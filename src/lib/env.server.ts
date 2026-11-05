@@ -50,7 +50,7 @@ export function serverEnv(): ServerEnv {
     const parsed = serverSchema.safeParse(withBlanksAsUnset(process.env));
     if (!parsed.success) {
       const detail = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
-      throw new Error(`Invalid server environment: ${detail}`);
+      throw new Error(`Invalid server environment: ${detail}. See SETUP.md for instructions.`);
     }
     cached = parsed.data;
   }
