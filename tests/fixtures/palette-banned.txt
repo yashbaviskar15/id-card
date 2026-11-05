@@ -1,0 +1,10 @@
+# Palette literals that must never appear in this repository.
+#
+# THIS FILE IS THE ONLY ALLOWED LOCATION FOR THESE VALUES.
+# scripts/scan-colors.mjs reads it (one bare hex per line, no leading "#")
+# and additionally rejects any warm-yellow colour by HSL analysis, so deleting
+# a line here does not weaken the scan.
+#
+# The two values required by the brief:
+c9a24b
+e9d9a6

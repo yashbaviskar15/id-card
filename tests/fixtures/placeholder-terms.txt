@@ -1,0 +1,26 @@
+# Deny-list of mock/placeholder content.
+#
+# THIS FILE IS ONE OF ONLY TWO FILES ALLOWED TO CONTAIN THESE PATTERNS
+# (the other is banned-terms.txt). scripts/scan-deny-list.mjs fails the build
+# when any of them appears in the application, except in genuine empty states.
+#
+# Syntax: plain: <phrase> | re: <pattern> | # comment
+plain: lorem ipsum
+plain: lorem
+plain: coming soon
+plain: to be implemented
+plain: not implemented yet
+plain: dummy data
+plain: sample data
+plain: mock data
+plain: fake data
+plain: foo bar
+plain: john doe
+plain: jane doe
+plain: acme
+plain: placeholder text
+re: href="#"
+re: \bTODO\b
+re: \bFIXME\b
+re: \bXXX\b
+re: \bTBD\b

@@ -1,58 +1,119 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Palette — single source of truth.
+ * Plain white surfaces, ink text, muted labels, hairline borders. No gold, no
+ * gradients, no metallic effects (enforced by `npm run scan:colors`).
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+  --font-heading: var(--font-manrope);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Card-specific tokens (ID-1 card design spec) */
+  --color-ink: var(--ink);
+  --color-label: var(--label);
+  --color-hairline: var(--hairline);
+  --color-subtle-line: var(--subtle-line);
+  --color-photo-placeholder: var(--photo-placeholder);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
 :root {
-  color-scheme: dark;
-  --ink: #f4efe4;
-  --muted: #aaa295;
-  --surface: #181716;
-  --surface-raised: #24211d;
-  --accent: #c9a24b;
-  --accent-soft: #e9d9a6;
+  --background: #ffffff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #111827;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #111827;
+  --muted: #f3f4f6;
+  --muted-foreground: #5b6472;
+  --accent: #f3f4f6;
+  --accent-foreground: #111827;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #dde1e7;
+  --ring: #111827;
+  --radius: 0.5rem;
+
+  --ink: #111827;
+  --label: #5b6472;
+  --hairline: #dde1e7;
+  --subtle-line: #e5e7eb;
+  --photo-placeholder: #f3f4f6;
 }
 
-* { box-sizing: border-box; }
-html, body { min-height: 100%; }
-body {
-  margin: 0;
-  background: #0d0d0d;
-  color: var(--ink);
-  font-family: Georgia, "Times New Roman", serif;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  /* Visible focus everywhere (WCAG 2.4.7) */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
-button, input { font: inherit; }
-.lock-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: radial-gradient(circle at 50% 0%, #2b261f 0, #0d0d0d 48rem);
+@layer utilities {
+  /* Dashboard sidebar / surfaces */
+  .surface-muted {
+    background-color: var(--muted);
+  }
+  /* Tabular figures for codes, counts and dates */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
 }
-.lock-panel {
-  width: min(100%, 410px);
-  padding: 36px 28px;
-  border: 1px solid #55462d;
-  background: rgba(24, 23, 22, 0.94);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+
+/* The identity card is printed; keep it exact and never break it across pages. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .card-print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+  }
+  @page {
+    margin: 0;
+  }
 }
-.lock-mark { color: var(--accent-soft); letter-spacing: 0.18em; font-size: 0.72rem; text-transform: uppercase; }
-.lock-panel h1 { margin: 30px 0 10px; font-size: clamp(2rem, 8vw, 3rem); font-weight: 400; }
-.lock-panel p { color: var(--muted); line-height: 1.6; }
-.code-form { display: grid; gap: 12px; margin-top: 28px; }
-.code-input { width: 100%; padding: 14px; border: 1px solid #655332; background: #0d0d0d; color: var(--ink); letter-spacing: 0.22em; }
-.code-button { padding: 14px; border: 0; background: var(--accent); color: #17120a; cursor: pointer; }
-.code-button:focus-visible, .code-input:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 3px; }
-.code-button:disabled { cursor: wait; opacity: 0.65; }
-.text-link { color: var(--accent-soft); }
-.dashboard-page { min-height: 100vh; background: #11100f; color: var(--ink); }
-.dashboard-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-.dashboard-nav { border-right: 1px solid #393127; padding: 28px 20px; background: #171513; }
-.dashboard-nav h1 { font-size: 1rem; font-weight: 400; color: var(--accent-soft); margin: 0 0 28px; }
-.dashboard-nav a { display: block; padding: 9px 0; color: var(--muted); text-decoration: none; }
-.dashboard-nav a:hover, .dashboard-nav a:focus-visible { color: var(--ink); }
-.dashboard-main { max-width: 900px; width: 100%; padding: 48px clamp(24px, 6vw, 72px); }
-.dashboard-main h2 { margin-top: 0; font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 400; }
-.dashboard-main h3 { font-weight: 400; color: var(--accent-soft); }
-.dashboard-muted { color: var(--muted); line-height: 1.7; }
-.dashboard-panel { border: 1px solid #493c2b; background: #1a1816; padding: 24px; margin: 24px 0; }
-.dashboard-panel code { color: var(--accent-soft); overflow-wrap: anywhere; }
-.dashboard-signout { margin-top: 28px; padding: 9px 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-.dashboard-signout:hover, .dashboard-signout:focus-visible { color: var(--ink); }
-@media (max-width: 700px) { .dashboard-shell { grid-template-columns: 1fr; } .dashboard-nav { border-right: 0; border-bottom: 1px solid #393127; } .dashboard-nav nav { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 18px; } }
