@@ -59,6 +59,13 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // The public profile and its contact download are never cached and never
+  // indexed, at every layer that could otherwise keep a copy.
+  if (path === '/p' || path.startsWith('/p/')) {
+    next.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    next.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  }
+
   // Owner area: require a session. The OWNER_EMAIL allow-list is re-checked
   // server-side in the dashboard layout (middleware has no DB access).
   if (path.startsWith('/dashboard') && !userId) {
