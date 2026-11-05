@@ -28,11 +28,26 @@ const serverSchema = z.object({
 
 export type ServerEnv = z.infer<typeof serverSchema>;
 
+/**
+ * A variable that is listed but left blank (exactly what .env.example produces
+ * when an optional value is not filled in) arrives as an empty string, not as
+ * undefined — and `''` fails `.min(1).optional()`. Every blank value is therefore
+ * normalised to "unset" before validation, so an unconfigured optional feature
+ * degrades gracefully instead of taking the whole app down at runtime.
+ */
+function withBlanksAsUnset(source: NodeJS.ProcessEnv): Record<string, unknown> {
+  const normalised: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(source)) {
+    normalised[key] = value === undefined || value.trim() === '' ? undefined : value;
+  }
+  return normalised;
+}
+
 let cached: ServerEnv | null = null;
 
 export function serverEnv(): ServerEnv {
   if (!cached) {
-    const parsed = serverSchema.safeParse(process.env);
+    const parsed = serverSchema.safeParse(withBlanksAsUnset(process.env));
     if (!parsed.success) {
       const detail = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
       throw new Error(`Invalid server environment: ${detail}`);

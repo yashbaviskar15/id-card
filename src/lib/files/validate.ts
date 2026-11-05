@@ -62,6 +62,38 @@ export function maxUploadBytes(): number {
   return serverEnv().MAX_UPLOAD_MB * 1024 * 1024;
 }
 
+/** Lowercased extension of a declared file name, without the dot. */
+export function declaredExtension(originalName: string): string {
+  return path.extname(originalName).replace(/^\./, '').toLowerCase().slice(0, 12);
+}
+
+/** True when the declared name carries an extension we refuse outright. */
+export function isBlockedExtension(originalName: string): boolean {
+  return BLOCKED_EXTENSIONS.has(declaredExtension(originalName));
+}
+
+/**
+ * Provisional destination for a direct-to-storage upload.
+ *
+ * The browser uploads large files straight to the private bucket (a request body
+ * that big would be rejected by the hosting platform before it ever reached a
+ * server action), so the server has to pick the path before it has seen a single
+ * byte. Nothing is recorded in the vault until `finalizeUpload` has pulled the
+ * object back, sniffed its real content and agreed it is what it claims to be —
+ * a rejected object is deleted again.
+ */
+export function pendingStoragePath(ownerId: string, declaredName: string): string {
+  const stem = safeFileName(declaredName).replace(/\.[^.]+$/, '') || 'file';
+  const extension = declaredExtension(declaredName) || 'bin';
+  return `${ownerId}/${generateStorageId()}-${stem}.${extension}`;
+}
+
+/** Display name for a document: the original, minus control characters. */
+export function displayName(originalName: string): string {
+  const base = path.basename(originalName).replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  return base.slice(0, 300) || 'Untitled';
+}
+
 export interface UploadCandidate {
   buffer: Buffer;
   declaredName: string;

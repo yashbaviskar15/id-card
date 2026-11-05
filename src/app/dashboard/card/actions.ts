@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createUserClient } from '@/lib/db/user';
-import { createProfile, getProfile, setProfilePhoto, updateProfile, DOCUMENTS_BUCKET } from '@/lib/card/load';
+import { createProfile, getProfile, setProfilePhoto, updateProfile } from '@/lib/card/load';
+import { DOCUMENTS_BUCKET } from '@/lib/storage';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
 import { profileUpdateSchema } from '@/lib/validation';
 import { zodFieldErrors } from '@/lib/result';

@@ -9,7 +9,7 @@ import {
   visitorCookieName,
   type CookiePayload,
 } from '@/lib/crypto/cookies';
-import { DOCUMENTS_BUCKET, SIGNED_URL_TTL_SECONDS } from '@/lib/card/load';
+import { signedServiceUrl } from '@/lib/storage';
 import { log } from '@/lib/log';
 import type { GrantedProfile } from '@/lib/types';
 
@@ -92,13 +92,7 @@ export async function loadGrantedProfile(
  * through a short-lived signed URL minted server-side after the grant check.
  */
 export async function signedVisitorPhotoUrl(path: string | null): Promise<string | null> {
-  if (!path) return null;
-  const supabase = createServiceClient();
-  const { data, error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (error || !data) return null;
-  return data.signedUrl;
+  return signedServiceUrl(path);
 }
 
 /** Appends one `session_view` row to the access log. Never blocks rendering. */

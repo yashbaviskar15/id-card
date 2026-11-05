@@ -2,14 +2,9 @@ import 'server-only';
 import { createUserClient } from '@/lib/db/user';
 import { generateSlug } from '@/lib/crypto/random';
 import { log } from '@/lib/log';
+import { signedUrlFor } from '@/lib/storage';
 import type { CardData } from '@/lib/card/data';
 import type { ProfileRow } from '@/lib/types';
-
-/** Private bucket that holds every owner file. Never public. */
-export const DOCUMENTS_BUCKET = 'documents';
-
-/** Signed URLs are short-lived (≤60 s) and are the only way to read a file. */
-export const SIGNED_URL_TTL_SECONDS = 60;
 
 const PROFILE_COLUMNS =
   'id, owner_id, slug, full_name, dob, address, photo_path, show_dob, show_address, show_photo, is_active, created_at, updated_at';
@@ -114,17 +109,6 @@ export async function setProfilePhoto(ownerId: string, photoPath: string | null)
     log.warn('profile.photo failed', { code: error.code });
     throw new Error('Could not update the photo.');
   }
-}
-
-/** Short-lived signed URL for a stored object. Returns null when unavailable. */
-export async function signedUrlFor(path: string | null): Promise<string | null> {
-  if (!path) return null;
-  const supabase = await createUserClient();
-  const { data, error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (error || !data) return null;
-  return data.signedUrl;
 }
 
 /**
