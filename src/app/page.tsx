@@ -5,6 +5,7 @@ export default function HomePage() {
         <div className="lock-mark">Private identity card</div>
         <h1 id="home-title">Access by invitation</h1>
         <p>This private profile is available through an owner-issued access link.</p>
+        <p><a className="text-link" href="/login">Owner sign in</a></p>
       </section>
     </main>
   );
