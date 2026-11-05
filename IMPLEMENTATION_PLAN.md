@@ -93,8 +93,7 @@ All `/p/*` and vCard responses use `Cache-Control: no-store`, noindex, and the s
 
 ### Owner routes
 
-- `/login`: owner email OTP entry.
-- `/auth/callback`: server callback and session establishment.
+- `/login`: owner email/password entry.
 - `/dashboard`: authenticated shell and summary.
 - `/dashboard/card`: editable card preview, print/PDF/PNG exports, front/back views.
 - `/dashboard/access`: issue, view, revoke grants and sessions; inspect access outcomes.
@@ -138,7 +137,7 @@ The legacy `public_profile()` function is removed or made inaccessible to both a
 | QR mutation | Immutable random slug, trigger, explicit updates, deterministic rendering | Byte-for-byte QR comparison after all listed mutations |
 | Storage exposure | Private bucket, safe paths, signed URLs <= 60 seconds, hashed share tokens | Storage policy and expiry tests |
 | Session theft/extension | Signed secure cookie, no-store, server validation, fixed expiry, revocation checks | Expiry and revoke tests; inspect cookie flags |
-| Owner account compromise | Restricted email OTP, TOTP, optional passkey, recent re-auth for sensitive actions, sign-out all devices | Authentication and re-authentication browser tests |
+| Owner account compromise | Restricted email/password sign-in, TOTP, optional passkey, recent re-auth for sensitive actions, sign-out all devices | Authentication and re-authentication browser tests |
 | CSRF and malformed input | Same-site cookies, server actions/route checks, Zod validation, security headers/CSP | Negative request tests and header checks |
 
 ## Workstream split after approval
@@ -146,7 +145,7 @@ The legacy `public_profile()` function is removed or made inaccessible to both a
 Each workstream owns separate files and exposes a small contract to the others.
 
 - **A. Database and security:** migrations/schema, RLS, storage policies, immutable-slug trigger, grants/logs/audit tables, atomic consume function, lockout transaction, database tests.
-- **B. Auth:** owner-only email OTP, TOTP, optional WebAuthn/passkey, session age/re-authentication, sign-out-all-devices, server auth helpers.
+- **B. Auth:** owner-only email/password sign-in, TOTP, optional WebAuthn/passkey, session age/re-authentication, sign-out-all-devices, server auth helpers.
 - **C. Card and QR:** ID-1 card views, data binding, deterministic QR renderer, PNG/SVG/PDF/bleed exports, print styles.
 - **D. Access gate:** lock screen, verification action, hashing/rate limiting/lockout, visitor cookie, gated projection, vCard, owner access page.
 - **E. Vault:** private upload and validation, categories, previews, signed downloads, storage usage, document share links and password/expiry/download limits.
@@ -173,7 +172,7 @@ Each workstream owns separate files and exposes a small contract to the others.
 ### Authentication
 
 - [ ] Restrict sign-in to the owner email and disable public sign-up.
-- [ ] Add email OTP, TOTP, optional passkey fallback, session timeout, recent re-authentication, and sign-out-all-devices.
+- [ ] Add password sign-in, TOTP, optional passkey fallback, session timeout, recent re-authentication, and sign-out-all-devices.
 
 ### Visitor experience
 
