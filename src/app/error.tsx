@@ -29,10 +29,9 @@ export default function RouteError({
       <div className="w-full max-w-sm text-center">
         <h1 className="text-xl font-bold tracking-tight">Something went wrong</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This page could not be loaded. Nothing was changed — try again, and if it keeps happening
-          check the server logs.
-        </p>
-        {error.digest ? (
+          This page could not be loaded. If this is a fresh deployment, check that every required
+          environment variable is set — see SETUP.md.
+        </p>       {error.digest ? (
           <p className="mt-4 font-mono text-xs text-label">Reference: {error.digest}</p>
         ) : null}
         <Button className="mt-8 h-11 w-full" onClick={reset}>
