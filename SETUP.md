@@ -13,12 +13,12 @@ Copy `.env.example` to `.env.local` and fill every value. Do not commit `.env.lo
 
 ## Supabase
 
-1. Create a Supabase project and enable Auth email OTP.
+1. Create a Supabase project and enable Auth email/password sign-in.
 2. Disable public sign-up and allow only the owner email.
 3. Apply `supabase/schema.sql` in the SQL editor or through the migration workflow.
 4. Confirm the `private-documents` bucket is private and review the owner-prefix storage policies.
 5. Configure TOTP as the required second factor. Passkeys can be enabled for supported devices after the base flow is working.
-6. Create the owner account and complete the first-login category seed transaction.
+6. Create the owner account with a password and complete the first-login category seed transaction.
 
 ## Local checks
 
