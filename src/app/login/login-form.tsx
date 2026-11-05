@@ -12,12 +12,26 @@ export default function LoginForm() {
     event.preventDefault();
     setPending(true);
     setMessage("");
-    const origin = window.location.origin;
-    const { error } = await getBrowserClient().auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${origin}/auth/callback` }
-    });
-    setMessage(error ? "Unable to send the sign-in link." : "Check your email for the sign-in link.");
+    try {
+      const origin = window.location.origin;
+      const { error } = await getBrowserClient().auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${origin}/auth/callback` }
+      });
+      if (!error) {
+        setMessage("Check your email for the sign-in link.");
+      } else if (error.message.toLowerCase().includes("email provider")) {
+        setMessage("Email sign-in is disabled in Supabase. Enable the Email provider first.");
+      } else if (error.message.toLowerCase().includes("redirect")) {
+        setMessage("Add this callback URL in Supabase Auth: /auth/callback.");
+      } else if (error.message.toLowerCase().includes("apikey") || error.message.toLowerCase().includes("api key")) {
+        setMessage("The Supabase public URL or publishable key is missing in Vercel.");
+      } else {
+        setMessage("Supabase could not send the sign-in link. Check the Supabase Auth email settings.");
+      }
+    } catch {
+      setMessage("Supabase configuration is missing in this deployment.");
+    }
     setPending(false);
   }
 
