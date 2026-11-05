@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # Non-functional CI placeholders: the build gate only needs the public
+      # variables, and no real secret ever belongs in this file.
+      NEXT_PUBLIC_SUPABASE_URL: https://ci.example.invalid
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key-value-000000
+      NEXT_PUBLIC_SITE_URL: https://ci.example.invalid
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install (locked)
+        run: npm ci
+
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: gitleaks.toml
+
+      - name: Forbidden content scan
+        run: npm run scan:deny-list
+
+      - name: Palette scan
+        run: npm run scan:colors
+
+      - name: Dependency audit
+        run: npm run audit
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build

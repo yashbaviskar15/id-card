@@ -1,0 +1,13 @@
+-- ============================================================================
+-- supabase/seed.sql — intentionally minimal.
+--
+-- Nothing is inserted here by design: the app ships with no sample or filler
+-- rows at all. Real rows are created by the owner through the app.
+--
+-- The 14 default document categories and each owner's settings row are created
+-- automatically by the `on_auth_user_created` trigger (see
+-- supabase/migrations/0001_init.sql -> public.handle_new_owner()).
+--
+-- If the owner user already existed before this schema was applied, run:
+--   select public.seed_categories('<owner-uuid>');
+-- ============================================================================

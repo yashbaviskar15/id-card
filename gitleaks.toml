@@ -1,0 +1,47 @@
+# gitleaks configuration — secret scanning gate.
+# Run: npm run secrets:scan   (fails the build on any finding)
+title = "private-identity-vault"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-service-role-jwt"
+description = "Supabase service-role JWT (must only ever live in the host environment)"
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret/service key (sb_secret_*)"
+regex = '''sb_secret_[A-Za-z0-9_-]{16,}'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "resend-api-key"
+description = "Resend API key"
+regex = '''re_[A-Za-z0-9]{16,}'''
+tags = ["key", "email"]
+
+[[rules]]
+id = "private-key-block"
+description = "Private key material"
+regex = '''-----BEGIN (RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----'''
+tags = ["key"]
+
+[allowlist]
+description = "Only placeholders and documentation may contain look-alike values"
+paths = [
+  '''\.env\.example$''',
+  '''env\.manifest\.json$''',
+  '''^SETUP\.md$''',
+  '''^gitleaks\.toml$''',
+  '''^tests/fixtures/''',
+  '''^package-lock\.json$''',
+]
+regexes = [
+  '''YOUR_''',
+  '''changeme''',
+  '''placeholder''',
+  '''example\.invalid''',
+]

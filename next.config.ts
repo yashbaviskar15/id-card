@@ -1,24 +1,39 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
-if (!process.env.NEXT_PUBLIC_SITE_URL) {
-  throw new Error("NEXT_PUBLIC_SITE_URL must be set before building or running the app");
-}
-
+/**
+ * Static security headers. The per-request Content-Security-Policy (which needs
+ * a nonce) is set in middleware.ts.
+ */
 const securityHeaders = [
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "Referrer-Policy", value: "no-referrer" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'no-referrer' },
+  { key: 'X-Frame-Options', value: 'DENY' },
   {
-    key: "Content-Security-Policy",
-    value: "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
-  }
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+  },
+];
+
+const noStore = [
+  { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, max-age=0' },
+  { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
 ];
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  reactStrictMode: true,
+  // Native/ESM-only packages must stay outside the server bundle.
+  serverExternalPackages: ['@resvg/resvg-js', '@node-rs/argon2', 'file-type'],
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
-  }
+    return [
+      { source: '/(.*)', headers: securityHeaders },
+      { source: '/p/:path*', headers: noStore },
+      { source: '/s/:path*', headers: noStore },
+      { source: '/api/:path*', headers: noStore },
+      { source: '/dashboard/:path*', headers: noStore },
+    ];
+  },
 };
 
 export default nextConfig;

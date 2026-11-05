@@ -1,0 +1,58 @@
+# Deny-list of occupational / employer / branding terms.
+#
+# THIS IS THE ONLY FILE IN THE REPOSITORY THAT IS ALLOWED TO CONTAIN THESE WORDS.
+# It exists so scripts/scan-deny-list.mjs can fail the build if any of them ever
+# appear in UI copy, seed data, placeholders, metadata, README, tests or schema.
+#
+# Syntax: one entry per line.
+#   plain: <word or phrase>  -> matched case-insensitively with word boundaries
+#   re:    <pattern>         -> raw regular expression (use sparingly)
+#   #                         -> comment
+plain: profession
+plain: professions
+plain: professional
+plain: professionally
+plain: professionals
+plain: occupation
+plain: occupations
+plain: occupational
+plain: job title
+plain: jobtitle
+plain: designation
+plain: employer
+plain: employers
+plain: employment
+plain: employed
+plain: employee
+plain: employee id
+plain: colleague
+plain: career
+plain: resume
+plain: curriculum vitae
+plain: linkedin
+plain: company
+plain: companies
+plain: corporate
+plain: entrepreneur
+plain: businessman
+plain: freelancer
+plain: freelance
+plain: self-employed
+plain: founder
+plain: founders
+plain: co-founder
+plain: consultant
+plain: consultants
+plain: managing director
+plain: chief executive
+plain: work history
+plain: work experience
+plain: years of experience
+re: \bCEO\b
+re: \bCTO\b
+re: \bCFO\b
+re: \bCOO\b
+plain: tagline
+plain: brand ambassador
+plain: organizational role
+plain: organisational role
