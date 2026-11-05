@@ -4,6 +4,7 @@ import { requireOwner } from '@/lib/auth/session';
 const NAV = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/card', label: 'Card & QR' },
+  { href: '/dashboard/access', label: 'Access' },
 ] as const;
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {

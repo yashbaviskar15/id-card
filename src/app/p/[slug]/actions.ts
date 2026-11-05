@@ -1,0 +1,118 @@
+'use server';
+
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { createServiceClient } from '@/lib/db/service';
+import { setVisitorSession } from '@/lib/access/visitor';
+import { serverEnv } from '@/lib/env.server';
+import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
+import { buildAccessCodeProof } from '@/lib/crypto/proofs';
+import { accessCodeSchema, slugSchema } from '@/lib/validation';
+import { isLocked, RATE_LIMITS } from '@/lib/rate-limit';
+import { alertAccessGateLockout } from '@/lib/mail';
+import { writeAudit } from '@/lib/audit';
+import { log } from '@/lib/log';
+import type { ConsumeCodeVerdict } from '@/lib/types';
+import type { FormState } from '@/app/(auth)/form-state';
+
+/**
+ * Wrong, expired, used and revoked codes all produce this one message, so the
+ * screen never reveals which of those happened.
+ */
+const INVALID_CODE = 'That code is not valid. Ask the owner for a new one.';
+const RATE_LIMITED = 'Too many attempts from this device. Wait a few minutes and try again.';
+const LOCKED = 'Too many attempts. Access is paused. Ask the owner for a new code.';
+
+export async function submitAccessCodeAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const slugParsed = slugSchema.safeParse(formData.get('slug'));
+  if (!slugParsed.success) return { ok: false, error: INVALID_CODE };
+  const slug = slugParsed.data;
+
+  const codeParsed = accessCodeSchema.safeParse(String(formData.get('code') ?? '').trim());
+  if (!codeParsed.success) return { ok: false, error: INVALID_CODE };
+
+  const headerList = await headers();
+  const ipHash = hashIp(clientIpFromHeaders(headerList));
+  const userAgent = truncateUserAgent(headerList.get('user-agent'));
+
+  // If a lockout is already in force the attempt is short-circuited and no new
+  // alert is raised — the owner gets exactly one mail per lockout.
+  const alreadyLocked = await isLocked('slug', slug);
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc('consume_access_code', {
+    p_slug: slug,
+    p_code_hash: buildAccessCodeProof(slug, codeParsed.data),
+    p_session_minutes: serverEnv().ACCESS_SESSION_MINUTES,
+    p_ip_hash: ipHash,
+    p_user_agent: userAgent,
+  });
+
+  if (error) {
+    log.warn('access.consume failed', { code: error.code });
+    return { ok: false, error: INVALID_CODE };
+  }
+
+  const verdict = data as ConsumeCodeVerdict;
+
+  if (!verdict.ok) {
+    if (verdict.reason === 'locked') {
+      if (!alreadyLocked) {
+        // The lockout has just tripped: the database has already revoked every
+        // outstanding code, so tell the owner right away.
+        await alertAccessGateLockout({
+          slugSuffix: slug.slice(-6),
+          attempts: RATE_LIMITS.codeSlugLockoutAfter,
+        });
+        const owner = await ownerIdForSlug(slug);
+        if (owner) {
+          await writeAudit({
+            ownerId: owner,
+            actor: 'system',
+            action: 'access.lockout',
+            entityType: 'profile',
+            detail: { reason: 'wrong_code_threshold', window_minutes: RATE_LIMITS.codeSlugLockoutMinutes },
+            ipHash,
+            userAgent,
+          });
+        }
+      }
+      return { ok: false, error: LOCKED };
+    }
+    if (verdict.reason === 'rate_limited') return { ok: false, error: RATE_LIMITED };
+    return { ok: false, error: INVALID_CODE };
+  }
+
+  if (!verdict.grant_id || !verdict.session_expires_at) {
+    return { ok: false, error: INVALID_CODE };
+  }
+
+  const seconds = Math.floor((Date.parse(verdict.session_expires_at) - Date.now()) / 1000);
+  await setVisitorSession({ grantId: verdict.grant_id, slug }, seconds);
+
+  const owner = await ownerIdForSlug(slug);
+  if (owner) {
+    await writeAudit({
+      ownerId: owner,
+      actor: 'visitor',
+      action: 'access.grant_used',
+      entityType: 'access_grant',
+      entityId: verdict.grant_id,
+      detail: { scope: verdict.scope },
+      ipHash,
+      userAgent,
+    });
+  }
+
+  redirect(`/p/${slug}`);
+}
+
+async function ownerIdForSlug(slug: string): Promise<string | null> {
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from('profiles')
+    .select('owner_id')
+    .eq('slug', slug)
+    .maybeSingle<{ owner_id: string }>();
+  return data?.owner_id ?? null;
+}
