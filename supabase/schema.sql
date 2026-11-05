@@ -1,8 +1,14 @@
 create extension if not exists pgcrypto;
 
-create type public.access_scope as enum ('contact', 'full');
+do $$
+begin
+  if not exists (select 1 from pg_type where typnamespace = 'public'::regnamespace and typname = 'access_scope') then
+    create type public.access_scope as enum ('contact', 'full');
+  end if;
+end;
+$$;
 
-create table public.profiles (
+create table if not exists public.profiles (
   owner_id uuid primary key references auth.users(id) on delete cascade,
   slug text not null unique check (slug ~ '^[A-Za-z0-9_-]{12,}$'),
   full_name text not null default '',
@@ -31,11 +37,12 @@ begin
 end;
 $$;
 
+drop trigger if exists profiles_slug_immutable on public.profiles;
 create trigger profiles_slug_immutable
 before update on public.profiles
 for each row execute function public.prevent_profile_slug_change();
 
-create table public.fields (
+create table if not exists public.fields (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   kind text not null check (kind in ('email', 'phone', 'address', 'other')),
@@ -47,7 +54,7 @@ create table public.fields (
   updated_at timestamptz not null default now()
 );
 
-create table public.categories (
+create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
@@ -55,7 +62,7 @@ create table public.categories (
   unique(owner_id, name)
 );
 
-create table public.documents (
+create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   category_id uuid references public.categories(id) on delete set null,
@@ -67,7 +74,7 @@ create table public.documents (
   updated_at timestamptz not null default now()
 );
 
-create table public.share_links (
+create table if not exists public.share_links (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   document_id uuid not null references public.documents(id) on delete cascade,
@@ -80,7 +87,7 @@ create table public.share_links (
   created_at timestamptz not null default now()
 );
 
-create table public.access_grants (
+create table if not exists public.access_grants (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   slug text not null references public.profiles(slug) on delete cascade,
@@ -93,10 +100,10 @@ create table public.access_grants (
   created_at timestamptz not null default now()
 );
 
-create unique index access_grants_code_hash_unique
+create unique index if not exists access_grants_code_hash_unique
 on public.access_grants(slug, code_hash);
 
-create table public.access_log (
+create table if not exists public.access_log (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   grant_id uuid references public.access_grants(id) on delete set null,
@@ -107,7 +114,7 @@ create table public.access_log (
   created_at timestamptz not null default now()
 );
 
-create table public.audit_log (
+create table if not exists public.audit_log (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   actor_type text not null check (actor_type in ('owner', 'visitor', 'system')),
@@ -126,6 +133,15 @@ alter table public.share_links enable row level security;
 alter table public.access_grants enable row level security;
 alter table public.access_log enable row level security;
 alter table public.audit_log enable row level security;
+
+drop policy if exists profiles_owner on public.profiles;
+drop policy if exists fields_owner on public.fields;
+drop policy if exists categories_owner on public.categories;
+drop policy if exists documents_owner on public.documents;
+drop policy if exists share_links_owner on public.share_links;
+drop policy if exists access_grants_owner on public.access_grants;
+drop policy if exists access_log_owner_read on public.access_log;
+drop policy if exists audit_log_owner_read on public.audit_log;
 
 create policy profiles_owner on public.profiles for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 create policy fields_owner on public.fields for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
@@ -182,6 +198,11 @@ revoke all on function public.consume_access_grant(text, bytea) from anon, authe
 insert into storage.buckets (id, name, public)
 values ('private-documents', 'private-documents', false)
 on conflict (id) do nothing;
+
+drop policy if exists private_documents_owner_select on storage.objects;
+drop policy if exists private_documents_owner_insert on storage.objects;
+drop policy if exists private_documents_owner_update on storage.objects;
+drop policy if exists private_documents_owner_delete on storage.objects;
 
 create policy private_documents_owner_select on storage.objects
 for select to authenticated
