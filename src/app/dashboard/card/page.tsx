@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { requireOwner } from '@/lib/auth/session';
 import { getProfile, loadCardData } from '@/lib/card/load';
 import { qrPayload } from '@/lib/qr/payload';
-import { IdCard } from '@/components/card/id-card';
+import { ResponsiveCard } from '@/components/card/responsive-card';
 import { CardForm } from './card-form';
 
 export const dynamic = 'force-dynamic';
@@ -41,14 +41,18 @@ export default async function CardPage() {
 
       {card ? (
         <>
-          <section className="grid gap-6 xl:grid-cols-2">
+          <section className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-3">
               <h2 className="text-sm font-semibold tracking-wide text-label uppercase">Front</h2>
-              <IdCard face="front" data={card} scale={0.78} />
+              <div className="rounded-[32px] border border-hairline shadow-[0_10px_30px_rgba(17,24,39,0.10)]">
+                <ResponsiveCard face="front" data={card} />
+              </div>
             </div>
             <div className="space-y-3">
               <h2 className="text-sm font-semibold tracking-wide text-label uppercase">Back</h2>
-              <IdCard face="back" data={card} scale={0.78} />
+              <div className="rounded-[32px] border border-hairline shadow-[0_10px_30px_rgba(17,24,39,0.10)]">
+                <ResponsiveCard face="back" data={card} />
+              </div>
             </div>
           </section>
 

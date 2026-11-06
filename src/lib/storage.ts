@@ -1,18 +1,19 @@
 import 'server-only';
+import { log } from '@/lib/log';
 import { createServiceClient } from '@/lib/db/service';
 import { createUserClient } from '@/lib/db/user';
 
 /**
  * Private Storage access. Every file lives in a private bucket under the owner's
- * folder, and the only way to read one is a signed URL that expires within 60
- * seconds. Public URLs are never generated anywhere in the app.
+ * folder, and the only way to read one is a signed URL that expires within 1 hour.
+ * Public URLs are never generated anywhere in the app.
  */
 
 /** Private bucket that holds every owner file. Never public. */
 export const DOCUMENTS_BUCKET = 'documents';
 
-/** Signed URLs are short-lived (≤60 s) and are the only way to read a file. */
-export const SIGNED_URL_TTL_SECONDS = 60;
+/** Signed URLs are valid for 1 hour to prevent expiry during slow loads or caching. */
+export const SIGNED_URL_TTL_SECONDS = 3600;
 
 const UNSAFE_DISPOSITION_CHARS = /[^A-Za-z0-9._-]+/g;
 
@@ -36,7 +37,11 @@ export async function signedUrlFor(path: string | null): Promise<string | null> 
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (error || !data) return null;
+  if (error) {
+    log.warn('storage.signedUrl failed', { path, code: error.name, message: error.message });
+    return null;
+  }
+  if (!data) return null;
   return data.signedUrl;
 }
 
@@ -61,7 +66,11 @@ export async function signedServiceUrl(path: string | null): Promise<string | nu
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (error || !data) return null;
+  if (error) {
+    log.warn('storage.signedServiceUrl failed', { path, code: error.name, message: error.message });
+    return null;
+  }
+  if (!data) return null;
   return data.signedUrl;
 }
 
