@@ -33,7 +33,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
             <div className="hidden md:block">
               <form action="/auth/signout" method="post">
-                <Button variant="outline" size="sm" className="rounded-full border-2 border-ink font-black hover:bg-ink hover:text-white transition-all active:scale-95">
+                <Button type="submit" variant="outline" size="sm" className="rounded-full border-2 border-ink font-black hover:bg-ink hover:text-white transition-all active:scale-95">
                   Sign out
                 </Button>
               </form>
