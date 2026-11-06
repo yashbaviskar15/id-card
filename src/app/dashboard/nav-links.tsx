@@ -18,7 +18,7 @@ export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Dashboard" className="flex flex-1 items-center gap-1 overflow-x-auto pb-1 scrollbar-none sm:pb-0">
+    <nav aria-label="Dashboard" className="flex flex-1 items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none sm:pb-0">
       {NAV.map((item) => {
         const isActive = pathname === item.href;
         return (
@@ -26,9 +26,9 @@ export function NavLinks() {
             key={item.href}
             href={item.href}
             className={cn(
-              'whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors',
+              'whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition-all active:scale-95',
               isActive
-                ? 'bg-ink text-white'
+                ? 'bg-ink text-white shadow-md shadow-ink/20'
                 : 'text-label hover:bg-muted hover:text-ink'
             )}
           >

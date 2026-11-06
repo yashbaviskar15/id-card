@@ -29,19 +29,19 @@ function Toggle({
   defaultChecked: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-hairline p-3">
+    <div className="flex items-start gap-3 rounded-2xl border border-hairline p-4 transition-colors hover:bg-[#f8f9fa]">
       <input
         id={id}
         name={name}
         type="checkbox"
         defaultChecked={defaultChecked}
-        className="mt-0.5 h-4 w-4 accent-[#111827]"
+        className="mt-1 h-4 w-4 rounded border-hairline text-ink focus:ring-ink"
       />
       <div>
-        <Label htmlFor={id} className="cursor-pointer">
+        <Label htmlFor={id} className="cursor-pointer font-bold text-ink">
           {label}
         </Label>
-        <p className="mt-0.5 text-xs text-label">{hint}</p>
+        <p className="mt-1 text-xs font-medium text-label">{hint}</p>
       </div>
     </div>
   );
@@ -52,120 +52,150 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
   const [photoState, upload, uploading] = useActionState(uploadPhotoAction, initialFormState);
 
   return (
-    <div className="space-y-6">
-      <form action={save} className="space-y-5 rounded-xl border border-hairline bg-white p-6" noValidate>
-        <div className="space-y-1.5">
-          <Label htmlFor="full_name">Full name</Label>
-          <Input
-            id="full_name"
-            name="full_name"
-            defaultValue={profile?.full_name ?? ''}
-            maxLength={200}
-            required
-            autoComplete="name"
-          />
-          <FieldError messages={saveState.fieldErrors?.full_name} />
-        </div>
+    <div className="space-y-8">
+      <form action={save} className="space-y-8 rounded-3xl border border-hairline bg-white p-8 shadow-sm" noValidate>
+        <div className="grid gap-8 sm:grid-cols-2">
+          <div className="space-y-2.5">
+            <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-label">Full name</Label>
+            <Input
+              id="full_name"
+              name="full_name"
+              defaultValue={profile?.full_name ?? ''}
+              maxLength={200}
+              required
+              autoComplete="name"
+              className="h-12 rounded-xl border-hairline focus:border-ink focus:ring-ink"
+            />
+            <FieldError messages={saveState.fieldErrors?.full_name} />
+          </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="dob">Date of birth</Label>
-            <Input id="dob" name="dob" type="date" defaultValue={profile?.dob ?? ''} />
+          <div className="space-y-2.5">
+            <Label htmlFor="dob" className="text-xs font-bold uppercase tracking-widest text-label">Date of birth</Label>
+            <Input 
+              id="dob" 
+              name="dob" 
+              type="date" 
+              defaultValue={profile?.dob ?? ''} 
+              className="h-12 rounded-xl border-hairline focus:border-ink focus:ring-ink"
+            />
             <FieldError messages={saveState.fieldErrors?.dob} />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="address">Address</Label>
-            <Textarea id="address" name="address" rows={3} defaultValue={profile?.address ?? ''} maxLength={500} />
-            <FieldError messages={saveState.fieldErrors?.address} />
-          </div>
         </div>
 
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-semibold text-ink">What a full-profile code may show</legend>
-          <Toggle
-            id="show_photo"
-            name="show_photo"
-            label="Share the photo"
-            hint="Only with a full-profile code. Never with a contact-only code."
-            defaultChecked={profile?.show_photo ?? false}
+        <div className="space-y-2.5">
+          <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-label">Address</Label>
+          <Textarea 
+            id="address" 
+            name="address" 
+            rows={3} 
+            defaultValue={profile?.address ?? ''} 
+            maxLength={500} 
+            className="rounded-xl border-hairline focus:border-ink focus:ring-ink min-h-[100px]"
           />
-          <Toggle
-            id="show_dob"
-            name="show_dob"
-            label="Share the date of birth"
-            hint="Only with a full-profile code."
-            defaultChecked={profile?.show_dob ?? false}
-          />
-          <Toggle
-            id="show_address"
-            name="show_address"
-            label="Share the address"
-            hint="Only with a full-profile code."
-            defaultChecked={profile?.show_address ?? false}
-          />
+          <FieldError messages={saveState.fieldErrors?.address} />
+        </div>
+
+        <fieldset className="space-y-4">
+          <legend className="text-sm font-black text-ink">Visibility Settings</legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Toggle
+              id="show_photo"
+              name="show_photo"
+              label="Share the photo"
+              hint="Only with a full-profile code."
+              defaultChecked={profile?.show_photo ?? false}
+            />
+            <Toggle
+              id="show_dob"
+              name="show_dob"
+              label="Share the date of birth"
+              hint="Only with a full-profile code."
+              defaultChecked={profile?.show_dob ?? false}
+            />
+            <Toggle
+              id="show_address"
+              name="show_address"
+              label="Share the address"
+              hint="Only with a full-profile code."
+              defaultChecked={profile?.show_address ?? false}
+            />
+            <Toggle
+              id="is_active"
+              name="is_active"
+              label="Profile is active"
+              hint="Instantly refuse every code."
+              defaultChecked={profile?.is_active ?? true}
+            />
+          </div>
         </fieldset>
 
-        <Toggle
-          id="is_active"
-          name="is_active"
-          label="Profile is active"
-          hint="Turn this off to refuse every code instantly. The QR code is not affected."
-          defaultChecked={profile?.is_active ?? true}
-        />
-
         {saveState.error ? (
-          <Alert variant="destructive" role="alert">
-            <AlertDescription>{saveState.error}</AlertDescription>
+          <Alert variant="destructive" className="rounded-2xl border-2">
+            <AlertDescription className="font-bold">{saveState.error}</AlertDescription>
           </Alert>
         ) : null}
         {saveState.ok && saveState.message ? (
-          <Alert role="status">
-            <AlertDescription>{saveState.message}</AlertDescription>
+          <Alert className="rounded-2xl border-2 border-ink bg-ink text-white">
+            <AlertDescription className="font-bold">{saveState.message}</AlertDescription>
           </Alert>
         ) : null}
 
-        <Button type="submit" className="h-11" disabled={saving}>
+        <Button type="submit" className="h-14 w-full sm:w-auto px-10 rounded-2xl text-lg font-black shadow-lg shadow-ink/10 transition-all active:scale-95" disabled={saving}>
           {saving ? 'Saving…' : profile ? 'Save card' : 'Create my card'}
         </Button>
       </form>
 
       {profile ? (
-        <form action={upload} className="space-y-4 rounded-xl border border-hairline bg-white p-6">
-          <div className="space-y-1.5">
-            <Label htmlFor="photo">Card photo</Label>
-            <Input id="photo" name="photo" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/tiff" />
-            <p className="text-xs text-label">
-              PNG, JPEG, WebP, HEIC or TIFF, up to 8 MB. Stored privately; only ever shown through a
-              signed link.
-            </p>
-          </div>
+        <div className="grid gap-8 sm:grid-cols-2">
+          <form action={upload} className="space-y-6 rounded-3xl border border-hairline bg-white p-8 shadow-sm">
+            <div className="space-y-2.5">
+              <Label htmlFor="photo" className="text-xs font-bold uppercase tracking-widest text-label">Card photo</Label>
+              <div className="relative group">
+                <Input 
+                  id="photo" 
+                  name="photo" 
+                  type="file" 
+                  accept="image/png,image/jpeg,image/webp,image/heic,image/tiff" 
+                  className="h-14 rounded-2xl border-hairline file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-black file:bg-ink file:text-white file:cursor-pointer transition-all hover:border-ink"
+                />
+              </div>
+              <p className="text-[10px] font-bold text-label uppercase tracking-widest">
+                PNG, JPEG, WebP · Max 8 MB
+              </p>
+            </div>
 
-          {photoState.error ? (
-            <Alert variant="destructive" role="alert">
-              <AlertDescription>{photoState.error}</AlertDescription>
-            </Alert>
-          ) : null}
-          {photoState.ok && photoState.message ? (
-            <Alert role="status">
-              <AlertDescription>{photoState.message}</AlertDescription>
-            </Alert>
-          ) : null}
+            {photoState.error ? (
+              <Alert variant="destructive" className="rounded-2xl border-2">
+                <AlertDescription className="font-bold">{photoState.error}</AlertDescription>
+              </Alert>
+            ) : null}
+            {photoState.ok && photoState.message ? (
+              <Alert className="rounded-2xl border-2 border-ink bg-ink text-white">
+                <AlertDescription className="font-bold">{photoState.message}</AlertDescription>
+              </Alert>
+            ) : null}
 
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit" variant="outline" className="h-11" disabled={uploading}>
+            <Button type="submit" variant="outline" className="h-12 w-full rounded-xl border-2 border-ink font-black transition-all active:scale-95" disabled={uploading}>
               {uploading ? 'Uploading…' : 'Upload photo'}
             </Button>
-          </div>
-        </form>
-      ) : null}
+          </form>
 
-      {profile && hasPhoto ? (
-        <form action={removePhotoAction} className="rounded-xl border border-hairline bg-white p-6">
-          <p className="text-sm text-label">Remove the current photo from the card.</p>
-          <Button type="submit" variant="outline" className="mt-3 h-11">
-            Remove photo
-          </Button>
-        </form>
+          {hasPhoto ? (
+            <form action={removePhotoAction} className="flex flex-col justify-between rounded-3xl border border-hairline bg-white p-8 shadow-sm">
+              <div className="space-y-2">
+                <h3 className="text-sm font-black text-ink">Current photo</h3>
+                <p className="text-sm font-medium text-label">Remove the current photo from the card.</p>
+              </div>
+              <Button type="submit" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2 border-destructive text-destructive font-black transition-all hover:bg-destructive hover:text-white active:scale-95">
+                Remove photo
+              </Button>
+            </form>
+          ) : (
+             <div className="flex items-center justify-center rounded-3xl border-2 border-dashed border-hairline bg-[#f8f9fa] p-8">
+               <p className="text-sm font-bold text-label/40 uppercase tracking-widest">No photo uploaded</p>
+             </div>
+          )}
+        </div>
       ) : null}
     </div>
   );

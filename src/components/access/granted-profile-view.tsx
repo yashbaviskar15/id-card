@@ -119,20 +119,29 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
   const photoUrl = await signedVisitorPhotoUrl(profile.photo_path);
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
-      <div className="overflow-hidden rounded-3xl border border-hairline bg-white shadow-sm">
-        <div className="flex flex-col items-center gap-6 p-8 text-center sm:flex-row sm:items-start sm:text-left">
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-subtle-line bg-photo-placeholder shadow-inner sm:h-20 sm:w-20">
-            {photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="text-[10px] font-bold tracking-[0.2em] text-label uppercase">No Photo</span>
-            )}
+    <div className="mx-auto w-full max-w-lg px-4 py-12 sm:py-20">
+      <div className="relative overflow-hidden rounded-[40px] border border-hairline bg-white shadow-2xl shadow-ink/5">
+        <div className="absolute inset-x-0 top-0 h-2 bg-ink" />
+        <div className="flex flex-col items-center gap-8 p-10 text-center sm:flex-row sm:items-start sm:text-left">
+          <div className="relative group">
+            <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[32px] border-2 border-subtle-line bg-photo-placeholder shadow-md transition-transform group-hover:scale-105 sm:h-24 sm:w-24">
+              {photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="text-[10px] font-black tracking-[0.2em] text-label/40 uppercase">Photo</span>
+              )}
+            </div>
+            <div className="absolute -inset-1 rounded-[32px] border border-ink/5 pointer-events-none" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold tracking-[0.2em] text-label uppercase">Verified Identity</p>
-            <h1 className="mt-2 text-3xl leading-tight font-extrabold break-words text-ink sm:text-2xl">{profile.full_name}</h1>
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex items-center justify-center gap-2 sm:justify-start">
+              <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
+              <p className="text-[10px] font-black tracking-[0.3em] text-label/60 uppercase">Verified Identity</p>
+            </div>
+            <h1 className="text-4xl leading-none font-black tracking-tight text-ink break-words sm:text-3xl">
+              {profile.full_name}
+            </h1>
             <div className="mt-4 flex justify-center sm:justify-start">
               <SessionTimer until={profile.session_expires_at} />
             </div>
@@ -140,12 +149,14 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
         </div>
       </div>
 
-      <div className="mt-6 space-y-4">
-        <ContactBlock title="Email" items={profile.emails} kind="email" />
-        <ContactBlock title="Phone" items={profile.phones} kind="phone" />
+      <div className="mt-8 space-y-6">
+        <div className="grid gap-6">
+          <ContactBlock title="Email" items={profile.emails} kind="email" />
+          <ContactBlock title="Phone" items={profile.phones} kind="phone" />
+        </div>
 
         {profile.dob || profile.address ? (
-          <section className="space-y-6 rounded-2xl border border-hairline bg-white p-5 shadow-sm">
+          <section className="space-y-8 rounded-[32px] border border-hairline bg-white p-8 shadow-sm">
             {profile.dob ? <Detail label="Date of birth" value={profile.dob} /> : null}
             {profile.address ? <Detail label="Address" value={profile.address} /> : null}
           </section>
@@ -153,17 +164,22 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
 
         <DocumentsSection slug={slug} documents={profile.documents ?? []} />
 
-        <a
-          href={`/p/${slug}/vcf`}
-          download
-          className={cn(buttonVariants(), 'h-14 w-full rounded-2xl text-lg font-bold shadow-md shadow-ink/10 transition-transform active:scale-[0.98]')}
-        >
-          Save contact to phone
-        </a>
+        <div className="pt-4">
+          <a
+            href={`/p/${slug}/vcf`}
+            download
+            className={cn(buttonVariants(), 'h-16 w-full rounded-[24px] text-xl font-black shadow-xl shadow-ink/10 transition-all hover:scale-[1.02] active:scale-[0.98]')}
+          >
+            Save contact
+          </a>
+        </div>
 
-        <p className="pb-8 text-center text-[10px] font-bold tracking-widest text-label/40 uppercase">
-          End-to-end Encrypted · Single-use Session
-        </p>
+        <div className="flex flex-col items-center gap-4 py-8">
+          <div className="h-px w-8 bg-subtle-line" />
+          <p className="text-center text-[10px] font-black tracking-[0.4em] text-label/30 uppercase">
+            Private · Secure · Encrypted
+          </p>
+        </div>
       </div>
     </div>
   );
