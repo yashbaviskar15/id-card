@@ -5,6 +5,10 @@ const NAV = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/card', label: 'Card & QR' },
   { href: '/dashboard/access', label: 'Access' },
+  { href: '/dashboard/vault', label: 'Vault' },
+  { href: '/dashboard/info', label: 'Information' },
+  { href: '/dashboard/backup', label: 'Backup' },
+  { href: '/dashboard/settings', label: 'Settings' },
 ] as const;
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
