@@ -4,39 +4,45 @@ import { z } from 'zod';
 import { requireOwner } from '@/lib/auth/session';
 import { createUserClient } from '@/lib/db/user';
 import { revalidatePath } from 'next/cache';
-
-import { encryptField, maskValue, fieldAad } from '@/lib/crypto/fields';
+import {
+  decryptField,
+  encryptField,
+  fieldAad,
+  isEncryptedEnvelope,
+  maskValue,
+} from '@/lib/crypto/fields';
 import { randomUUID } from 'node:crypto';
+import type { FieldKind } from '@/lib/types';
 
 const fieldSchema = z.object({
-  kind: z.enum([
-    'email',
-    'phone',
-    'address',
-    'family_contact',
-    'emergency_contact',
-    'important_date',
-    'note',
-    'account_record',
-    'custom',
-  ]),
-  label: z.string().min(1).max(50),
+  kind: z.enum(['email', 'phone', 'address', 'family_contact', 'emergency_contact', 'important_date', 'note', 'account_record', 'custom']),
+  label: z.string().min(1).max(80),
   value: z.string().min(1).max(2000),
   is_public: z.boolean().default(false),
   is_sensitive: z.boolean().default(false),
 });
 
-export async function addFieldAction(formData: FormData) {
-  const owner = await requireOwner();
-  const supabase = await createUserClient();
+const fieldIdSchema = z.uuid();
 
-  const data = fieldSchema.parse({
+export type InfoActionResult = { ok: boolean; error?: string };
+
+function publicAllowed(kind: FieldKind): boolean {
+  return kind === 'email' || kind === 'phone';
+}
+
+export async function addFieldAction(formData: FormData): Promise<InfoActionResult> {
+  const parsed = fieldSchema.safeParse({
     kind: formData.get('kind'),
     label: formData.get('label'),
     value: formData.get('value'),
     is_public: formData.get('is_public') === 'true',
     is_sensitive: formData.get('is_sensitive') === 'true',
   });
+  if (!parsed.success) return { ok: false, error: 'Enter a valid label and value.' };
+
+  const owner = await requireOwner('/dashboard/info');
+  const supabase = await createUserClient();
+  const data = parsed.data;
 
   const fieldId = randomUUID();
   let value = data.value;
@@ -48,14 +54,14 @@ export async function addFieldAction(formData: FormData) {
     value = maskValue(data.value);
   }
 
-  // Get max sort
-  const { data: maxSort } = await supabase
+  const { data: maxSort, error: sortError } = await supabase
     .from('fields')
     .select('sort')
     .eq('owner_id', owner.id)
     .order('sort', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
+  if (sortError) return { ok: false, error: 'Could not load your information. Try again.' };
 
   const sort = (maxSort?.sort ?? -1) + 1;
 
@@ -66,85 +72,119 @@ export async function addFieldAction(formData: FormData) {
     label: data.label,
     value,
     value_encrypted,
-    is_public: data.is_public,
+    is_public: publicAllowed(data.kind) && data.is_public && !data.is_sensitive,
     is_sensitive: data.is_sensitive,
     sort,
   });
 
-  if (error) throw error;
+  if (error) return { ok: false, error: 'Could not save this information. Try again.' };
   revalidatePath('/dashboard/info');
   return { ok: true };
 }
 
-export async function updateFieldAction(id: string, formData: FormData) {
-  const owner = await requireOwner();
-  const supabase = await createUserClient();
+export async function updateFieldAction(id: string, formData: FormData): Promise<InfoActionResult> {
+  const parsedId = fieldIdSchema.safeParse(id);
+  if (!parsedId.success) return { ok: false, error: 'This information could not be found.' };
 
-  const updates: Partial<{
-    label: string;
-    value: string;
-    value_encrypted: string | null;
-    is_public: boolean;
-    is_sensitive: boolean;
-  }> = {};
-  if (formData.has('label')) updates.label = formData.get('label') as string;
-  
-  if (formData.has('value')) {
-    const newValue = formData.get('value') as string;
-    const isSensitive = formData.get('is_sensitive') === 'true' || (await supabase.from('fields').select('is_sensitive').eq('id', id).single()).data?.is_sensitive;
-    
-    if (isSensitive) {
-      const aad = fieldAad(owner.id, id, 'value_encrypted');
-      updates.value_encrypted = encryptField(newValue, aad);
-      updates.value = maskValue(newValue);
+  const owner = await requireOwner('/dashboard/info');
+  const supabase = await createUserClient();
+  const { data: current, error: loadError } = await supabase
+    .from('fields')
+    .select('id, kind, label, value, value_encrypted, is_sensitive, is_public')
+    .eq('id', parsedId.data)
+    .eq('owner_id', owner.id)
+    .maybeSingle();
+  if (loadError || !current) return { ok: false, error: 'This information could not be found.' };
+
+  const updates: Record<string, string | boolean | null> = {};
+  const labelEntry = formData.get('label');
+  if (labelEntry !== null) {
+    const label = z.string().trim().min(1).max(80).safeParse(labelEntry);
+    if (!label.success) return { ok: false, error: 'Labels must be between 1 and 80 characters.' };
+    updates.label = label.data;
+  }
+
+  const valueEntry = formData.get('value');
+  let plainValue: string | null = null;
+  if (current.is_sensitive) {
+    const encrypted = typeof current.value_encrypted === 'string' ? current.value_encrypted : null;
+    plainValue = encrypted && isEncryptedEnvelope(encrypted)
+      ? decryptField(encrypted, fieldAad(owner.id, current.id, 'value_encrypted'))
+      : current.value;
+  } else {
+    plainValue = current.value;
+  }
+  if (valueEntry !== null) {
+    const value = z.string().trim().min(1).max(2000).safeParse(valueEntry);
+    if (!value.success) return { ok: false, error: 'Values must be between 1 and 2000 characters.' };
+    plainValue = value.data;
+  }
+
+  const sensitiveEntry = formData.get('is_sensitive');
+  const nextSensitive = sensitiveEntry === null ? current.is_sensitive : sensitiveEntry === 'true';
+  if (sensitiveEntry !== null) updates.is_sensitive = nextSensitive;
+  if (nextSensitive && current.is_public) updates.is_public = false;
+  if (valueEntry !== null || sensitiveEntry !== null) {
+    if (nextSensitive && plainValue !== null) {
+      updates.value = maskValue(plainValue);
+      updates.value_encrypted = encryptField(
+        plainValue,
+        fieldAad(owner.id, current.id, 'value_encrypted'),
+      );
     } else {
-      updates.value = newValue;
+      updates.value = plainValue;
       updates.value_encrypted = null;
     }
   }
 
-  if (formData.has('is_public')) updates.is_public = formData.get('is_public') === 'true';
-  if (formData.has('is_sensitive')) updates.is_sensitive = formData.get('is_sensitive') === 'true';
+  const publicEntry = formData.get('is_public');
+  if (publicEntry !== null) {
+    const nextPublic = publicEntry === 'true';
+    updates.is_public = publicAllowed(current.kind as FieldKind) && nextPublic && !nextSensitive;
+  }
 
   const { error } = await supabase
     .from('fields')
     .update(updates)
-    .eq('id', id)
+    .eq('id', parsedId.data)
     .eq('owner_id', owner.id);
 
-  if (error) throw error;
+  if (error) return { ok: false, error: 'Could not update this information. Try again.' };
   revalidatePath('/dashboard/info');
   return { ok: true };
 }
 
-export async function deleteFieldAction(id: string) {
-  const owner = await requireOwner();
+export async function deleteFieldAction(id: string): Promise<InfoActionResult> {
+  const parsedId = fieldIdSchema.safeParse(id);
+  if (!parsedId.success) return { ok: false, error: 'This information could not be found.' };
+  const owner = await requireOwner('/dashboard/info');
   const supabase = await createUserClient();
 
   const { error } = await supabase
     .from('fields')
     .delete()
-    .eq('id', id)
+    .eq('id', parsedId.data)
     .eq('owner_id', owner.id);
 
-  if (error) throw error;
+  if (error) return { ok: false, error: 'Could not delete this information. Try again.' };
   revalidatePath('/dashboard/info');
   return { ok: true };
 }
 
-export async function reorderFieldsAction(ids: string[]) {
-  const owner = await requireOwner();
+export async function reorderFieldsAction(ids: string[]): Promise<InfoActionResult> {
+  const parsedIds = z.array(z.uuid()).max(500).safeParse(ids);
+  if (!parsedIds.success) return { ok: false, error: 'The information order is invalid.' };
+  const owner = await requireOwner('/dashboard/info');
   const supabase = await createUserClient();
 
-  const updates = ids.map((id, index) => ({
-    id,
-    owner_id: owner.id,
-    sort: index,
-  }));
-
-  const { error } = await supabase.from('fields').upsert(updates);
-
-  if (error) throw error;
+  for (const [sort, id] of parsedIds.data.entries()) {
+    const { error } = await supabase
+      .from('fields')
+      .update({ sort })
+      .eq('id', id)
+      .eq('owner_id', owner.id);
+    if (error) return { ok: false, error: 'Could not reorder your information. Try again.' };
+  }
   revalidatePath('/dashboard/info');
   return { ok: true };
 }
