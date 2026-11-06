@@ -21,6 +21,9 @@ export const validityMinutesSchema = z.coerce
   .min(1, 'Minimum 1 minute.')
   .max(30, 'Maximum 30 minutes.');
 
+/** Unchecked checkboxes are simply absent from the form data, so this is false. */
+export const includeDocumentsSchema = z.coerce.boolean();
+
 /* ------------------------------ password policy --------------------------- */
 
 /**

@@ -105,6 +105,21 @@ export function GiveAccess({
         <Button type="submit" className="h-9" disabled={pending}>
           {pending ? 'Creating…' : 'Create code'}
         </Button>
+
+        <div className="sm:col-span-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-ink">
+            <input
+              type="checkbox"
+              name="include_documents"
+              value="true"
+              className="h-4 w-4 rounded border-hairline accent-ink"
+            />
+            Also show my shared documents
+          </label>
+          <p className="mt-1 pl-6 text-xs text-label">
+            Only documents you have marked “Shared” in the Vault can appear, and only for this code.
+          </p>
+        </div>
       </form>
 
       {state.error ? (

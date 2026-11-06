@@ -8,7 +8,7 @@ import { getProfile } from '@/lib/card/load';
 import { generateAccessCode } from '@/lib/crypto/random';
 import { buildAccessCodeProof } from '@/lib/crypto/proofs';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
-import { scopeSchema, validityMinutesSchema } from '@/lib/validation';
+import { scopeSchema, validityMinutesSchema, includeDocumentsSchema } from '@/lib/validation';
 import { isReauthenticated } from '@/lib/auth/reauth';
 import { requireOwner } from '@/lib/auth/session';
 import { writeAudit } from '@/lib/audit';
@@ -34,9 +34,11 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
 
   const scopeParsed = scopeSchema.safeParse(formData.get('scope'));
   const validityParsed = validityMinutesSchema.safeParse(formData.get('validity_minutes'));
+  const includeDocuments = includeDocumentsSchema.safeParse(formData.get('include_documents'));
   if (!scopeParsed.success || !validityParsed.success) {
     return { ok: false, error: 'Choose a scope and a validity between 1 and 30 minutes.' };
   }
+  const withDocuments = includeDocuments.success && includeDocuments.data;
 
   const profile = await getProfile(owner.id);
   if (!profile) {
@@ -59,6 +61,7 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
         owner_id: owner.id,
         code_hash: codeHash,
         scope: scopeParsed.data,
+        include_documents: withDocuments,
         expires_at: expiresAt,
       })
       .select('id, expires_at')
@@ -72,7 +75,7 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
         action: 'access.grant_create',
         entityType: 'access_grant',
         entityId: data.id,
-        detail: { scope: scopeParsed.data, validity_minutes: validityParsed.data },
+        detail: { scope: scopeParsed.data, validity_minutes: validityParsed.data, include_documents: withDocuments },
         ipHash,
         userAgent,
       });

@@ -85,6 +85,8 @@ export interface DocumentRow {
   mime: string;
   size: number;
   sha256: string | null;
+  /** Owner opt-in: only a shared document can reach a visitor. */
+  is_shared: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -109,6 +111,8 @@ export interface AccessGrantRow {
   /** HMAC-SHA256(slug + ':' + code). The code itself is never stored. */
   code_hash: string;
   scope: AccessScope;
+  /** When true, the visitor session may also open the owner's shared documents. */
+  include_documents: boolean;
   /** End of the code's validity window. */
   expires_at: string;
   used_at: string | null;
@@ -170,6 +174,14 @@ export interface GrantContactItem {
   value: string;
 }
 
+/** Metadata of one shareable document. Never carries a storage path or URL. */
+export interface GrantDocument {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+}
+
 /** The complete set of data a visitor session can ever receive. */
 export interface GrantedProfile {
   full_name: string;
@@ -182,6 +194,9 @@ export interface GrantedProfile {
   address: string | null;
   emails: GrantContactItem[];
   phones: GrantContactItem[];
+  /** Shared documents the owner opted into for this specific grant. */
+  documents: GrantDocument[];
+  can_view_documents: boolean;
   session_expires_at: string;
 }
 
