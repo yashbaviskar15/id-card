@@ -29,11 +29,11 @@ export function dispositionName(filename: string): string {
 
 /**
  * Short-lived signed URL for inline display (e.g. the card photo), read through
- * the owner's own session so RLS applies.
+ * the service role so RLS does not block signed URL generation.
  */
 export async function signedUrlFor(path: string | null): Promise<string | null> {
   if (!path) return null;
-  const supabase = await createUserClient();
+  const supabase = createServiceClient();
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
@@ -47,7 +47,7 @@ export async function signedUrlFor(path: string | null): Promise<string | null> 
 
 /** Owner-scoped download URL: forces an attachment carrying the display name. */
 export async function signedDownloadUrl(path: string, filename: string): Promise<string | null> {
-  const supabase = await createUserClient();
+  const supabase = createServiceClient();
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, { download: dispositionName(filename) });

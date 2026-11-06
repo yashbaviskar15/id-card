@@ -24,7 +24,8 @@ const RATE_LIMITED = 'Too many attempts from this device. Wait a few minutes and
 const LOCKED = 'Too many attempts. Access is paused. Ask the owner for a new code.';
 
 export async function submitAccessCodeAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const slugParsed = slugSchema.safeParse(formData.get('slug'));
+  const slugRaw = String(formData.get('slug') ?? '').trim().toLowerCase();
+  const slugParsed = slugSchema.safeParse(slugRaw);
   if (!slugParsed.success) return { ok: false, error: INVALID_CODE };
   const slug = slugParsed.data;
 
@@ -42,22 +43,25 @@ export async function submitAccessCodeAction(_prev: FormState, formData: FormDat
   const alreadyLocked = await isLocked('slug', slug);
 
   const supabase = createServiceClient();
+  const proof = buildAccessCodeProof(slug, codeParsed.data);
+
   const { data, error } = await supabase.rpc('consume_access_code', {
     p_slug: slug,
-    p_code_hash: buildAccessCodeProof(slug, codeParsed.data),
+    p_code_hash: proof,
     p_session_minutes: serverEnv().ACCESS_SESSION_MINUTES,
     p_ip_hash: ipHash,
     p_user_agent: userAgent,
   });
 
   if (error) {
-    log.warn('access.consume failed', { code: error.code });
+    log.warn('access.consume failed', { slug, code: error.code, message: error.message });
     return { ok: false, error: INVALID_CODE };
   }
 
   const verdict = data as ConsumeCodeVerdict;
 
   if (!verdict.ok) {
+    log.warn('access.consume verdict not ok', { slug, reason: verdict.reason });
     if (verdict.reason === 'locked') {
       if (!alreadyLocked) {
         // The lockout has just tripped: the database has already revoked every

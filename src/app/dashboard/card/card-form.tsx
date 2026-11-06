@@ -136,7 +136,7 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
             <Input id="photo" name="photo" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/tiff" />
             <p className="text-xs text-label">
               PNG, JPEG, WebP, HEIC or TIFF, up to 8 MB. Stored privately; only ever shown through a
-              60-second signed link.
+              signed link.
             </p>
           </div>
 
