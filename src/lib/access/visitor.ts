@@ -95,6 +95,42 @@ export async function signedVisitorPhotoUrl(path: string | null): Promise<string
   return signedServiceUrl(path);
 }
 
+export interface GrantedDocumentTarget {
+  storagePath: string;
+  name: string;
+  mime: string;
+}
+
+/**
+ * Resolves one shared document for a live visitor session. The database only
+ * returns a storage path when the grant opted into documents, the document is
+ * still shared, and the grant is still valid — so an unshared, revoked or
+ * expired request simply yields null.
+ */
+export async function loadGrantedDocument(
+  slug: string,
+  documentId: string,
+): Promise<GrantedDocumentTarget | null> {
+  const session = await readVisitorSession(slug);
+  if (!session) return null;
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc('get_granted_document', {
+    p_grant_id: session.grantId,
+    p_slug: slug,
+    p_document_id: documentId,
+  });
+  if (error) {
+    log.warn('access.document read failed', { code: error.code });
+    return null;
+  }
+  if (!data) return null;
+
+  const row = data as { storage_path: string; name: string; mime: string };
+  if (!row.storage_path) return null;
+  return { storagePath: row.storage_path, name: row.name, mime: row.mime };
+}
+
 /** Appends one `session_view` row to the access log. Never blocks rendering. */
 export async function recordVisitorView(input: {
   slug: string;

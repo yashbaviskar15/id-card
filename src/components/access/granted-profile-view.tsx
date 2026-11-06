@@ -1,12 +1,19 @@
 import { buttonVariants } from '@/components/ui/button';
 import { SessionTimer } from '@/components/access/session-timer';
 import { signedVisitorPhotoUrl } from '@/lib/access/visitor';
+import { Download, FileText } from 'lucide-react';
 import { cn } from 'cn';
-import type { GrantedProfile, GrantContactItem } from '@/lib/types';
+import type { GrantedProfile, GrantContactItem, GrantDocument } from '@/lib/types';
 
 /** wa.me and tel: both want digits and a leading plus, not punctuation. */
 function whatsAppNumber(value: string): string {
   return value.replace(/[^\d]/g, '');
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function ActionLink({ href, children, external }: { href: string; children: React.ReactNode; external?: boolean }) {
@@ -69,10 +76,44 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
+function DocumentsSection({ slug, documents }: { slug: string; documents: GrantDocument[] }) {
+  if (documents.length === 0) return null;
+  return (
+    <section className="rounded-xl border border-hairline bg-white p-4">
+      <h2 className="text-xs font-normal tracking-[0.14em] text-label uppercase">Documents</h2>
+      <ul className="mt-3 divide-y divide-subtle-line">
+        {documents.map((document) => (
+          <li key={document.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-subtle-line bg-photo-placeholder">
+              <FileText className="h-5 w-5 text-ink" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-ink">{document.name}</span>
+              <span className="block text-xs text-label">{formatSize(document.size)}</span>
+            </span>
+            <a
+              href={`/p/${slug}/doc/${document.id}`}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Open
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-xs text-label">
+        These files open through a link that stops working when this view closes.
+      </p>
+    </section>
+  );
+}
+
 /**
  * The complete visitor view. It renders only what the database projection
- * returned for this grant's scope — Aadhaar, PAN, notes, accounts and documents
- * are not part of the projection and cannot be requested from here.
+ * returned for this grant's scope — Aadhaar, PAN, notes and account records are
+ * not part of the projection and can never be requested from here, and a
+ * document only appears when the owner marked it shareable and this specific
+ * hand-out opted into documents.
  */
 export async function GrantedProfileView({ slug, profile }: { slug: string; profile: GrantedProfile }) {
   const photoUrl = await signedVisitorPhotoUrl(profile.photo_path);
@@ -108,6 +149,8 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
             {profile.address ? <Detail label="Address" value={profile.address} /> : null}
           </section>
         ) : null}
+
+        <DocumentsSection slug={slug} documents={profile.documents ?? []} />
 
         <a
           href={`/p/${slug}/vcf`}

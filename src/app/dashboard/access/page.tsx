@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 interface GrantRow {
   id: string;
   scope: AccessScope;
+  include_documents: boolean;
   created_at: string;
   expires_at: string;
   used_at: string | null;
@@ -71,7 +72,7 @@ export default async function AccessPage() {
   const [grantsResult, eventsResult, settingsResult] = await Promise.all([
     supabase
       .from('access_grants')
-      .select('id, scope, created_at, expires_at, used_at, session_expires_at, revoked_at')
+      .select('id, scope, include_documents, created_at, expires_at, used_at, session_expires_at, revoked_at')
       .eq('owner_id', owner.id)
       .order('created_at', { ascending: false })
       .limit(25)
@@ -144,6 +145,7 @@ export default async function AccessPage() {
                   </span>
                   <span className="text-sm text-ink">
                     {grant.scope === 'full' ? 'Full profile' : 'Contact only'}
+                    {grant.include_documents ? ' · documents' : ''}
                   </span>
                   <span className="text-sm text-label">
                     created {when(grant.created_at)} · expires {when(grant.expires_at)}
