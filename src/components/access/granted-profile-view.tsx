@@ -79,8 +79,43 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DocumentsSection({ slug, documents }: { slug: string; documents: GrantDocument[] }) {
-  if (documents.length === 0) return null;
+function DocumentsSection({
+  slug,
+  documents,
+  canViewDocuments,
+}: {
+  slug: string;
+  documents: GrantDocument[];
+  canViewDocuments: boolean;
+}) {
+  if (!canViewDocuments) {
+    return (
+      <section className="rounded-[32px] border border-hairline bg-white p-8 shadow-sm">
+        <div className="flex items-center gap-3">
+          <FileText className="h-5 w-5 text-label" aria-hidden="true" />
+          <h2 className="text-sm font-black text-ink">Documents not included</h2>
+        </div>
+        <p className="mt-3 text-sm font-medium leading-relaxed text-label">
+          Ask the owner for a new access code that includes shared documents.
+        </p>
+      </section>
+    );
+  }
+
+  if (documents.length === 0) {
+    return (
+      <section className="rounded-[32px] border border-hairline bg-white p-8 shadow-sm">
+        <div className="flex items-center gap-3">
+          <FileText className="h-5 w-5 text-label" aria-hidden="true" />
+          <h2 className="text-sm font-black text-ink">No shared documents</h2>
+        </div>
+        <p className="mt-3 text-sm font-medium leading-relaxed text-label">
+          This access code allows documents, but the owner has not marked any files as shared.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2 px-4">
@@ -177,7 +212,11 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
           </section>
         ) : null}
 
-        <DocumentsSection slug={slug} documents={profile.documents ?? []} />
+        <DocumentsSection
+          slug={slug}
+          documents={profile.documents ?? []}
+          canViewDocuments={profile.can_view_documents}
+        />
 
         <div className="pt-4">
           <a
