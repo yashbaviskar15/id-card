@@ -5,6 +5,7 @@ import { IdCard } from '@/components/card/id-card';
 import { qrPayload } from '@/lib/qr/payload';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ShieldCheck, QrCode, Globe, Settings, FileText } from 'lucide-react';
+import { cn } from 'cn';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ export default async function DashboardOverviewPage() {
           <div className="relative z-10 max-w-xl">
             <h2 className="text-3xl font-black tracking-tight text-ink">Initialize Your Identity</h2>
             <p className="mt-4 text-base font-medium leading-relaxed text-label">
-              You haven't created your identity card yet. Setting it up generates a permanent QR code and a unique profile link that will stay yours forever.
+              You haven&apos;t created your identity card yet. Setting it up generates a permanent QR code and a unique profile link that will stay yours forever.
             </p>
             <Link href="/dashboard/card" className="mt-8 inline-block">
               <Button className="h-14 px-10 rounded-2xl bg-ink text-white font-black text-lg shadow-xl shadow-ink/20 transition-all hover:scale-105 active:scale-95">

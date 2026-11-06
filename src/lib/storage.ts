@@ -1,7 +1,6 @@
 import 'server-only';
 import { log } from '@/lib/log';
 import { createServiceClient } from '@/lib/db/service';
-import { createUserClient } from '@/lib/db/user';
 
 /**
  * Private Storage access. Every file lives in a private bucket under the owner's

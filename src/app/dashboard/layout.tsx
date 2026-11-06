@@ -41,10 +41,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
             <div className="lg:hidden">
               <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-xl">
-                    <Menu className="h-6 w-6 text-ink" />
-                  </Button>
+                <SheetTrigger
+                  render={<Button variant="ghost" size="icon" className="rounded-xl" />}
+                  aria-label="Open dashboard navigation"
+                >
+                  <Menu className="h-6 w-6 text-ink" />
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0">
                   <SheetHeader className="p-6 border-b border-hairline text-left">
