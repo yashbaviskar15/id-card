@@ -22,11 +22,11 @@ export function LoginForm({
   const [state, action, pending] = useActionState(signInAction, initialFormState);
 
   return (
-    <form action={action} className="mt-6 space-y-4" noValidate>
+    <form action={action} className="mt-8 space-y-6" noValidate>
       <input type="hidden" name="next" value={next} />
 
-      <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
+      <div className="space-y-2.5">
+        <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-label">Email</Label>
         <Input
           id="email"
           name="email"
@@ -35,14 +35,15 @@ export function LoginForm({
           inputMode="email"
           required
           autoFocus
+          className="h-12 rounded-xl border-hairline focus:border-ink focus:ring-ink"
           aria-invalid={Boolean(state.error) || undefined}
         />
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
-          <Link href="/forgot" className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+          <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-label">Password</Label>
+          <Link href="/forgot" className="text-[10px] font-bold uppercase tracking-widest text-label/60 hover:text-ink transition-colors">
             Forgot password?
           </Link>
         </div>
@@ -52,6 +53,7 @@ export function LoginForm({
           type="password"
           autoComplete="current-password"
           required
+          className="h-12 rounded-xl border-hairline focus:border-ink focus:ring-ink"
           aria-invalid={Boolean(state.error) || undefined}
         />
       </div>
@@ -68,12 +70,12 @@ export function LoginForm({
       ) : null}
 
       {state.error ? (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{state.error}</AlertDescription>
+        <Alert variant="destructive" className="rounded-2xl border-2">
+          <AlertDescription className="font-bold">{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <Button type="submit" className="h-11 w-full" disabled={pending}>
+      <Button type="submit" className="h-14 w-full rounded-2xl text-lg font-black shadow-lg shadow-ink/10 transition-all active:scale-95" disabled={pending}>
         {pending ? 'Signing in…' : 'Sign in'}
       </Button>
     </form>

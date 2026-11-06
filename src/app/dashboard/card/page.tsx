@@ -41,64 +41,82 @@ export default async function CardPage() {
 
       {card ? (
         <>
-          <section className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-3">
-              <h2 className="text-sm font-semibold tracking-wide text-label uppercase">Front</h2>
-              <div className="rounded-[32px] border border-hairline shadow-[0_10px_30px_rgba(17,24,39,0.10)]">
+          <section className="grid gap-8 lg:grid-cols-2">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
+                <h2 className="text-[10px] font-bold tracking-[0.25em] text-label uppercase">Front</h2>
+              </div>
+              <div className="rounded-[32px] border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform hover:scale-[1.01]">
                 <ResponsiveCard face="front" data={card} />
               </div>
             </div>
-            <div className="space-y-3">
-              <h2 className="text-sm font-semibold tracking-wide text-label uppercase">Back</h2>
-              <div className="rounded-[32px] border border-hairline shadow-[0_10px_30px_rgba(17,24,39,0.10)]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
+                <h2 className="text-[10px] font-bold tracking-[0.25em] text-label uppercase">Back</h2>
+              </div>
+              <div className="rounded-[32px] border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform hover:scale-[1.01]">
                 <ResponsiveCard face="back" data={card} />
               </div>
             </div>
           </section>
 
-          <section className="rounded-xl border border-hairline bg-white p-6">
-            <h2 className="text-base font-bold text-ink">Permanent link</h2>
-            <p className="mt-2 text-sm break-all text-ink">{qrPayload(card.slug)}</p>
-            <p className="mt-2 text-xs text-label">
-              Rendered on demand from this exact URL. No QR image is ever stored.
-            </p>
+          <section className="rounded-3xl border border-hairline bg-white p-8 shadow-sm">
+            <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+              <div className="max-w-md">
+                <h2 className="text-lg font-black text-ink">Permanent link</h2>
+                <div className="mt-3 rounded-2xl bg-[#f8f9fa] p-4 font-mono text-sm break-all text-ink border border-hairline">
+                  {qrPayload(card.slug)}
+                </div>
+                <p className="mt-3 text-xs font-medium text-label">
+                  Rendered on demand from this exact URL. No QR image is ever stored.
+                </p>
+              </div>
 
-            <h3 className="mt-6 text-sm font-semibold text-ink">Download the QR</h3>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {DOWNLOADS.map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    className="inline-block rounded-md border border-hairline px-3 py-2 text-sm font-semibold text-ink hover:bg-muted"
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+              <div className="flex-1 space-y-8">
+                <div>
+                  <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Download the QR</h3>
+                  <ul className="mt-4 flex flex-wrap gap-2">
+                    {DOWNLOADS.map((item) => (
+                      <li key={item.href}>
+                        <a
+                          href={item.href}
+                          className="inline-block rounded-full border-2 border-hairline px-5 py-2 text-sm font-bold text-ink transition-all hover:border-ink hover:bg-ink hover:text-white active:scale-95"
+                        >
+                          {item.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-            <h3 className="mt-6 text-sm font-semibold text-ink">Export the card</h3>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {EXPORTS.map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    className="inline-block rounded-md border border-hairline px-3 py-2 text-sm font-semibold text-ink hover:bg-muted"
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-label">
-              ID-1 size, 85.60 × 53.98 mm. Exports are drawn at 300 DPI (1011 × 638 px).
-            </p>
+                <div>
+                  <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Export the card</h3>
+                  <ul className="mt-4 flex flex-wrap gap-3">
+                    {EXPORTS.map((item) => (
+                      <li key={item.href}>
+                        <a
+                          href={item.href}
+                          className="inline-block rounded-full border-2 border-hairline px-5 py-2 text-sm font-bold text-ink transition-all hover:border-ink hover:bg-ink hover:text-white active:scale-95"
+                        >
+                          {item.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 text-[10px] font-bold text-label uppercase tracking-widest">
+                    ID-1 size, 85.60 × 53.98 mm · 300 DPI
+                  </p>
+                </div>
+              </div>
+            </div>
           </section>
         </>
       ) : (
-        <section className="rounded-xl border border-hairline bg-white p-6">
-          <h2 className="text-base font-bold text-ink">Your card does not exist yet</h2>
-          <p className="mt-2 max-w-prose text-sm text-label">
+        <section className="rounded-3xl border border-hairline bg-white p-8 shadow-sm">
+          <h2 className="text-xl font-black text-ink">Your card does not exist yet</h2>
+          <p className="mt-3 max-w-prose text-sm font-medium leading-relaxed text-label">
             Save your details below to create it. The permanent link and QR code are generated once
             and can never change — so take a moment to make sure the details are right.
           </p>

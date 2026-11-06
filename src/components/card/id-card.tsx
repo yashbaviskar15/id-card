@@ -65,29 +65,35 @@ function Scaled({ scale, children }: { scale: number; children: React.ReactNode 
 
 export function IdCardFront({ data }: { data: CardData }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white">
-      <div className="absolute inset-x-0 top-0 h-2 bg-ink" />
-      <div className="flex h-full items-start gap-8 px-12 pt-12 pb-10">
-        <div className="flex h-[216px] w-[172px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-subtle-line bg-photo-placeholder">
-          {data.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={data.photoUrl}
-              alt=""
-              className="h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span className="text-[13px] font-normal tracking-[0.14em] text-label uppercase">Photo</span>
-          )}
+    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-inner">
+      <div className="absolute inset-x-0 top-0 h-2.5 bg-ink" />
+      <div className="flex h-full items-start gap-10 px-12 pt-14 pb-10">
+        <div className="relative group">
+          <div className="flex h-[220px] w-[180px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-subtle-line bg-photo-placeholder shadow-md transition-transform group-hover:scale-[1.02]">
+            {data.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={data.photoUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="text-[14px] font-bold tracking-[0.14em] text-label/40 uppercase">Photo</span>
+            )}
+          </div>
+          <div className="absolute -inset-1 rounded-2xl border border-ink/5 pointer-events-none" />
         </div>
 
-        <div className="min-w-0 flex-1 pt-1">
-          <p className="text-[13px] font-normal tracking-[0.2em] text-label uppercase">Identity card</p>
-          <h2 className="mt-2 text-[44px] leading-[1.05] font-bold break-words text-ink">
+        <div className="min-w-0 flex-1 pt-2">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
+            <p className="text-[12px] font-bold tracking-[0.25em] text-label/60 uppercase">Identity card</p>
+          </div>
+          <h2 className="mt-3 text-[48px] leading-[1] font-black tracking-tight text-ink drop-shadow-sm">
             {data.fullName}
           </h2>
-          <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-5">
+          <div className="mt-10 grid grid-cols-2 gap-x-10 gap-y-6">
             <Field label="Date of birth" value={data.dob} />
             <Field label="Phone" value={data.phone} />
             <Field label="Email" value={data.email} />
@@ -95,28 +101,42 @@ export function IdCardFront({ data }: { data: CardData }) {
         </div>
       </div>
       <ConcentricLines />
+      <div className="absolute bottom-6 right-10 opacity-20">
+        <div className="h-8 w-8 rounded-full border-2 border-ink" />
+      </div>
     </div>
   );
 }
 
 export function IdCardBack({ data }: { data: CardData }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white">
-      <div className="flex h-full items-center gap-12 px-12 pt-10 pb-12">
-        <div className="shrink-0 rounded-2xl border border-subtle-line bg-white p-4 shadow-[0_6px_20px_rgba(17,24,39,0.08)]">
-          <QrSvg slug={data.slug} size={280} />
+    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-inner">
+      <div className="flex h-full items-center gap-16 px-16 pt-10 pb-12">
+        <div className="shrink-0 group relative">
+          <div className="rounded-3xl border-2 border-subtle-line bg-white p-5 shadow-[0_8px_30px_rgba(17,24,39,0.12)] transition-transform group-hover:scale-[1.02]">
+            <QrSvg slug={data.slug} size={280} />
+          </div>
+          <div className="absolute -inset-2 rounded-3xl border border-ink/5 pointer-events-none" />
         </div>
-        <div className="max-w-[340px]">
-          <p className="text-[13px] font-normal tracking-[0.2em] text-label uppercase">Access</p>
-          <p className="mt-3 text-[22px] leading-snug font-semibold text-ink">
-            Scan, then enter the code I give you.
-          </p>
-          <p className="mt-3 text-[14px] text-label">
+        <div className="max-w-[340px] space-y-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
+              <p className="text-[12px] font-bold tracking-[0.25em] text-label/60 uppercase">Access</p>
+            </div>
+            <p className="mt-4 text-[26px] leading-tight font-black text-ink">
+              Scan, then enter the code I give you.
+            </p>
+          </div>
+          <p className="text-[15px] font-medium leading-relaxed text-label/80">
             The code is valid once and for a few minutes only.
           </p>
+          <div className="pt-4">
+            <div className="h-px w-12 bg-subtle-line" />
+          </div>
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 h-2 bg-ink" />
+      <div className="absolute inset-x-0 bottom-0 h-2.5 bg-ink" />
       <ConcentricLines />
     </div>
   );

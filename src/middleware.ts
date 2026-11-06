@@ -27,7 +27,7 @@ function buildCsp(nonce: string, isDev: boolean): string {
     `default-src 'self'`,
     `script-src ${scriptSrc.join(' ')}`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: blob:`,
+    `img-src 'self' ${supabaseOrigin} data: blob:`,
     `font-src 'self' data:`,
     `connect-src 'self' ${supabaseOrigin} ${supabaseWs} https://challenges.cloudflare.com`,
     `frame-src https://challenges.cloudflare.com`,
