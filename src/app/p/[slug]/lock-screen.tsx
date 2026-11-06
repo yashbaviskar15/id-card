@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { initialFormState } from '@/app/(auth)/form-state';
@@ -13,6 +13,7 @@ import { submitAccessCodeAction } from './actions';
  */
 export function LockScreen({ slug }: { slug: string }) {
   const [state, submit, pending] = useActionState(submitAccessCodeAction, initialFormState);
+  const [submitted, setSubmitted] = useState(false);
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col justify-center px-5 py-14">
@@ -30,7 +31,12 @@ export function LockScreen({ slug }: { slug: string }) {
         <h1 className="mt-5 text-center text-xl font-bold text-ink">This profile is locked</h1>
         <p className="mt-2 text-center text-sm text-label">Enter the access code from the owner.</p>
 
-        <form action={submit} className="mt-6 space-y-4" noValidate>
+        <form
+          action={submit}
+          className="mt-6 space-y-4"
+          noValidate
+          onSubmit={() => setSubmitted(true)}
+        >
           <input type="hidden" name="slug" value={slug} />
           <label htmlFor="code" className="sr-only">
             8-digit access code
@@ -47,6 +53,7 @@ export function LockScreen({ slug }: { slug: string }) {
               autoFocus
               placeholder="0000 0000"
               aria-describedby="code-hint"
+              onChange={() => setSubmitted(false)}
               className="h-16 w-full rounded-2xl border border-hairline bg-white text-center text-3xl font-bold tracking-[0.2em] text-ink placeholder:text-label/30 focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none sm:tracking-[0.4em]"
             />
           </div>
@@ -54,7 +61,7 @@ export function LockScreen({ slug }: { slug: string }) {
             The code works once and expires after a few minutes.
           </p>
 
-          {state.error ? (
+          {state.error && submitted ? (
             <Alert variant="destructive" role="alert">
               <AlertDescription>{state.error}</AlertDescription>
             </Alert>

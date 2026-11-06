@@ -55,7 +55,10 @@ export async function submitAccessCodeAction(_prev: FormState, formData: FormDat
 
   if (error) {
     log.warn('access.consume failed', { slug, code: error.code, message: error.message });
-    return { ok: false, error: INVALID_CODE };
+    return {
+      ok: false,
+      error: 'Could not verify the code right now. Ask the owner to check the verification service and issue a new code.',
+    };
   }
 
   const verdict = data as ConsumeCodeVerdict;
