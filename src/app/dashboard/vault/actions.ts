@@ -78,6 +78,7 @@ export async function uploadDocumentAction(_prev: VaultState, formData: FormData
     storage_path: storagePath,
     mime: validation.data.mime,
     size: validation.data.size,
+    is_shared: true, // Default to shared so they are visible to visitors by default
   });
 
   if (dbError) {

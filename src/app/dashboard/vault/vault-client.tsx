@@ -67,51 +67,68 @@ function DocumentRow({ document }: { document: VaultDocument }) {
   }
 
   return (
-    <li className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-subtle-line bg-photo-placeholder">
-          <FileText className="h-5 w-5 text-label" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-semibold text-ink">{document.name}</p>
-            {shared ? <Badge variant="outline">Shared</Badge> : null}
+    <li className={cn(
+      "flex flex-col gap-4 px-6 py-6 transition-colors sm:flex-row sm:items-center sm:gap-6",
+      shared ? "bg-white" : "bg-[#f8f9fa]/50"
+    )}>
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <div className={cn(
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-all shadow-sm",
+          shared ? "border-ink bg-ink text-white" : "border-hairline bg-white text-label"
+        )}>
+          <FileText className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-base font-black text-ink">{document.name}</p>
+            {shared ? (
+              <Badge className="bg-ink text-white border-0 px-2 py-0 text-[10px] font-black uppercase tracking-widest">
+                Visible to visitors
+              </Badge>
+            ) : null}
           </div>
-          <p className="mt-0.5 text-xs text-label">
+          <p className="mt-1 text-[11px] font-bold text-label uppercase tracking-wider">
             {document.category ?? 'Uncategorized'} · {formatSize(document.size)} · {formatDate(document.created_at)}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:justify-end">
-        <label className="flex items-center gap-2 text-xs font-medium text-ink">
+      <div className="flex items-center justify-between gap-4 sm:justify-end">
+        <label className="flex items-center gap-3 cursor-pointer group">
           <input
             type="checkbox"
             checked={shared}
             disabled={busy}
             onChange={(event) => toggleShared(event.target.checked)}
-            className="h-4 w-4 rounded border-hairline accent-ink"
+            className="h-5 w-5 rounded border-hairline text-ink focus:ring-ink transition-transform active:scale-90"
           />
-          Visible to visitors
+          <span className="text-xs font-black text-ink uppercase tracking-widest group-hover:text-label transition-colors">
+            Share
+          </span>
         </label>
-        <a
-          href={`/api/documents/${document.id}`}
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-        >
-          <Download className="h-4 w-4" aria-hidden="true" />
-          Download
-        </a>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Delete ${document.name}`}
-          disabled={busy}
-          onClick={remove}
-          className="text-destructive hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        
+        <div className="h-8 w-px bg-hairline hidden sm:block" />
+
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/documents/${document.id}`}
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), "rounded-xl border-2 font-black transition-all active:scale-95")}
+          >
+            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+            Download
+          </a>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Delete ${document.name}`}
+            disabled={busy}
+            onClick={remove}
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all active:scale-90"
+          >
+            <Trash2 className="h-5 w-5" aria-hidden="true" />
+          </Button>
+        </div>
       </div>
     </li>
   );

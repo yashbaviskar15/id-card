@@ -69,7 +69,7 @@ export default async function AccessPage() {
   const supabase = await createUserClient();
 
   const profile = await getProfile(owner.id);
-  const [grantsResult, eventsResult, settingsResult] = await Promise.all([
+  const [grantsResult, eventsResult, settingsResult, sharedCountResult] = await Promise.all([
     supabase
       .from('access_grants')
       .select('id, scope, include_documents, created_at, expires_at, used_at, session_expires_at, revoked_at')
@@ -89,10 +89,16 @@ export default async function AccessPage() {
       .select('default_scope, default_validity_minutes')
       .eq('owner_id', owner.id)
       .maybeSingle<{ default_scope: AccessScope; default_validity_minutes: number }>(),
+    supabase
+      .from('documents')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', owner.id)
+      .eq('is_shared', true),
   ]);
 
   const grants = grantsResult.data ?? [];
   const events = eventsResult.data ?? [];
+  const sharedCount = sharedCountResult.count ?? 0;
   const now = Date.now();
 
   return (
@@ -121,6 +127,7 @@ export default async function AccessPage() {
         <GiveAccess
           defaultScope={settingsResult.data?.default_scope ?? 'contact'}
           defaultValidity={settingsResult.data?.default_validity_minutes ?? 5}
+          sharedCount={sharedCount}
         />
       ) : (
         <ReauthPanel action="hand out a code" />
