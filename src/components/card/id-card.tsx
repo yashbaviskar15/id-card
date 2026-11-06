@@ -36,8 +36,8 @@ function ConcentricLines() {
 function Field({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="min-w-0">
-      <p className="text-[13px] font-normal tracking-[0.14em] text-label uppercase">{label}</p>
-      <p className="mt-1 truncate text-[18px] font-semibold text-ink">{value ?? '—'}</p>
+      <p className="text-[12px] font-black tracking-[0.2em] text-label/40 uppercase leading-none">{label}</p>
+      <p className="mt-2 truncate text-[20px] font-black text-ink tracking-tight">{value ?? '—'}</p>
     </div>
   );
 }
@@ -65,11 +65,11 @@ function Scaled({ scale, children }: { scale: number; children: React.ReactNode 
 
 export function IdCardFront({ data }: { data: CardData }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-inner">
+    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
       <div className="absolute inset-x-0 top-0 h-2.5 bg-ink" />
       <div className="flex h-full items-start gap-10 px-12 pt-14 pb-10">
-        <div className="relative group">
-          <div className="flex h-[220px] w-[180px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-subtle-line bg-photo-placeholder shadow-md transition-transform group-hover:scale-[1.02]">
+        <div className="relative group shrink-0">
+          <div className="flex h-[220px] w-[180px] items-center justify-center overflow-hidden rounded-2xl border-2 border-subtle-line bg-photo-placeholder shadow-md transition-all group-hover:scale-[1.02] group-hover:shadow-lg">
             {data.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -77,9 +77,15 @@ export function IdCardFront({ data }: { data: CardData }) {
                 alt=""
                 className="h-full w-full object-cover"
                 referrerPolicy="no-referrer"
+                loading="eager"
               />
             ) : (
-              <span className="text-[14px] font-bold tracking-[0.14em] text-label/40 uppercase">Photo</span>
+              <div className="flex flex-col items-center gap-2 opacity-30">
+                <div className="h-12 w-12 rounded-full border-2 border-label flex items-center justify-center">
+                   <div className="h-6 w-6 rounded-full bg-label" />
+                </div>
+                <span className="text-[12px] font-black tracking-[0.2em] text-label uppercase">No Photo</span>
+              </div>
             )}
           </div>
           <div className="absolute -inset-1 rounded-2xl border border-ink/5 pointer-events-none" />
@@ -87,22 +93,24 @@ export function IdCardFront({ data }: { data: CardData }) {
 
         <div className="min-w-0 flex-1 pt-2">
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
-            <p className="text-[12px] font-bold tracking-[0.25em] text-label/60 uppercase">Identity card</p>
+            <div className="h-2 w-2 rounded-full bg-ink/20 animate-pulse" />
+            <p className="text-[12px] font-black tracking-[0.25em] text-label/60 uppercase">Identity card</p>
           </div>
-          <h2 className="mt-3 text-[48px] leading-[1] font-black tracking-tight text-ink drop-shadow-sm">
+          <h2 className="mt-4 text-[44px] leading-[1.1] font-black tracking-tight text-ink drop-shadow-sm break-words max-h-[100px] overflow-hidden">
             {data.fullName}
           </h2>
           <div className="mt-10 grid grid-cols-2 gap-x-10 gap-y-6">
             <Field label="Date of birth" value={data.dob} />
             <Field label="Phone" value={data.phone} />
-            <Field label="Email" value={data.email} />
+            <div className="col-span-2">
+              <Field label="Email" value={data.email} />
+            </div>
           </div>
         </div>
       </div>
       <ConcentricLines />
-      <div className="absolute bottom-6 right-10 opacity-20">
-        <div className="h-8 w-8 rounded-full border-2 border-ink" />
+      <div className="absolute bottom-8 right-12 opacity-10">
+        <div className="h-12 w-12 rounded-full border-[3px] border-ink" />
       </div>
     </div>
   );
@@ -110,29 +118,29 @@ export function IdCardFront({ data }: { data: CardData }) {
 
 export function IdCardBack({ data }: { data: CardData }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-inner">
+    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
       <div className="flex h-full items-center gap-16 px-16 pt-10 pb-12">
         <div className="shrink-0 group relative">
-          <div className="rounded-3xl border-2 border-subtle-line bg-white p-5 shadow-[0_8px_30px_rgba(17,24,39,0.12)] transition-transform group-hover:scale-[1.02]">
+          <div className="rounded-3xl border-2 border-subtle-line bg-white p-6 shadow-[0_15px_40px_rgba(17,24,39,0.1)] transition-all group-hover:scale-[1.02] group-hover:shadow-[0_20px_50px_rgba(17,24,39,0.15)]">
             <QrSvg slug={data.slug} size={280} />
           </div>
-          <div className="absolute -inset-2 rounded-3xl border border-ink/5 pointer-events-none" />
+          <div className="absolute -inset-2 rounded-[40px] border border-ink/5 pointer-events-none" />
         </div>
-        <div className="max-w-[340px] space-y-4">
+        <div className="max-w-[340px] space-y-6">
           <div>
             <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
-              <p className="text-[12px] font-bold tracking-[0.25em] text-label/60 uppercase">Access</p>
+              <div className="h-2 w-2 rounded-full bg-ink/20 animate-pulse" />
+              <p className="text-[12px] font-black tracking-[0.25em] text-label/60 uppercase">Security</p>
             </div>
-            <p className="mt-4 text-[26px] leading-tight font-black text-ink">
-              Scan, then enter the code I give you.
+            <p className="mt-5 text-[28px] leading-[1.2] font-black text-ink tracking-tight">
+              Scan to verify identity securely.
             </p>
           </div>
-          <p className="text-[15px] font-medium leading-relaxed text-label/80">
-            The code is valid once and for a few minutes only.
+          <p className="text-[16px] font-medium leading-relaxed text-label/70">
+            The generated access code is valid for one-time use and expires quickly.
           </p>
           <div className="pt-4">
-            <div className="h-px w-12 bg-subtle-line" />
+            <div className="h-1.5 w-16 rounded-full bg-ink/10" />
           </div>
         </div>
       </div>

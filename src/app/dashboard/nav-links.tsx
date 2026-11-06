@@ -14,11 +14,35 @@ const NAV = [
   { href: '/dashboard/settings', label: 'Settings' },
 ] as const;
 
-export function NavLinks() {
+export function NavLinks({ mobile }: { mobile?: boolean }) {
   const pathname = usePathname();
 
+  if (mobile) {
+    return (
+      <nav aria-label="Dashboard Mobile" className="flex flex-col gap-1">
+        {NAV.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center w-full px-4 py-3 text-base font-bold rounded-xl transition-all',
+                isActive
+                  ? 'bg-ink text-white shadow-lg shadow-ink/10'
+                  : 'text-label hover:bg-muted hover:text-ink'
+              )}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
-    <nav aria-label="Dashboard" className="flex flex-1 items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none sm:pb-0">
+    <nav aria-label="Dashboard" className="flex items-center gap-1">
       {NAV.map((item) => {
         const isActive = pathname === item.href;
         return (
