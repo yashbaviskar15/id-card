@@ -66,9 +66,8 @@ export function GiveAccess({
     if (state.ok) {
       setDismissed(false);
       setCopied(false);
-      router.refresh();
     }
-  }, [state, router]);
+  }, [state]);
 
   const showCode = Boolean(state.ok && state.code) && !dismissed;
 
@@ -165,6 +164,9 @@ export function GiveAccess({
               }}
               className="font-semibold text-ink"
             />
+          </p>
+          <p className="mt-2 text-xs text-label">
+            Copy or share it now. For security, this code cannot be recovered after you leave or refresh this page.
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <Button
