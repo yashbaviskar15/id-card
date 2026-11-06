@@ -1,5 +1,6 @@
 import { requireOwner } from '@/lib/auth/session';
 import { createUserClient } from '@/lib/db/user';
+import { log } from '@/lib/log';
 import { VaultClient, type VaultCategory, type VaultDocument } from './vault-client';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,13 @@ export default async function VaultPage() {
       .returns<VaultCategory[]>(),
   ]);
 
+  if (documentsResult.error) {
+    log.warn('vault.documents read failed', { message: documentsResult.error.message });
+  }
+  if (categoriesResult.error) {
+    log.warn('vault.categories read failed', { message: categoriesResult.error.message });
+  }
+
   const documents: VaultDocument[] = (documentsResult.data ?? []).map((row) => ({
     id: row.id,
     name: row.name,
@@ -41,5 +49,12 @@ export default async function VaultPage() {
     category: row.categories?.name ?? null,
   }));
 
-  return <VaultClient documents={documents} categories={categoriesResult.data ?? []} />;
+  return (
+    <VaultClient
+      documents={documents}
+      categories={categoriesResult.data ?? []}
+      documentsLoadFailed={Boolean(documentsResult.error)}
+      categoriesLoadFailed={Boolean(categoriesResult.error)}
+    />
+  );
 }

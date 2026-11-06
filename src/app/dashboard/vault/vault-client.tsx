@@ -44,26 +44,45 @@ function formatDate(iso: string): string {
 function DocumentRow({ document }: { document: VaultDocument }) {
   const [shared, setShared] = useState(document.is_shared);
   const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const router = useRouter();
 
   async function toggleShared(next: boolean) {
     setShared(next);
     setBusy(true);
-    const result = await setDocumentSharedAction(document.id, next);
-    setBusy(false);
-    if (!result.ok) {
+    setActionError(null);
+    try {
+      const result = await setDocumentSharedAction(document.id, next);
+      if (!result.ok) {
+        setShared(!next);
+        setActionError(result.error ?? 'Could not update sharing. Try again.');
+        return;
+      }
+      router.refresh();
+    } catch {
       setShared(!next);
-      return;
+      setActionError('Could not update sharing. Check your connection and try again.');
+    } finally {
+      setBusy(false);
     }
-    router.refresh();
   }
 
   async function remove() {
     if (!window.confirm(`Delete “${document.name}”? This cannot be undone.`)) return;
     setBusy(true);
-    const result = await deleteDocumentAction(document.id);
-    setBusy(false);
-    if (result.ok) router.refresh();
+    setActionError(null);
+    try {
+      const result = await deleteDocumentAction(document.id);
+      if (result.ok) {
+        router.refresh();
+      } else {
+        setActionError(result.error ?? 'Could not delete the document. Try again.');
+      }
+    } catch {
+      setActionError('Could not delete the document. Check your connection and try again.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -141,6 +160,11 @@ function DocumentRow({ document }: { document: VaultDocument }) {
           </Button>
         </div>
       </div>
+      {actionError ? (
+        <Alert variant="destructive" className="rounded-xl">
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
+      ) : null}
     </li>
   );
 }
@@ -148,9 +172,13 @@ function DocumentRow({ document }: { document: VaultDocument }) {
 export function VaultClient({
   documents,
   categories,
+  documentsLoadFailed,
+  categoriesLoadFailed,
 }: {
   documents: VaultDocument[];
   categories: VaultCategory[];
+  documentsLoadFailed: boolean;
+  categoriesLoadFailed: boolean;
 }) {
   const [state, submit, pending] = useActionState(uploadDocumentAction, initialVaultState);
   const formRef = useRef<HTMLFormElement>(null);
@@ -182,6 +210,21 @@ export function VaultClient({
           Secure storage for your private files. Shared documents can be accessed by visitors who enter a valid profile code.
         </p>
       </header>
+
+      {documentsLoadFailed ? (
+        <Alert variant="destructive" className="rounded-2xl">
+          <AlertDescription>
+            The vault could not load document records. Your files have not been deleted; check the Supabase schema and access policies, then refresh.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {categoriesLoadFailed ? (
+        <Alert variant="destructive" className="rounded-2xl">
+          <AlertDescription>
+            Categories could not be loaded. Documents may still appear without category names; check the Supabase schema and access policies.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <section className="rounded-3xl border border-hairline bg-white p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
         <div className="flex items-center gap-3 mb-8">
@@ -268,7 +311,15 @@ export function VaultClient({
       </div>
 
       <section className="rounded-[32px] border border-hairline bg-white overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.02)]">
-        {filtered.length === 0 ? (
+        {documentsLoadFailed ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <FileText className="h-10 w-10 text-destructive/40" aria-hidden="true" />
+            <h3 className="mt-5 text-lg font-black text-ink tracking-tight">Documents unavailable</h3>
+            <p className="mt-2 max-w-sm text-sm font-medium text-label">
+              The database returned an error, so this list is not being shown as empty.
+            </p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#f8f9fa] border-2 border-dashed border-hairline">
               <FileText className="h-10 w-10 text-label/20" aria-hidden="true" />
