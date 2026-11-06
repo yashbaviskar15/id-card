@@ -28,7 +28,9 @@ export async function submitAccessCodeAction(_prev: FormState, formData: FormDat
   if (!slugParsed.success) return { ok: false, error: INVALID_CODE };
   const slug = slugParsed.data;
 
-  const codeParsed = accessCodeSchema.safeParse(String(formData.get('code') ?? '').trim());
+  const codeRaw = String(formData.get('code') ?? '');
+  const codeClean = codeRaw.replace(/\D/g, ''); // Remove all non-digits
+  const codeParsed = accessCodeSchema.safeParse(codeClean);
   if (!codeParsed.success) return { ok: false, error: INVALID_CODE };
 
   const headerList = await headers();

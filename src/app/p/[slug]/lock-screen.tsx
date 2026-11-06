@@ -35,19 +35,21 @@ export function LockScreen({ slug }: { slug: string }) {
           <label htmlFor="code" className="sr-only">
             8-digit access code
           </label>
-          <input
-            id="code"
-            name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]*"
-            maxLength={8}
-            required
-            autoFocus
-            placeholder="••••••••"
-            aria-describedby="code-hint"
-            className="h-14 w-full rounded-xl border border-hairline bg-white text-center text-2xl font-semibold tracking-[0.4em] text-ink placeholder:text-label/50 focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none"
-          />
+          <div className="relative">
+            <input
+              id="code"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={12} // Allow extra for spaces/dashes
+              required
+              autoFocus
+              placeholder="0000 0000"
+              aria-describedby="code-hint"
+              className="h-16 w-full rounded-2xl border border-hairline bg-white text-center text-3xl font-bold tracking-[0.2em] text-ink placeholder:text-label/30 focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none sm:tracking-[0.4em]"
+            />
+          </div>
           <p id="code-hint" className="text-center text-xs text-label">
             The code works once and expires after a few minutes.
           </p>
