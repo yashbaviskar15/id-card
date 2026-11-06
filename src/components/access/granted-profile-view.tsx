@@ -79,31 +79,43 @@ function Detail({ label, value }: { label: string; value: string }) {
 function DocumentsSection({ slug, documents }: { slug: string; documents: GrantDocument[] }) {
   if (documents.length === 0) return null;
   return (
-    <section className="rounded-2xl border border-hairline bg-white p-5 shadow-sm">
-      <h2 className="text-[10px] font-bold tracking-[0.2em] text-label uppercase">Documents</h2>
-      <ul className="mt-4 divide-y divide-subtle-line">
-        {documents.map((document) => (
-          <li key={document.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-subtle-line bg-photo-placeholder shadow-inner">
-              <FileText className="h-6 w-6 text-ink" aria-hidden="true" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-base font-bold text-ink">{document.name}</span>
-              <span className="block text-xs font-medium text-label">{formatSize(document.size)}</span>
-            </span>
-            <a
-              href={`/p/${slug}/doc/${document.id}`}
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9 shrink-0 px-4 font-bold')}
-            >
-              <Download className="h-4 w-4 mr-2" aria-hidden="true" />
-              Open
-            </a>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-4 text-[10px] font-medium text-label/60">
-        Files are decrypted on demand and expire when this session ends.
-      </p>
+    <section className="space-y-4">
+      <div className="flex items-center gap-2 px-4">
+        <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
+        <h2 className="text-[10px] font-black tracking-[0.3em] text-label/60 uppercase">Shared Documents</h2>
+      </div>
+      <div className="overflow-hidden rounded-[32px] border border-hairline bg-white shadow-sm">
+        <ul className="divide-y divide-subtle-line">
+          {documents.map((document) => (
+            <li key={document.id}>
+              <a
+                href={`/p/${slug}/doc/${document.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between px-6 py-5 transition-colors hover:bg-[#f8f9fa] group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-[20px] border border-hairline bg-white text-label transition-all group-hover:border-ink group-hover:bg-ink group-hover:text-white group-hover:scale-105 shadow-sm">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-base font-black text-ink group-hover:underline">{document.name}</p>
+                    <p className="text-[10px] font-bold text-label uppercase tracking-widest">{formatSize(document.size)}</p>
+                  </div>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-hairline text-label transition-all group-hover:border-ink group-hover:text-ink group-hover:scale-110 shadow-sm">
+                  <Download className="h-5 w-5" />
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div className="bg-[#f8f9fa] px-6 py-4 border-t border-hairline">
+          <p className="text-[10px] font-bold text-label/40 uppercase tracking-[0.2em] text-center">
+            Files are decrypted on demand and expire with the session
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

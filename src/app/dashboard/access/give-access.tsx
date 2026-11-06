@@ -2,10 +2,12 @@
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from 'cn';
 import { Countdown } from '@/components/countdown';
 import { createGrantAction, revokeGrantAction } from './actions';
 import { initialGrantState } from './form-state';
@@ -48,9 +50,11 @@ export function RevokeButton({
 export function GiveAccess({
   defaultScope,
   defaultValidity,
+  sharedCount,
 }: {
   defaultScope: AccessScope;
   defaultValidity: number;
+  sharedCount: number;
 }) {
   const [state, submit, pending] = useActionState(createGrantAction, initialGrantState);
   const [copied, setCopied] = useState(false);
@@ -107,18 +111,37 @@ export function GiveAccess({
         </Button>
 
         <div className="sm:col-span-3">
-          <label className="flex items-center gap-2 text-sm font-medium text-ink">
+          <label className={cn(
+            "flex items-center gap-3 rounded-2xl border p-4 transition-colors cursor-pointer",
+            sharedCount > 0 ? "border-hairline hover:bg-[#f8f9fa]" : "border-destructive/20 bg-destructive/5"
+          )}>
             <input
               type="checkbox"
               name="include_documents"
               value="true"
-              className="h-4 w-4 rounded border-hairline accent-ink"
+              defaultChecked={sharedCount > 0}
+              disabled={sharedCount === 0}
+              className="h-5 w-5 rounded border-hairline text-ink focus:ring-ink"
             />
-            Also show my shared documents
+            <div>
+              <span className={cn("text-sm font-black", sharedCount > 0 ? "text-ink" : "text-destructive")}>
+                Also show my shared documents
+              </span>
+              <p className="mt-1 text-xs font-medium text-label">
+                {sharedCount > 0
+                  ? `Your ${sharedCount} shared document${sharedCount === 1 ? '' : 's'} will be visible for this code.`
+                  : "You haven't shared any documents in the Vault yet."}
+              </p>
+            </div>
           </label>
-          <p className="mt-1 pl-6 text-xs text-label">
-            Only documents you have marked “Shared” in the Vault can appear, and only for this code.
-          </p>
+          {sharedCount === 0 && (
+            <Link
+              href="/dashboard/vault"
+              className="mt-2 inline-block text-[10px] font-black uppercase tracking-widest text-ink underline underline-offset-4"
+            >
+              Go to Vault to share documents
+            </Link>
+          )}
         </div>
       </form>
 
