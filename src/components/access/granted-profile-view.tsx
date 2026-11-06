@@ -20,7 +20,7 @@ function ActionLink({ href, children, external }: { href: string; children: Reac
   return (
     <a
       href={href}
-      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), "rounded-xl border-2 border-ink font-black text-[10px] uppercase tracking-widest hover:bg-ink hover:text-white transition-all")}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer nofollow' } : {})}
     >
       {children}
@@ -39,19 +39,22 @@ function ContactBlock({
 }) {
   if (items.length === 0) return null;
   return (
-    <section className="rounded-2xl border border-hairline bg-white p-5 shadow-sm">
-      <h2 className="text-[10px] font-bold tracking-[0.2em] text-label uppercase">{title}</h2>
-      <ul className="mt-4 space-y-4">
+    <section className="rounded-[32px] border border-hairline bg-white p-8 shadow-sm">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
+        <h2 className="text-[10px] font-black tracking-[0.3em] text-label/60 uppercase">{title}</h2>
+      </div>
+      <ul className="space-y-6">
         {items.map((item, index) => (
           <li key={`${kind}-${index}`} className="min-w-0">
-            {item.label ? <p className="text-[10px] font-bold text-label/60 uppercase tracking-wider">{item.label}</p> : null}
-            <p className="truncate text-lg font-bold text-ink">{item.value}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            {item.label ? <p className="text-[10px] font-black text-label/40 uppercase tracking-[0.15em] mb-1">{item.label}</p> : null}
+            <p className="truncate text-xl font-black text-ink tracking-tight">{item.value}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
               {kind === 'email' ? (
-                <ActionLink href={`mailto:${encodeURIComponent(item.value)}`}>Email</ActionLink>
+                <ActionLink href={`mailto:${encodeURIComponent(item.value)}`}>Send Email</ActionLink>
               ) : (
                 <>
-                  <ActionLink href={`tel:${item.value.replace(/\s+/g, '')}`}>Call</ActionLink>
+                  <ActionLink href={`tel:${item.value.replace(/\s+/g, '')}`}>Call Now</ActionLink>
                   {whatsAppNumber(item.value) ? (
                     <ActionLink href={`https://wa.me/${whatsAppNumber(item.value)}`} external>
                       WhatsApp
@@ -69,9 +72,9 @@ function ContactBlock({
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <p className="text-[10px] font-bold tracking-[0.2em] text-label uppercase">{label}</p>
-      <p className="mt-1 text-lg font-bold break-words text-ink">{value}</p>
+    <div className="space-y-1">
+      <p className="text-[10px] font-black tracking-[0.3em] text-label/40 uppercase">{label}</p>
+      <p className="text-xl font-black break-words text-ink tracking-tight">{value}</p>
     </div>
   );
 }
