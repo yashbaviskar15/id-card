@@ -32,6 +32,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .maybeSingle<{ storage_path: string; name: string }>();
 
   if (error || !document) {
+    console.warn('api.documents: document not found in DB', { id: parsed.data, error });
     // If we're not logged in or the document doesn't exist, we get no data.
     return new NextResponse('Not found', { status: 404, headers: NO_STORE });
   }

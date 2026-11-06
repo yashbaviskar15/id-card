@@ -38,6 +38,7 @@ export async function signedUrlFor(path: string | null): Promise<string | null> 
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
   if (error) {
+    console.error('storage.signedUrl failed', { path, error });
     log.warn('storage.signedUrl failed', { path, code: error.name, message: error.message });
     return null;
   }
@@ -67,6 +68,7 @@ export async function signedServiceUrl(path: string | null): Promise<string | nu
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
   if (error) {
+    console.error('storage.signedServiceUrl failed', { path, error });
     log.warn('storage.signedServiceUrl failed', { path, code: error.name, message: error.message });
     return null;
   }
@@ -79,6 +81,9 @@ export async function signedServiceDownloadUrl(path: string, filename: string): 
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, { download: dispositionName(filename) });
+  if (error) {
+    console.error('storage.signedServiceDownloadUrl failed', { path, error });
+  }
   if (error || !data) return null;
   return data.signedUrl;
 }
