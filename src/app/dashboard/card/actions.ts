@@ -109,8 +109,9 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
       });
     }
   } catch (error) {
-    log.warn('profile.save failed', { message: error instanceof Error ? error.message : 'unknown' });
-    return { ok: false, error: 'Could not save the profile. Try again.' };
+    const message = error instanceof Error ? error.message : 'unknown';
+    log.warn('profile.save failed', { message });
+    return { ok: false, error: `Could not save the profile: ${message}` };
   }
 
   revalidatePath('/dashboard/card');
