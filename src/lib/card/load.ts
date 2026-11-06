@@ -44,8 +44,8 @@ export async function createProfile(
         owner_id: ownerId,
         slug,
         full_name: input.fullName,
-        dob: input.dob ?? null,
-        address: input.address ?? null,
+        dob: input.dob || null,
+        address: input.address || null,
       })
       .select(PROFILE_COLUMNS)
       .single<ProfileRow>();
@@ -81,8 +81,8 @@ export async function updateProfile(
     .from('profiles')
     .update({
       full_name: input.full_name,
-      dob: input.dob,
-      address: input.address,
+      dob: input.dob || null,
+      address: input.address || null,
       show_dob: input.show_dob,
       show_address: input.show_address,
       show_photo: input.show_photo,
