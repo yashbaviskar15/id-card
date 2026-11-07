@@ -29,7 +29,7 @@ function Toggle({
   defaultChecked: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-hairline p-4 transition-colors hover:bg-[#f8f9fa]">
+    <div className="flex items-start gap-3 rounded-lg border border-hairline p-3.5 transition-colors hover:bg-muted/40">
       <input
         id={id}
         name={name}
@@ -38,10 +38,10 @@ function Toggle({
         className="mt-1 h-4 w-4 rounded border-hairline text-ink focus:ring-ink"
       />
       <div>
-        <Label htmlFor={id} className="cursor-pointer font-bold text-ink">
+        <Label htmlFor={id} className="cursor-pointer font-medium text-ink">
           {label}
         </Label>
-        <p className="mt-1 text-xs font-medium text-label">{hint}</p>
+        <p className="mt-0.5 text-xs text-label">{hint}</p>
       </div>
     </div>
   );
@@ -72,11 +72,11 @@ export function CardForm({
   }, [selectedPhoto]);
 
   return (
-    <div className="min-w-0 space-y-5 sm:space-y-8">
-      <form action={save} className="min-w-0 space-y-6 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:space-y-8 sm:rounded-3xl sm:p-8" noValidate>
-        <div className="grid min-w-0 gap-5 sm:grid-cols-2 sm:gap-8">
-          <div className="min-w-0 space-y-2.5">
-            <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-label">Full name</Label>
+    <div className="min-w-0 space-y-6 lg:space-y-8">
+      <form action={save} className="surface shadow-card min-w-0 space-y-6 p-5 sm:space-y-7 sm:p-7" noValidate>
+        <div className="grid min-w-0 gap-5 sm:grid-cols-2 sm:gap-6">
+          <div className="min-w-0 space-y-2">
+            <Label htmlFor="full_name" className="font-medium text-ink">Full name</Label>
             <Input
               id="full_name"
               name="full_name"
@@ -84,39 +84,39 @@ export function CardForm({
               maxLength={200}
               required
               autoComplete="name"
-              className="h-12 rounded-xl border-hairline focus:border-ink focus:ring-ink"
+              className="h-11 border-hairline focus:border-ink focus:ring-ink"
             />
             <FieldError messages={saveState.fieldErrors?.full_name} />
           </div>
 
-          <div className="min-w-0 space-y-2.5">
-            <Label htmlFor="dob" className="text-xs font-bold uppercase tracking-widest text-label">Date of birth</Label>
+          <div className="min-w-0 space-y-2">
+            <Label htmlFor="dob" className="font-medium text-ink">Date of birth</Label>
             <Input 
               id="dob" 
               name="dob" 
               type="date" 
               defaultValue={profile?.dob ?? ''} 
-              className="h-12 rounded-xl border-hairline focus:border-ink focus:ring-ink"
+              className="h-11 border-hairline focus:border-ink focus:ring-ink"
             />
             <FieldError messages={saveState.fieldErrors?.dob} />
           </div>
         </div>
 
-        <div className="min-w-0 space-y-2.5">
-          <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-label">Address</Label>
+        <div className="min-w-0 space-y-2">
+          <Label htmlFor="address" className="font-medium text-ink">Address</Label>
           <Textarea 
             id="address" 
             name="address" 
             rows={3} 
             defaultValue={profile?.address ?? ''} 
             maxLength={500} 
-            className="rounded-xl border-hairline focus:border-ink focus:ring-ink min-h-[100px]"
+            className="min-h-[96px] border-hairline focus:border-ink focus:ring-ink"
           />
           <FieldError messages={saveState.fieldErrors?.address} />
         </div>
 
         <fieldset className="space-y-4">
-          <legend className="text-sm font-black text-ink">Visibility Settings</legend>
+          <legend className="eyebrow">Visibility settings</legend>
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             <Toggle
               id="show_photo"
@@ -150,27 +150,27 @@ export function CardForm({
         </fieldset>
 
         {saveState.error ? (
-          <Alert variant="destructive" className="rounded-2xl border-2">
-            <AlertDescription className="font-bold">{saveState.error}</AlertDescription>
+          <Alert variant="destructive">
+            <AlertDescription>{saveState.error}</AlertDescription>
           </Alert>
         ) : null}
         {saveState.ok && saveState.message ? (
-          <Alert className="rounded-2xl border-2 border-ink bg-ink text-white">
-            <AlertDescription className="font-bold">{saveState.message}</AlertDescription>
+          <Alert>
+            <AlertDescription>{saveState.message}</AlertDescription>
           </Alert>
         ) : null}
 
-        <Button type="submit" className="h-12 w-full rounded-xl px-6 font-bold shadow-lg shadow-ink/10 transition-all active:scale-95 sm:h-14 sm:w-auto sm:rounded-2xl sm:px-10 sm:text-lg sm:font-black" disabled={saving}>
+        <Button type="submit" className="h-10 w-full px-5 font-medium sm:w-auto" disabled={saving}>
           {saving ? 'Saving…' : profile ? 'Save card' : 'Create my card'}
         </Button>
       </form>
 
       {profile ? (
-        <div className="grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-8">
-          <form action={upload} className="min-w-0 space-y-5 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:space-y-6 sm:rounded-3xl sm:p-8">
-            <div className="space-y-2.5">
-              <p className="text-xs font-bold uppercase tracking-widest text-label">Card photo</p>
-              <div className="flex min-h-[60px] min-w-0 items-center gap-3 rounded-xl border border-hairline bg-white px-3 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
+        <div className="grid min-w-0 gap-6 sm:grid-cols-2 lg:gap-8">
+          <form action={upload} className="surface shadow-card min-w-0 space-y-5 p-5 sm:p-7">
+            <div className="space-y-2">
+              <p className="eyebrow">Card photo</p>
+              <div className="flex min-h-14 min-w-0 items-center gap-3 rounded-lg border border-hairline bg-white px-3 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
                 <Input
                   id="photo"
                   name="photo"
@@ -191,7 +191,7 @@ export function CardForm({
                 </span>
               </div>
               {selectedPhoto ? (
-              <div className="flex items-center gap-3 rounded-xl border border-hairline bg-muted/30 p-3">
+              <div className="flex items-center gap-3 rounded-lg border border-hairline bg-muted/30 p-3">
                 {selectedPhotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -200,43 +200,43 @@ export function CardForm({
                     className="h-20 w-16 shrink-0 rounded-lg border border-hairline bg-white object-contain"
                   />
                 ) : (
-                  <span className="flex h-20 w-16 shrink-0 items-center justify-center rounded-lg border border-hairline bg-white text-xs font-semibold text-label">Image</span>
+                  <span className="flex h-20 w-16 shrink-0 items-center justify-center rounded-lg border border-hairline bg-white text-xs font-medium text-label">Image</span>
                 )}
-                <p className="min-w-0 break-words text-sm font-medium text-label">
+                <p className="min-w-0 break-words text-sm text-label">
                   {selectedPhotoUrl ? 'Full photo preview, without cropping.' : 'This image will be optimized and shown after upload.'}
                 </p>
               </div>
             ) : null}
-              <p id="photo-help" className="text-[10px] font-bold text-label uppercase tracking-widest">
+              <p id="photo-help" className="text-xs leading-5 text-label">
                 PNG, JPEG, WebP, HEIC, TIFF · Max 8 MB. Auto-rotated and optimized for display.
               </p>
             </div>
 
             {photoState.error ? (
-              <Alert variant="destructive" className="rounded-2xl border-2">
-                <AlertDescription className="font-bold">{photoState.error}</AlertDescription>
+              <Alert variant="destructive">
+                <AlertDescription>{photoState.error}</AlertDescription>
               </Alert>
             ) : null}
             {photoState.ok && photoState.message ? (
-              <Alert className="rounded-2xl border-2 border-ink bg-ink text-white">
-                <AlertDescription className="font-bold">{photoState.message}</AlertDescription>
+              <Alert>
+                <AlertDescription>{photoState.message}</AlertDescription>
               </Alert>
             ) : null}
 
-            <Button type="submit" variant="outline" className="h-12 w-full rounded-xl border-2 border-ink font-black transition-all active:scale-95" disabled={uploading}>
+            <Button type="submit" variant="outline" className="h-10 w-full font-medium" disabled={uploading}>
               {uploading ? 'Uploading…' : 'Upload photo'}
             </Button>
           </form>
 
           {hasPhoto ? (
-            <form action={removePhotoAction} className="flex min-w-0 flex-col justify-between gap-5 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:rounded-3xl sm:p-8">
+            <form action={removePhotoAction} className="surface shadow-card flex min-w-0 flex-col justify-between gap-5 p-5 sm:p-7">
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-sm font-black text-ink">Current photo</h3>
-                  <p className="mt-1 text-sm font-medium text-label">The complete image is shown without cropping.</p>
+                  <h3 className="text-sm font-semibold text-ink">Current photo</h3>
+                  <p className="mt-1 text-sm text-label">The complete image is shown without cropping.</p>
                 </div>
                 {photoUrl ? (
-                  <div className="flex min-h-44 items-center justify-center overflow-hidden rounded-xl border border-hairline bg-muted/30 p-2">
+                  <div className="flex min-h-44 items-center justify-center overflow-hidden rounded-lg border border-hairline bg-muted/30 p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={photoUrl}
@@ -247,13 +247,13 @@ export function CardForm({
                   </div>
                 ) : null}
               </div>
-              <Button type="submit" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2 border-destructive text-destructive font-black transition-all hover:bg-destructive hover:text-white active:scale-95">
+              <Button type="submit" variant="outline" className="h-10 w-full font-medium text-destructive hover:bg-destructive hover:text-white">
                 Remove photo
               </Button>
             </form>
           ) : (
-             <div className="flex items-center justify-center rounded-2xl border-2 border-dashed border-hairline bg-[#f8f9fa] p-6 sm:rounded-3xl sm:p-8">
-               <p className="text-sm font-bold text-label/40 uppercase tracking-widest">No photo uploaded</p>
+             <div className="flex items-center justify-center rounded-xl border border-dashed border-hairline bg-muted/20 p-6 sm:p-7">
+               <p className="text-sm text-label">No photo uploaded</p>
              </div>
           )}
         </div>

@@ -292,9 +292,32 @@ export function GrantedProfileView({
 
   useEffect(() => {
     if (sessionEnded) return;
+    let disposed = false;
+    let source: EventSource | null = null;
+    let fallbackTimer: number | null = null;
+    let failures = 0;
     let inFlight = false;
     let controller: AbortController | null = null;
 
+    const endSession = () => {
+      if (disposed) return;
+      setProfile(null);
+      setPhotoUrl(null);
+      setSessionEnded(true);
+    };
+
+    const applySnapshot = (snapshot: {
+      profile: GrantedProfile;
+      photoChanged: boolean;
+      photoUrl?: string | null;
+    }) => {
+      photoPathRef.current = snapshot.profile.photo_path;
+      setProfile(snapshot.profile);
+      if (snapshot.photoChanged) setPhotoUrl(snapshot.photoUrl ?? null);
+      setReconnecting(false);
+    };
+
+    // Polling fallback: only used if the live stream cannot stay connected.
     async function refreshSnapshot() {
       if (document.visibilityState !== 'visible' || inFlight) return;
       inFlight = true;
@@ -308,25 +331,14 @@ export function GrantedProfileView({
           signal: controller.signal,
         });
         if (response.status === 401) {
-          setProfile(null);
-          setPhotoUrl(null);
-          setSessionEnded(true);
+          endSession();
           return;
         }
         if (!response.ok) {
           setReconnecting(true);
           return;
         }
-
-        const snapshot = await response.json() as {
-          profile: GrantedProfile;
-          photoChanged: boolean;
-          photoUrl?: string | null;
-        };
-        photoPathRef.current = snapshot.profile.photo_path;
-        setProfile(snapshot.profile);
-        if (snapshot.photoChanged) setPhotoUrl(snapshot.photoUrl ?? null);
-        setReconnecting(false);
+        applySnapshot(await response.json());
       } catch {
         if (!controller.signal.aborted) setReconnecting(true);
       } finally {
@@ -334,16 +346,62 @@ export function GrantedProfileView({
       }
     }
 
-    const timer = window.setInterval(() => void refreshSnapshot(), 8_000);
+    const startFallbackPolling = () => {
+      if (fallbackTimer !== null) return;
+      fallbackTimer = window.setInterval(() => void refreshSnapshot(), 5_000);
+    };
+
+    const openStream = () => {
+      if (disposed) return;
+      source = new EventSource(`/p/${encodeURIComponent(slug)}/stream`);
+
+      source.addEventListener('open', () => {
+        failures = 0;
+        setReconnecting(false);
+      });
+      source.addEventListener('message', (event) => {
+        try {
+          applySnapshot(JSON.parse((event as MessageEvent<string>).data));
+        } catch {
+          /* ignore a malformed frame; the next one corrects it */
+        }
+      });
+      source.addEventListener('ended', () => {
+        source?.close();
+        source = null;
+        endSession();
+      });
+      source.addEventListener('recycle', () => {
+        // The server recycles long streams; reconnect transparently.
+        source?.close();
+        source = null;
+        openStream();
+      });
+      source.addEventListener('error', () => {
+        // EventSource retries on its own; only fall back if it keeps failing.
+        failures += 1;
+        if (failures >= 4) {
+          source?.close();
+          source = null;
+          setReconnecting(true);
+          startFallbackPolling();
+          void refreshSnapshot();
+        }
+      });
+    };
+
+    openStream();
+
     const refreshWhenVisible = () => {
       if (document.visibilityState === 'visible') void refreshSnapshot();
     };
     document.addEventListener('visibilitychange', refreshWhenVisible);
     window.addEventListener('focus', refreshWhenVisible);
-    void refreshSnapshot();
 
     return () => {
-      window.clearInterval(timer);
+      disposed = true;
+      source?.close();
+      if (fallbackTimer !== null) window.clearInterval(fallbackTimer);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
       window.removeEventListener('focus', refreshWhenVisible);
       controller?.abort();
@@ -352,16 +410,16 @@ export function GrantedProfileView({
 
   if (sessionEnded || !profile) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] px-4 py-10">
-        <section className="w-full max-w-md rounded-3xl border border-hairline bg-white p-7 text-center shadow-sm sm:p-9">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-ink">
-            <LockKeyhole className="h-6 w-6" aria-hidden="true" />
+      <main className="bg-page flex min-h-dvh items-center justify-center px-4 py-10">
+        <section className="surface shadow-card w-full max-w-md p-7 text-center sm:p-9">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-ink">
+            <LockKeyhole className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h1 className="mt-5 text-2xl font-bold text-ink">This access session has ended</h1>
+          <h1 className="mt-5 text-xl font-semibold text-ink">This access session has ended</h1>
           <p className="mt-2 text-sm leading-6 text-label">
             The owner may have revoked access or the session may have expired. Request a new code to continue.
           </p>
-          <a href={`/p/${slug}`} className={cn(buttonVariants(), 'mt-6 min-h-12 rounded-xl px-5 font-semibold')}>
+          <a href={`/p/${slug}`} className={cn(buttonVariants(), 'mt-6 h-11 px-5 font-medium')}>
             Return to access screen
           </a>
         </section>
@@ -370,29 +428,29 @@ export function GrantedProfileView({
   }
 
   return (
-      <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-[#f1f4f8] via-[#f8f9fa] to-[#f8f9fa]">
-      <main className="mx-auto min-w-0 w-full max-w-7xl px-3 pb-28 pt-4 sm:px-5 sm:py-8 lg:px-8">
+    <div className="bg-page min-h-dvh overflow-x-hidden">
+      <main className="mx-auto w-full min-w-0 max-w-7xl px-3 pt-4 pb-28 sm:px-5 sm:py-8 lg:px-8">
         {reconnecting ? (
           <p role="status" className="mx-auto mb-3 max-w-6xl text-sm text-label">
             Connection interrupted. Retrying securely…
           </p>
         ) : null}
-        <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6 lg:space-y-7">
-          <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-[0_18px_50px_rgba(17,24,39,0.06)] sm:rounded-3xl">
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-ink to-slate-800 px-4 py-3 text-white sm:px-7 sm:py-4">
-              <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <Contact className="h-4 w-4" aria-hidden="true" />
+        <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
+          <section className="surface shadow-card min-w-0 overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-ink px-4 py-3 text-white sm:px-6">
+              <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/10">
+                  <Contact className="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
                 <span>Private identity</span>
               </div>
-              <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold shadow-sm">
-                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-xs font-medium">
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 Temporary access active
               </span>
             </div>
-            <div className="flex min-w-0 flex-col gap-4 bg-gradient-to-br from-white to-muted/40 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-7 lg:p-8">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center self-center overflow-hidden rounded-2xl border-4 border-white bg-muted shadow-lg ring-1 ring-ink/5 sm:h-32 sm:w-32 sm:self-auto">
+            <div className="flex min-w-0 flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-7">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center self-center overflow-hidden rounded-xl border border-hairline bg-muted sm:h-28 sm:w-28 sm:self-auto">
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -402,12 +460,12 @@ export function GrantedProfileView({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <UserRound className="h-10 w-10 text-label/60" aria-hidden="true" />
+                  <UserRound className="h-9 w-9 text-label/60" aria-hidden="true" />
                 )}
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-left">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-label">Shared with you</p>
-                <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink sm:text-3xl lg:text-4xl [overflow-wrap:anywhere]">
+                <p className="eyebrow">Shared with you</p>
+                <h1 className="mt-1.5 text-2xl font-semibold tracking-tight break-words text-ink sm:text-3xl [overflow-wrap:anywhere]">
                   {profile.full_name}
                 </h1>
                 <div className="mt-3 flex justify-center sm:justify-start">
@@ -422,7 +480,7 @@ export function GrantedProfileView({
               {profile.emails.length > 0 || profile.phones.length > 0 ? (
                 <section className="space-y-3">
                   <div>
-                    <h2 className="text-lg font-semibold text-ink">Contact information</h2>
+                    <h2 className="text-base font-semibold text-ink">Contact information</h2>
                     <p className="text-sm text-label">Choose the most convenient way to get in touch.</p>
                   </div>
                   <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4">
@@ -435,7 +493,7 @@ export function GrantedProfileView({
               <SocialLinks items={profile.social_links ?? []} />
 
               {profile.dob || profile.address ? (
-                <section className="rounded-2xl border border-hairline bg-white p-5 shadow-sm sm:p-6">
+                <section className="surface shadow-card p-5 sm:p-6">
                   <div className="mb-4">
                     <h2 className="text-base font-semibold text-ink">Additional information</h2>
                     <p className="text-sm text-label">Details shared for this visit.</p>
@@ -454,7 +512,7 @@ export function GrantedProfileView({
                 documents={profile.documents ?? []}
                 canViewDocuments={profile.can_view_documents}
               />
-              <div className="flex items-start gap-3 rounded-2xl border border-hairline bg-white p-4">
+              <div className="surface shadow-card flex items-start gap-3 p-4">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-label" aria-hidden="true" />
                 <div>
                   <h2 className="text-sm font-semibold text-ink">Private by design</h2>
@@ -470,7 +528,7 @@ export function GrantedProfileView({
             <a
               href={`/p/${slug}/vcf`}
               download
-              className={cn(buttonVariants(), 'min-h-12 rounded-xl px-5 font-semibold')}
+              className={cn(buttonVariants(), 'h-11 px-5 font-medium')}
             >
               <Contact className="h-4 w-4" aria-hidden="true" />
               Save contact
@@ -483,11 +541,11 @@ export function GrantedProfileView({
         </div>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-white/95 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-lg backdrop-blur sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-white/95 px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-float backdrop-blur sm:hidden">
         <a
           href={`/p/${slug}/vcf`}
           download
-          className={cn(buttonVariants(), 'min-h-12 w-full rounded-xl font-semibold')}
+          className={cn(buttonVariants(), 'h-11 w-full font-medium')}
         >
           <Contact className="h-4 w-4" aria-hidden="true" />
           Save contact

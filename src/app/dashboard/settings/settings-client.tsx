@@ -85,20 +85,20 @@ export function SettingsClient({ initialSettings, settingsLoadFailed }: Settings
       {error ? <Alert variant="destructive" role="alert"><AlertDescription>{error}</AlertDescription></Alert> : null}
       {message ? <Alert role="status"><AlertDescription>{message}</AlertDescription></Alert> : null}
 
-      <section className="overflow-hidden rounded-xl border border-hairline bg-white shadow-sm">
+      <section className="surface shadow-card overflow-hidden">
         <div className="border-b border-subtle-line px-6 py-4">
-          <h2 className="text-base font-bold text-ink">Authentication</h2>
+          <h2 className="text-sm font-semibold text-ink">Authentication</h2>
         </div>
         <div className="divide-y divide-subtle-line">
           <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><Key className="h-4 w-4 text-label" /></div>
               <div>
-                <p className="text-sm font-bold text-ink">Password</p>
+                <p className="text-sm font-medium text-ink">Password</p>
                 <p className="text-xs text-label">Confirm your current password before changing it.</p>
               </div>
             </div>
-            <Button type="button" variant="outline" size="sm" className="w-full font-bold sm:w-auto" onClick={() => setPasswordOpen((open) => !open)}>
+            <Button type="button" variant="outline" size="sm" className="w-full font-medium sm:w-auto" onClick={() => setPasswordOpen((open) => !open)}>
               {passwordOpen ? 'Cancel' : 'Change password'}
             </Button>
           </div>
@@ -126,38 +126,38 @@ export function SettingsClient({ initialSettings, settingsLoadFailed }: Settings
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><Smartphone className="h-4 w-4 text-label" /></div>
               <div>
-                <p className="text-sm font-bold text-ink">Two-factor authentication</p>
+                <p className="text-sm font-medium text-ink">Two-factor authentication</p>
                 <p className="text-xs text-label">Unavailable until sign-in can enforce authenticator verification.</p>
               </div>
             </div>
-            <Button type="button" variant="outline" size="sm" className="w-full font-bold sm:w-auto" disabled>
+            <Button type="button" variant="outline" size="sm" className="w-full font-medium sm:w-auto" disabled>
               Not available
             </Button>
           </div>
           <div className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><Shield className="h-4 w-4 text-label" /></div>
             <div>
-              <p className="text-sm font-bold text-ink">Passkeys</p>
+              <p className="text-sm font-medium text-ink">Passkeys</p>
               <p className="text-xs text-label">Unavailable until passkey registration is configured for this app.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-hairline bg-white shadow-sm">
-        <div className="border-b border-subtle-line px-6 py-4"><h2 className="text-base font-bold text-ink">Notifications</h2></div>
+      <section className="surface shadow-card overflow-hidden">
+        <div className="border-b border-subtle-line px-6 py-4"><h2 className="text-sm font-semibold text-ink">Notifications</h2></div>
         <div className="divide-y divide-subtle-line">
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><Bell className="h-4 w-4 text-label" /></div>
-              <div><p className="text-sm font-bold text-ink">New device/browser alerts</p><p className="text-xs text-label">Email me when a sign-in uses a new browser</p></div>
+              <div><p className="text-sm font-medium text-ink">New device/browser alerts</p><p className="text-xs text-label">Email me when a sign-in uses a new browser</p></div>
             </div>
             <Switch checked={alerts.alert_on_new_device} onCheckedChange={(checked) => handleToggle('alert_on_new_device', checked)} disabled={isPending || settingsLoadFailed} aria-label="New device and browser alerts" />
           </div>
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><AlertCircle className="h-4 w-4 text-label" /></div>
-              <div><p className="text-sm font-bold text-ink">Account sign-in lockout alerts</p><p className="text-xs text-label">Email me when sign-in attempts lock the account</p></div>
+              <div><p className="text-sm font-medium text-ink">Account sign-in lockout alerts</p><p className="text-xs text-label">Email me when sign-in attempts lock the account</p></div>
             </div>
             <Switch checked={alerts.alert_on_lockout} onCheckedChange={(checked) => handleToggle('alert_on_lockout', checked)} disabled={isPending || settingsLoadFailed} aria-label="Account sign-in lockout alerts" />
           </div>
@@ -167,17 +167,17 @@ export function SettingsClient({ initialSettings, settingsLoadFailed }: Settings
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-hairline bg-white shadow-sm">
-        <div className="border-b border-subtle-line px-6 py-4"><h2 className="text-base font-bold text-ink">Session security</h2></div>
+      <section className="surface shadow-card overflow-hidden">
+        <div className="border-b border-subtle-line px-6 py-4"><h2 className="text-sm font-semibold text-ink">Session security</h2></div>
         <div className="space-y-4 px-6 py-4">
           <div className="flex items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><Smartphone className="h-4 w-4 text-label" /></div>
-              <div><p className="font-bold text-ink">This session</p><p className="text-xs text-label">Your current signed-in session</p></div>
+              <div><p className="font-medium text-ink">This session</p><p className="text-xs text-label">Your current signed-in session</p></div>
             </div>
-            <Badge variant="outline" className="border-ink/20 text-[10px] font-bold">Active</Badge>
+            <Badge variant="outline" className="border-ink/20 text-[10px] font-medium">Active</Badge>
           </div>
-          <Button type="button" variant="outline" size="sm" className="w-full border-destructive/20 font-bold text-destructive hover:text-destructive" onClick={signOutOtherDevices} disabled={sessionPending}>
+          <Button type="button" variant="outline" size="sm" className="w-full border-destructive/20 font-medium text-destructive hover:text-destructive" onClick={signOutOtherDevices} disabled={sessionPending}>
             <LogOut className="mr-2 h-4 w-4" />
             {sessionPending ? 'Please wait…' : 'Sign out of all other devices'}
           </Button>

@@ -10,7 +10,7 @@ export default function DashboardLoading() {
         {Array.from({ length: 3 }, (_, index) => (
           <div
             key={index}
-            className="h-32 rounded-2xl border border-hairline bg-white p-5 shadow-sm motion-safe:animate-pulse"
+            className="surface shadow-card h-32 p-5 motion-safe:animate-pulse"
           >
             <div className="h-4 w-2/5 rounded bg-hairline/60" />
             <div className="mt-5 h-7 w-1/2 rounded bg-hairline/50" />
@@ -18,7 +18,7 @@ export default function DashboardLoading() {
           </div>
         ))}
       </div>
-      <div className="h-72 rounded-2xl border border-hairline bg-white shadow-sm motion-safe:animate-pulse">
+      <div className="surface shadow-card h-72 motion-safe:animate-pulse">
         <div className="border-b border-subtle-line p-5">
           <div className="h-4 w-36 rounded bg-hairline/60" />
         </div>

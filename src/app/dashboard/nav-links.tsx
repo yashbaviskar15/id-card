@@ -23,53 +23,42 @@ const NAV = [
   { href: '/dashboard/settings', label: 'Settings', icon: Settings2 },
 ] as const;
 
-export function NavLinks({ mobile }: { mobile?: boolean }) {
+function isActivePath(pathname: string, href: string): boolean {
+  if (href === '/dashboard') return pathname === '/dashboard';
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function NavLinks({ layout = 'sidebar' }: { layout?: 'sidebar' | 'sheet' }) {
   const pathname = usePathname();
 
-  if (mobile) {
-    return (
-      <nav aria-label="Dashboard mobile" className="flex flex-col gap-1">
-        {NAV.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors',
-                isActive
-                  ? 'bg-ink text-white'
-                  : 'text-label hover:bg-muted hover:text-ink',
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    );
-  }
-
   return (
-    <nav aria-label="Dashboard" className="flex items-center gap-0.5">
+    <nav
+      aria-label="Dashboard"
+      className={cn('flex flex-col gap-0.5', layout === 'sheet' && 'gap-1')}
+    >
       {NAV.map((item) => {
-        const isActive = pathname === item.href;
+        const active = isActivePath(pathname, item.href);
         const Icon = item.icon;
         return (
           <Link
             key={item.href}
             href={item.href}
-            aria-current={isActive ? 'page' : undefined}
+            aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-2 text-xs font-semibold transition-colors active:scale-95',
-              isActive
-                ? 'bg-ink text-white'
-                : 'text-label hover:bg-muted hover:text-ink',
+              'group relative flex items-center gap-3 rounded-lg px-3 font-medium transition-colors',
+              layout === 'sheet' ? 'min-h-11 text-sm' : 'min-h-9 text-sm',
+              active
+                ? 'bg-muted text-ink'
+                : 'text-label hover:bg-muted/60 hover:text-ink',
             )}
           >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-ink transition-opacity',
+                active ? 'opacity-100' : 'opacity-0',
+              )}
+            />
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             {item.label}
           </Link>

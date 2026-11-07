@@ -72,8 +72,8 @@ export function GiveAccess({
   const showCode = Boolean(state.ok && state.code) && !dismissed;
 
   return (
-    <section className="rounded-xl border border-hairline bg-white p-6">
-      <h2 className="text-base font-bold text-ink">Give access</h2>
+    <section className="surface shadow-card p-5 sm:p-6">
+      <h2 className="text-sm font-semibold text-ink">Give access</h2>
       <p className="mt-1 text-sm text-label">
         Create a code and read it out to the person in front of you. It works once.
       </p>
@@ -111,8 +111,8 @@ export function GiveAccess({
 
         <div className="sm:col-span-3">
           <label className={cn(
-            "flex items-center gap-3 rounded-2xl border p-4 transition-colors cursor-pointer",
-            sharedCount > 0 ? "border-hairline hover:bg-[#f8f9fa]" : "border-destructive/20 bg-destructive/5"
+            "flex cursor-pointer items-center gap-3 rounded-lg border p-3.5 transition-colors",
+            sharedCount > 0 ? "border-hairline hover:bg-muted/40" : "border-destructive/25 bg-destructive/5"
           )}>
             <input
               type="checkbox"
@@ -120,13 +120,13 @@ export function GiveAccess({
               value="true"
               defaultChecked={sharedCount > 0}
               disabled={sharedCount === 0}
-              className="h-5 w-5 rounded border-hairline text-ink focus:ring-ink"
+              className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink"
             />
             <div>
-              <span className={cn("text-sm font-black", sharedCount > 0 ? "text-ink" : "text-destructive")}>
+              <span className={cn("text-sm font-medium", sharedCount > 0 ? "text-ink" : "text-destructive")}>
                 Also show my shared documents
               </span>
-              <p className="mt-1 text-xs font-medium text-label">
+              <p className="mt-0.5 text-xs text-label">
                 {sharedCount > 0
                   ? `Your ${sharedCount} shared document${sharedCount === 1 ? '' : 's'} will be visible for this code.`
                   : "You haven't shared any documents in the Vault yet."}
@@ -136,7 +136,7 @@ export function GiveAccess({
           {sharedCount === 0 && (
             <Link
               href="/dashboard/vault"
-              className="mt-2 inline-block text-[10px] font-black uppercase tracking-widest text-ink underline underline-offset-4"
+              className="mt-2 inline-block text-xs font-medium text-ink underline underline-offset-4"
             >
               Go to Vault to share documents
             </Link>
@@ -151,9 +151,9 @@ export function GiveAccess({
       ) : null}
 
       {showCode ? (
-        <div className="mt-5 rounded-xl border border-hairline bg-photo-placeholder p-5 text-center">
-          <p className="text-xs font-normal tracking-[0.14em] text-label uppercase">One-time code</p>
-          <p className="mt-2 text-4xl font-bold tracking-[0.3em] text-ink tabular-nums">{state.code}</p>
+        <div className="mt-5 rounded-xl border border-hairline bg-muted/50 p-5 text-center">
+          <p className="eyebrow">One-time code</p>
+          <p className="tnum mt-2 text-4xl font-semibold tracking-[0.3em] text-ink">{state.code}</p>
           <p className="mt-3 text-sm text-label">
             Expires in{' '}
             <Countdown

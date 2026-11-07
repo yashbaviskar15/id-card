@@ -86,38 +86,35 @@ function DocumentRow({ document }: { document: VaultDocument }) {
   }
 
   return (
-    <li className={cn(
-      "group relative flex flex-col gap-6 p-6 transition-all sm:flex-row sm:items-center sm:gap-8",
-      shared ? "bg-white" : "bg-[#f8f9fa]/50 hover:bg-white"
-    )}>
-      <div className="flex min-w-0 flex-1 items-center gap-5">
+    <li className="group relative flex flex-col gap-4 p-4 transition-colors hover:bg-muted/20 sm:flex-row sm:items-center sm:gap-6 sm:px-5">
+      <div className="flex min-w-0 flex-1 items-center gap-4">
         <div className={cn(
-          "flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border-2 transition-all shadow-sm",
-          shared ? "border-ink bg-ink text-white rotate-3" : "border-hairline bg-white text-label group-hover:border-subtle-line"
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors",
+          shared ? "border-ink bg-ink text-white" : "border-hairline bg-muted/40 text-label"
         )}>
-          <FileText className="h-7 w-7" aria-hidden="true" />
+          <FileText className="h-5 w-5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-lg font-black text-ink tracking-tight">{document.name}</p>
+            <p className="truncate text-sm font-medium text-ink">{document.name}</p>
             {shared ? (
-              <Badge className="bg-ink text-white border-0 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.15em] rounded-full">
-                Public
+              <Badge variant="outline" className="h-5 px-2 text-[10px] font-medium">
+                Shared
               </Badge>
             ) : null}
           </div>
-          <p className="mt-1 text-[11px] font-black text-label/60 uppercase tracking-widest flex items-center gap-2">
-            <span className="truncate max-w-[120px]">{document.category ?? 'Uncategorized'}</span>
+          <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-label">
+            <span className="truncate max-w-[140px]">{document.category ?? 'Uncategorized'}</span>
             <span className="h-1 w-1 rounded-full bg-hairline" />
-            <span>{formatSize(document.size)}</span>
+            <span className="tnum">{formatSize(document.size)}</span>
             <span className="h-1 w-1 rounded-full bg-hairline" />
-            <span>{formatDate(document.created_at)}</span>
+            <span className="tnum">{formatDate(document.created_at)}</span>
           </p>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-5 sm:justify-end">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
+      <div className="flex items-center justify-between gap-4 sm:justify-end">
+        <label className="flex cursor-pointer items-center gap-2.5 select-none">
           <div className="relative">
             <input
               type="checkbox"
@@ -126,26 +123,21 @@ function DocumentRow({ document }: { document: VaultDocument }) {
               onChange={(event) => toggleShared(event.target.checked)}
               className="peer sr-only"
             />
-            <div className="h-6 w-11 rounded-full bg-muted border-2 border-hairline transition-all peer-checked:bg-ink peer-checked:border-ink" />
-            <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-all peer-checked:left-6" />
+            <div className="h-5 w-9 rounded-full bg-muted ring-1 ring-hairline transition-colors peer-checked:bg-ink peer-checked:ring-ink" />
+            <div className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all peer-checked:left-[1.125rem]" />
           </div>
-          <span className="text-[10px] font-black text-ink uppercase tracking-widest">
+          <span className="text-xs font-medium text-label">
             {shared ? 'Shared' : 'Private'}
           </span>
         </label>
-        
-        <div className="h-10 w-px bg-hairline hidden sm:block" />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <a
             href={`/api/documents/${document.id}`}
-            className={cn(
-              buttonVariants({ variant: 'outline', size: 'default' }), 
-              "h-11 rounded-xl border-2 border-ink px-5 font-black text-xs uppercase tracking-widest transition-all hover:bg-ink hover:text-white active:scale-95"
-            )}
+            className={cn(buttonVariants({ variant: 'outline' }), 'h-9 gap-2 px-3 font-medium')}
           >
-            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-            Get File
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Get file
           </a>
           <Button
             type="button"
@@ -154,14 +146,14 @@ function DocumentRow({ document }: { document: VaultDocument }) {
             aria-label={`Delete ${document.name}`}
             disabled={busy}
             onClick={remove}
-            className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all active:scale-90"
+            className="text-label hover:bg-destructive/10 hover:text-destructive"
           >
-            <Trash2 className="h-5 w-5" aria-hidden="true" />
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
       </div>
       {actionError ? (
-        <Alert variant="destructive" className="rounded-xl">
+        <Alert variant="destructive" className="sm:col-span-2">
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
       ) : null}
@@ -236,39 +228,37 @@ export function VaultClient({
   const emptyVault = documents.length === 0 && page === 1 && !hasFilters;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 lg:space-y-8">
       <header>
-        <h1 className="text-3xl font-black tracking-tighter text-ink">Document Vault</h1>
-        <p className="mt-2 text-base font-medium text-label max-w-2xl">
-          Secure storage for your private files. Shared documents can be accessed by visitors who enter a valid profile code.
+        <h1 className="page-title">Document vault</h1>
+        <p className="mt-1 max-w-2xl text-sm text-label">
+          Secure storage for your private files. Shared documents can be viewed by visitors who
+          hold a valid access code.
         </p>
       </header>
 
       {documentsLoadFailed ? (
-        <Alert variant="destructive" className="rounded-2xl">
+        <Alert variant="destructive">
           <AlertDescription>
             The vault could not load document records. Your files have not been deleted; check the Supabase schema and access policies, then refresh.
           </AlertDescription>
         </Alert>
       ) : null}
       {categoriesLoadFailed ? (
-        <Alert variant="destructive" className="rounded-2xl">
+        <Alert variant="destructive">
           <AlertDescription>
             Categories could not be loaded. Documents may still appear without category names; check the Supabase schema and access policies.
           </AlertDescription>
         </Alert>
       ) : null}
 
-      <section className="rounded-3xl border border-hairline bg-white p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-2 w-2 rounded-full bg-ink animate-pulse" />
-          <h2 className="text-[10px] font-black tracking-[0.3em] text-label uppercase">Upload New Asset</h2>
-        </div>
-        
-        <form ref={formRef} action={submit} className="grid gap-6 md:grid-cols-[1fr_240px_auto] items-end">
-          <div className="space-y-3">
-            <p className="text-xs font-black uppercase tracking-widest text-ink ml-1">Select File</p>
-            <div className="flex min-h-[52px] min-w-0 items-center gap-3 rounded-2xl border-2 border-hairline bg-white px-3 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
+      <section className="surface shadow-card p-5 sm:p-7">
+        <h2 className="eyebrow">Upload a document</h2>
+
+        <form ref={formRef} action={submit} className="mt-4 grid items-end gap-4 md:grid-cols-[1fr_220px_auto]">
+          <div className="space-y-2">
+            <Label htmlFor="file" className="font-medium text-ink">File</Label>
+            <div className="flex min-h-11 min-w-0 items-center gap-3 rounded-lg border border-hairline bg-white px-2.5 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
               <input
                 id="file"
                 name="file"
@@ -281,7 +271,7 @@ export function VaultClient({
               />
               <Label
                 htmlFor="file"
-                className="inline-flex min-h-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-ink px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-ink/85 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink"
+                className="inline-flex min-h-8 shrink-0 cursor-pointer items-center justify-center rounded-md bg-ink px-3 text-xs font-medium text-white transition-colors hover:bg-ink/85 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink"
               >
                 Choose file
               </Label>
@@ -291,13 +281,13 @@ export function VaultClient({
             </div>
             <p id="file-help" className="text-xs text-label">Select a supported document or image to add it to your vault.</p>
           </div>
-          <div className="space-y-3">
-            <Label htmlFor="category_id" className="text-xs font-black uppercase tracking-widest text-ink ml-1">Category</Label>
+          <div className="space-y-2">
+            <Label htmlFor="category_id" className="font-medium text-ink">Category</Label>
             <select
               id="category_id"
               name="category_id"
-              className="h-[52px] w-full rounded-2xl border-2 border-hairline bg-white px-4 text-sm font-bold text-ink focus:border-ink focus:outline-none transition-all cursor-pointer appearance-none"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111827'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2rem' }}
+              className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111827'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
             >
               <option value="">Uncategorized</option>
               {categories.map((item) => (
@@ -307,42 +297,42 @@ export function VaultClient({
               ))}
             </select>
           </div>
-          <Button type="submit" className="h-[52px] px-10 rounded-2xl bg-ink text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-ink/20 transition-all active:scale-95 disabled:opacity-50" disabled={pending}>
-            {pending ? 'Processing…' : 'Upload File'}
+          <Button type="submit" className="h-11 px-5 font-medium" disabled={pending}>
+            {pending ? 'Processing…' : 'Upload'}
           </Button>
         </form>
 
         {state.error ? (
-          <Alert variant="destructive" className="mt-8 rounded-2xl border-2">
-            <AlertDescription className="font-bold">{state.error}</AlertDescription>
+          <Alert variant="destructive" className="mt-5">
+            <AlertDescription>{state.error}</AlertDescription>
           </Alert>
         ) : null}
         {state.ok && state.message ? (
-          <Alert className="mt-8 rounded-2xl border-2 border-ink bg-ink text-white">
-            <AlertDescription className="font-bold">{state.message}</AlertDescription>
+          <Alert className="mt-5">
+            <AlertDescription>{state.message}</AlertDescription>
           </Alert>
         ) : null}
       </section>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-label/40" aria-hidden="true" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-label" aria-hidden="true" />
           <Input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search your vault…"
             aria-label="Search documents"
-            className="h-14 pl-12 rounded-2xl border-2 border-hairline bg-white font-bold focus:border-ink transition-all"
+            className="h-11 border-hairline pl-9 focus:border-ink"
           />
         </div>
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-56">
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
             aria-label="Filter by category"
-            className="h-14 w-full rounded-2xl border-2 border-hairline bg-white px-4 text-sm font-bold text-ink focus:border-ink focus:outline-none transition-all cursor-pointer appearance-none"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111827'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2rem' }}
+            className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111827'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
           >
             <option value="">All categories</option>
             {categories.map((item) => (
@@ -355,24 +345,24 @@ export function VaultClient({
         </div>
       </div>
 
-      <section className="rounded-[32px] border border-hairline bg-white overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.02)]">
+      <section className="surface shadow-card overflow-hidden">
         {documentsLoadFailed ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <FileText className="h-10 w-10 text-destructive/40" aria-hidden="true" />
-            <h3 className="mt-5 text-lg font-black text-ink tracking-tight">Documents unavailable</h3>
-            <p className="mt-2 max-w-sm text-sm font-medium text-label">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <FileText className="h-8 w-8 text-destructive/50" aria-hidden="true" />
+            <h3 className="mt-4 text-sm font-semibold text-ink">Documents unavailable</h3>
+            <p className="mt-1 max-w-sm text-sm text-label">
               The database returned an error, so this list is not being shown as empty.
             </p>
           </div>
         ) : documents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#f8f9fa] border-2 border-dashed border-hairline">
-              <FileText className="h-10 w-10 text-label/20" aria-hidden="true" />
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-hairline bg-muted/30">
+              <FileText className="h-6 w-6 text-label" aria-hidden="true" />
             </div>
-            <h3 className="mt-6 text-lg font-black text-ink tracking-tight">
+            <h3 className="mt-4 text-sm font-semibold text-ink">
               {emptyVault ? 'Your vault is empty' : 'No matches found'}
             </h3>
-            <p className="mt-2 text-sm font-medium text-label max-w-xs">
+            <p className="mt-1 max-w-xs text-sm text-label">
               {emptyVault
                 ? 'Upload your first document to keep it safe in your private vault.'
                 : 'We couldn\'t find any documents matching your current filters.'}
@@ -390,7 +380,7 @@ export function VaultClient({
             aria-label="Vault pages"
             className="flex flex-col gap-3 border-t border-subtle-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
           >
-            <p className="text-sm font-medium text-label" aria-live="polite">
+            <p className="text-sm text-label" aria-live="polite">
               Page {page} · Showing {documents.length} of up to {pageSize} items{hasNextPage ? ' · More documents available' : ''}
             </p>
             <div className="flex gap-2">

@@ -70,9 +70,9 @@ export default async function AccessPage({
   const now = Date.now();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:space-y-8">
       <header>
-        <h1 className="text-xl font-bold text-ink">Access</h1>
+        <h1 className="page-title">Access</h1>
         <p className="mt-1 text-sm text-label">
           Every visit starts from the one permanent QR code. You decide who gets in, for how long, and
           what they can see.
@@ -80,13 +80,13 @@ export default async function AccessPage({
       </header>
 
       {!profile ? (
-        <section className="rounded-xl border border-hairline bg-white p-6">
+        <section className="surface shadow-card p-5 sm:p-6">
           <p className="text-sm text-label">
             Save your card first. The profile link is created once and never changes.
           </p>
           <Link
             href="/dashboard/card"
-            className="mt-3 inline-block text-sm font-semibold text-ink underline underline-offset-4"
+            className="mt-3 inline-block text-sm font-medium text-ink underline underline-offset-4"
           >
             Go to Card &amp; QR
           </Link>

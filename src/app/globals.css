@@ -48,26 +48,32 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #111827;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #111827;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #111827;
-  --primary: #111827;
+  --popover-foreground: #0f172a;
+  --primary: #0f172a;
   --primary-foreground: #ffffff;
-  --secondary: #f3f4f6;
-  --secondary-foreground: #111827;
-  --muted: #f3f4f6;
-  --muted-foreground: #5b6472;
-  --accent: #f3f4f6;
-  --accent-foreground: #111827;
+  --secondary: #f1f3f5;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f3f5;
+  --muted-foreground: #64748b;
+  --accent: #f1f3f5;
+  --accent-foreground: #0f172a;
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #dde1e7;
-  --ring: #111827;
-  --radius: 0.5rem;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #0f172a;
+  --radius: 0.625rem;
 
+  /* Application shell surface — one step away from white, never warm. */
+  --page: #f6f7f9;
+  --page-border: #e6e9ee;
+
+  /* Card-specific tokens (ID-1 card design spec) — deliberately unchanged so
+     the printed card stays byte-identical to its artwork. */
   --ink: #111827;
   --label: #5b6472;
   --hairline: #dde1e7;
@@ -94,9 +100,39 @@
 }
 
 @layer utilities {
-  /* Dashboard sidebar / surfaces */
-  .surface-muted {
-    background-color: var(--muted);
+  /* Application shell surface */
+  .bg-page {
+    background-color: var(--page);
+  }
+  /* Small caps label used above values and section titles */
+  .eyebrow {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--label);
+  }
+  /* The one card surface used across the dashboard: hairline border, quiet
+     shadow. Replaces ad-hoc rounded-3xl + heavy blur shadows. */
+  .surface {
+    background-color: #ffffff;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+  }
+  .shadow-card {
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+  .shadow-float {
+    box-shadow: 0 12px 32px -12px rgba(15, 23, 42, 0.18);
+  }
+  /* Subtle section heading rhythm */
+  .page-title {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    color: var(--ink);
   }
   /* Tabular figures for codes, counts and dates */
   .tnum {
