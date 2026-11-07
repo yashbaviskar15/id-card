@@ -47,17 +47,18 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
 
-  const { response, userId } = await updateSession(request);
+  const path = request.nextUrl.pathname;
+  const isVisitorPath = path === '/p' || path.startsWith('/p/');
+  const session = isVisitorPath ? null : await updateSession(request);
+  const userId = session?.userId ?? null;
 
   // Re-issue the response so the forwarded request headers reach the app.
   const next = NextResponse.next({ request: { headers: requestHeaders } });
   // Copy any refreshed auth cookies written by updateSession.
-  for (const cookie of response.cookies.getAll()) {
+  for (const cookie of session?.response.cookies.getAll() ?? []) {
     next.cookies.set(cookie);
   }
   next.headers.set('Content-Security-Policy', csp);
-
-  const path = request.nextUrl.pathname;
 
   // The public profile and its contact download are never cached and never
   // indexed, at every layer that could otherwise keep a copy.

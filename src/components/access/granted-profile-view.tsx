@@ -1,12 +1,15 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { SessionTimer } from '@/components/access/session-timer';
-import { signedVisitorPhotoUrl } from '@/lib/access/visitor';
 import {
   CalendarDays,
   Contact,
   Download,
   ExternalLink,
   FileText,
+  LockKeyhole,
   Mail,
   MapPin,
   MessageCircle,
@@ -272,12 +275,108 @@ function DocumentsSection({
  * document only appears when the owner marked it shareable and this specific
  * hand-out opted into documents.
  */
-export async function GrantedProfileView({ slug, profile }: { slug: string; profile: GrantedProfile }) {
-  const photoUrl = await signedVisitorPhotoUrl(profile.photo_path);
+export function GrantedProfileView({
+  slug,
+  profile: initialProfile,
+  photoUrl: initialPhotoUrl,
+}: {
+  slug: string;
+  profile: GrantedProfile;
+  photoUrl: string | null;
+}) {
+  const [profile, setProfile] = useState<GrantedProfile | null>(initialProfile);
+  const [photoUrl, setPhotoUrl] = useState(initialPhotoUrl);
+  const [sessionEnded, setSessionEnded] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const photoPathRef = useRef(initialProfile.photo_path);
+
+  useEffect(() => {
+    if (sessionEnded) return;
+    let inFlight = false;
+    let controller: AbortController | null = null;
+
+    async function refreshSnapshot() {
+      if (document.visibilityState !== 'visible' || inFlight) return;
+      inFlight = true;
+      controller = new AbortController();
+      const query = new URLSearchParams({ photoPath: photoPathRef.current ?? '' });
+
+      try {
+        const response = await fetch(`/p/${encodeURIComponent(slug)}/snapshot?${query}`, {
+          cache: 'no-store',
+          credentials: 'same-origin',
+          signal: controller.signal,
+        });
+        if (response.status === 401) {
+          setProfile(null);
+          setPhotoUrl(null);
+          setSessionEnded(true);
+          return;
+        }
+        if (!response.ok) {
+          setReconnecting(true);
+          return;
+        }
+
+        const snapshot = await response.json() as {
+          profile: GrantedProfile;
+          photoChanged: boolean;
+          photoUrl?: string | null;
+        };
+        photoPathRef.current = snapshot.profile.photo_path;
+        setProfile(snapshot.profile);
+        if (snapshot.photoChanged) setPhotoUrl(snapshot.photoUrl ?? null);
+        setReconnecting(false);
+      } catch {
+        if (!controller.signal.aborted) setReconnecting(true);
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    const timer = window.setInterval(() => void refreshSnapshot(), 8_000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void refreshSnapshot();
+    };
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('focus', refreshWhenVisible);
+    void refreshSnapshot();
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('focus', refreshWhenVisible);
+      controller?.abort();
+    };
+  }, [sessionEnded, slug]);
+
+  if (sessionEnded || !profile) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] px-4 py-10">
+        <section className="w-full max-w-md rounded-3xl border border-hairline bg-white p-7 text-center shadow-sm sm:p-9">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-ink">
+            <LockKeyhole className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <h1 className="mt-5 text-2xl font-bold text-ink">This access session has ended</h1>
+          <p className="mt-2 text-sm leading-6 text-label">
+            The owner may have revoked access or the session may have expired. Request a new code to continue.
+          </p>
+          <a href={`/p/${slug}`} className={cn(buttonVariants(), 'mt-6 min-h-12 rounded-xl px-5 font-semibold')}>
+            Return to access screen
+          </a>
+        </section>
+      </main>
+    );
+  }
 
   return (
       <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-[#f1f4f8] via-[#f8f9fa] to-[#f8f9fa]">
       <main className="mx-auto min-w-0 w-full max-w-7xl px-3 pb-28 pt-4 sm:px-5 sm:py-8 lg:px-8">
+        {reconnecting ? (
+          <p role="status" className="mx-auto mb-3 max-w-6xl text-sm text-label">
+            Connection interrupted. Retrying securely…
+          </p>
+        ) : null}
         <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6 lg:space-y-7">
           <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-[0_18px_50px_rgba(17,24,39,0.06)] sm:rounded-3xl">
             <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-ink to-slate-800 px-4 py-3 text-white sm:px-7 sm:py-4">

@@ -196,6 +196,7 @@ export function VaultClient({
   const pathname = usePathname();
   const [query, setQuery] = useState(queryValue);
   const [category, setCategory] = useState(categoryValue);
+  const [selectedFileName, setSelectedFileName] = useState('');
 
   const navigateTo = useCallback((nextQuery: string, nextCategory: string, nextPage: number) => {
     const params = new URLSearchParams();
@@ -209,6 +210,7 @@ export function VaultClient({
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();
+      setSelectedFileName('');
       router.refresh();
     }
   }, [state, router]);
@@ -265,17 +267,29 @@ export function VaultClient({
         
         <form ref={formRef} action={submit} className="grid gap-6 md:grid-cols-[1fr_240px_auto] items-end">
           <div className="space-y-3">
-            <Label htmlFor="file" className="text-xs font-black uppercase tracking-widest text-ink ml-1">Select File</Label>
-            <div className="relative group">
+            <p className="text-xs font-black uppercase tracking-widest text-ink ml-1">Select File</p>
+            <div className="flex min-h-[52px] min-w-0 items-center gap-3 rounded-2xl border-2 border-hairline bg-white px-3 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
               <input
                 id="file"
                 name="file"
                 type="file"
                 accept={ACCEPTED}
                 required
-                className="block w-full rounded-2xl border-2 border-hairline bg-white px-4 py-3 text-sm text-ink file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:text-white hover:border-ink transition-all cursor-pointer"
+                aria-describedby="file-help"
+                onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name ?? '')}
+                className="peer sr-only"
               />
+              <Label
+                htmlFor="file"
+                className="inline-flex min-h-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-ink px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-ink/85 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink"
+              >
+                Choose file
+              </Label>
+              <span className="min-w-0 truncate text-sm text-label" aria-live="polite">
+                {selectedFileName || 'No file chosen'}
+              </span>
             </div>
+            <p id="file-help" className="text-xs text-label">Select a supported document or image to add it to your vault.</p>
           </div>
           <div className="space-y-3">
             <Label htmlFor="category_id" className="text-xs font-black uppercase tracking-widest text-ink ml-1">Category</Label>

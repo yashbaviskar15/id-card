@@ -169,16 +169,26 @@ export function CardForm({
         <div className="grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-8">
           <form action={upload} className="min-w-0 space-y-5 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:space-y-6 sm:rounded-3xl sm:p-8">
             <div className="space-y-2.5">
-              <Label htmlFor="photo" className="text-xs font-bold uppercase tracking-widest text-label">Card photo</Label>
-              <div className="relative group">
+              <p className="text-xs font-bold uppercase tracking-widest text-label">Card photo</p>
+              <div className="flex min-h-[60px] min-w-0 items-center gap-3 rounded-xl border border-hairline bg-white px-3 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
                 <Input
-                  id="photo" 
-                  name="photo" 
-                  type="file" 
+                  id="photo"
+                  name="photo"
+                  type="file"
                   accept="image/png,image/jpeg,image/webp,image/heic,image/heif,image/tiff"
                   onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
-                  className="h-14 rounded-2xl border-hairline file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-black file:bg-ink file:text-white file:cursor-pointer transition-all hover:border-ink"
+                  aria-describedby="photo-help"
+                  className="peer sr-only"
                 />
+                <Label
+                  htmlFor="photo"
+                  className="inline-flex min-h-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-ink px-4 text-sm font-semibold text-white transition-colors hover:bg-ink/85 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink"
+                >
+                  Choose photo
+                </Label>
+                <span className="min-w-0 truncate text-sm text-label" aria-live="polite">
+                  {selectedPhoto?.name ?? 'No file chosen'}
+                </span>
               </div>
               {selectedPhoto ? (
               <div className="flex items-center gap-3 rounded-xl border border-hairline bg-muted/30 p-3">
@@ -197,7 +207,7 @@ export function CardForm({
                 </p>
               </div>
             ) : null}
-              <p className="text-[10px] font-bold text-label uppercase tracking-widest">
+              <p id="photo-help" className="text-[10px] font-bold text-label uppercase tracking-widest">
                 PNG, JPEG, WebP, HEIC, TIFF · Max 8 MB. Auto-rotated and optimized for display.
               </p>
             </div>
