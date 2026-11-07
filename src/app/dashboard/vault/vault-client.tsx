@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -172,19 +172,39 @@ function DocumentRow({ document }: { document: VaultDocument }) {
 export function VaultClient({
   documents,
   categories,
+  page,
+  pageSize,
+  queryValue,
+  categoryValue,
+  hasNextPage,
   documentsLoadFailed,
   categoriesLoadFailed,
 }: {
   documents: VaultDocument[];
   categories: VaultCategory[];
+  page: number;
+  pageSize: number;
+  queryValue: string;
+  categoryValue: string;
+  hasNextPage: boolean;
   documentsLoadFailed: boolean;
   categoriesLoadFailed: boolean;
 }) {
   const [state, submit, pending] = useActionState(uploadDocumentAction, initialVaultState);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('');
+  const pathname = usePathname();
+  const [query, setQuery] = useState(queryValue);
+  const [category, setCategory] = useState(categoryValue);
+
+  const navigateTo = useCallback((nextQuery: string, nextCategory: string, nextPage: number) => {
+    const params = new URLSearchParams();
+    if (nextQuery.trim()) params.set('q', nextQuery.trim());
+    if (nextCategory) params.set('category', nextCategory);
+    if (nextPage > 1) params.set('page', String(nextPage));
+    const search = params.toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
+  }, [pathname, router]);
 
   useEffect(() => {
     if (state.ok) {
@@ -193,14 +213,25 @@ export function VaultClient({
     }
   }, [state, router]);
 
-  const needle = query.trim().toLowerCase();
-  const filtered = documents.filter((document) => {
-    const matchesQuery = needle.length === 0 || document.name.toLowerCase().includes(needle);
-    const matchesCategory =
-      category === '' ||
-      (category === '__none' ? document.category === null : document.category === category);
-    return matchesQuery && matchesCategory;
-  });
+  useEffect(() => {
+    setQuery(queryValue);
+    setCategory(categoryValue);
+  }, [queryValue, categoryValue]);
+
+  useEffect(() => {
+    if (query.trim() === queryValue && category === categoryValue) return;
+    const timer = setTimeout(() => navigateTo(query, category, 1), 300);
+    return () => clearTimeout(timer);
+  }, [category, categoryValue, navigateTo, query, queryValue]);
+
+  useEffect(() => {
+    if (!documentsLoadFailed && documents.length === 0 && page > 1) {
+      navigateTo(queryValue, categoryValue, 1);
+    }
+  }, [categoryValue, documents.length, documentsLoadFailed, navigateTo, page, queryValue]);
+
+  const hasFilters = Boolean(queryValue || categoryValue);
+  const emptyVault = documents.length === 0 && page === 1 && !hasFilters;
 
   return (
     <div className="space-y-10">
@@ -301,7 +332,7 @@ export function VaultClient({
           >
             <option value="">All categories</option>
             {categories.map((item) => (
-              <option key={item.id} value={item.name}>
+              <option key={item.id} value={item.id}>
                 {item.name}
               </option>
             ))}
@@ -319,27 +350,57 @@ export function VaultClient({
               The database returned an error, so this list is not being shown as empty.
             </p>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : documents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#f8f9fa] border-2 border-dashed border-hairline">
               <FileText className="h-10 w-10 text-label/20" aria-hidden="true" />
             </div>
             <h3 className="mt-6 text-lg font-black text-ink tracking-tight">
-              {documents.length === 0 ? 'Your vault is empty' : 'No matches found'}
+              {emptyVault ? 'Your vault is empty' : 'No matches found'}
             </h3>
             <p className="mt-2 text-sm font-medium text-label max-w-xs">
-              {documents.length === 0
+              {emptyVault
                 ? 'Upload your first document to keep it safe in your private vault.'
                 : 'We couldn\'t find any documents matching your current filters.'}
             </p>
           </div>
         ) : (
           <ul className="divide-y divide-subtle-line">
-            {filtered.map((document) => (
+            {documents.map((document) => (
               <DocumentRow key={document.id} document={document} />
             ))}
           </ul>
         )}
+        {!documentsLoadFailed && documents.length > 0 ? (
+          <nav
+            aria-label="Vault pages"
+            className="flex flex-col gap-3 border-t border-subtle-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p className="text-sm font-medium text-label" aria-live="polite">
+              Page {page} · Showing {documents.length} of up to {pageSize} items{hasNextPage ? ' · More documents available' : ''}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => navigateTo(queryValue, categoryValue, page - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!hasNextPage}
+                onClick={() => navigateTo(queryValue, categoryValue, page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </nav>
+        ) : null}
       </section>
     </div>
   );

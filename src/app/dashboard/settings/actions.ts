@@ -21,15 +21,18 @@ export async function updateSettingsAction(updates: {
   const owner = await requireOwner('/dashboard/settings');
   const supabase = await createUserClient();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('owner_settings')
     .update(updates)
-    .eq('owner_id', owner.id);
+    .eq('owner_id', owner.id)
+    .select('owner_id')
+    .maybeSingle();
 
   if (error) {
     log.warn('settings.update failed', { code: error.code, message: error.message });
     return { ok: false, error: 'Could not save this setting. Try again.' };
   }
+  if (!data) return { ok: false, error: 'Your settings row is missing. Refresh and try again.' };
 
   revalidatePath('/dashboard/settings');
   return { ok: true };

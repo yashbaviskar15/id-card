@@ -33,13 +33,13 @@ export async function clearReauthenticated(): Promise<void> {
   store.delete(OWNER_REAUTH_COOKIE);
 }
 
-export async function isReauthenticated(): Promise<boolean> {
+export async function isReauthenticated(ownerId?: string): Promise<boolean> {
   const store = await cookies();
   const token = store.get(OWNER_REAUTH_COOKIE)?.value;
   const result = verifyCookie<CookiePayload>(token, ownerCookieSecret());
   if (!result.ok || typeof result.payload?.sub !== 'string') return false;
-  const ownerId = await getOwnerIdOrNull();
-  return ownerId !== null && result.payload.sub === ownerId;
+  const verifiedOwnerId = ownerId ?? await getOwnerIdOrNull();
+  return verifiedOwnerId !== null && result.payload.sub === verifiedOwnerId;
 }
 
 export async function requireReauth(): Promise<void> {

@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
   // Native/ESM-only packages must stay outside the server bundle.
   serverExternalPackages: ['@resvg/resvg-js', '@node-rs/argon2', 'file-type', 'sharp'],
   experimental: {
-    serverActions: { bodySizeLimit: '9mb' },
+    serverActions: { bodySizeLimit: '51mb' },
   },
   async headers() {
     return [

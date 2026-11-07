@@ -12,11 +12,12 @@ export const dynamic = 'force-dynamic';
 
 export default async function AccessPage() {
   const owner = await requireOwner('/dashboard/access');
-  const reauthenticated = await isReauthenticated();
-  const supabase = await createUserClient();
-
-  const profile = await getProfile(owner.id);
-  const [grantsResult, eventsResult, settingsResult, sharedCountResult] = await Promise.all([
+  const [reauthenticated, supabase] = await Promise.all([
+    isReauthenticated(owner.id),
+    createUserClient(),
+  ]);
+  const [profile, grantsResult, eventsResult, settingsResult, sharedCountResult] = await Promise.all([
+    getProfile(owner.id),
     supabase
       .from('access_grants')
       .select('id, scope, include_documents, created_at, expires_at, used_at, session_expires_at, revoked_at')

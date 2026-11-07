@@ -8,7 +8,7 @@ export default async function SettingsPage() {
   const owner = await requireOwner('/dashboard/settings');
   const supabase = await createUserClient();
 
-  const { data: settings } = await supabase
+  const { data: settings, error } = await supabase
     .from('owner_settings')
     .select('*')
     .eq('owner_id', owner.id)
@@ -23,7 +23,7 @@ export default async function SettingsPage() {
         </p>
       </header>
 
-      <SettingsClient initialSettings={settings} />
+      <SettingsClient initialSettings={settings} settingsLoadFailed={Boolean(error || !settings)} />
     </div>
   );
 }

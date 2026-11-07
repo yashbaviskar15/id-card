@@ -17,9 +17,10 @@ interface SettingsClientProps {
     alert_on_new_device: boolean;
     alert_on_lockout: boolean;
   } | null;
+  settingsLoadFailed: boolean;
 }
 
-export function SettingsClient({ initialSettings }: SettingsClientProps) {
+export function SettingsClient({ initialSettings, settingsLoadFailed }: SettingsClientProps) {
   const [isPending, startTransition] = useTransition();
   const [alerts, setAlerts] = useState({
     alert_on_new_device: initialSettings?.alert_on_new_device ?? true,
@@ -44,12 +45,17 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
     const previous = alerts[key];
     setAlerts((current) => ({ ...current, [key]: value }));
     startTransition(async () => {
-      const result = await updateSettingsAction({ [key]: value });
-      if (!result.ok) {
+      try {
+        const result = await updateSettingsAction({ [key]: value });
+        if (result.ok) {
+          setMessage('Setting saved.');
+          return;
+        }
         setAlerts((current) => ({ ...current, [key]: previous }));
         setError(result.error ?? 'Could not save this setting.');
-      } else {
-        setMessage('Setting saved.');
+      } catch {
+        setAlerts((current) => ({ ...current, [key]: previous }));
+        setError('Could not save this setting. Check your connection and try again.');
       }
     });
   }
@@ -71,6 +77,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
 
   return (
     <div className="space-y-6">
+      {settingsLoadFailed ? (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>Settings could not be loaded. Refresh the page before changing preferences.</AlertDescription>
+        </Alert>
+      ) : null}
       {error ? <Alert variant="destructive" role="alert"><AlertDescription>{error}</AlertDescription></Alert> : null}
       {message ? <Alert role="status"><AlertDescription>{message}</AlertDescription></Alert> : null}
 
@@ -139,27 +150,30 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><Bell className="h-4 w-4 text-label" /></div>
-              <div><p className="text-sm font-bold text-ink">Login alerts</p><p className="text-xs text-label">Notify me of new sign-ins</p></div>
+              <div><p className="text-sm font-bold text-ink">New device/browser alerts</p><p className="text-xs text-label">Email me when a sign-in uses a new browser</p></div>
             </div>
-            <Switch checked={alerts.alert_on_new_device} onCheckedChange={(checked) => handleToggle('alert_on_new_device', checked)} disabled={isPending} aria-label="Login alerts" />
+            <Switch checked={alerts.alert_on_new_device} onCheckedChange={(checked) => handleToggle('alert_on_new_device', checked)} disabled={isPending || settingsLoadFailed} aria-label="New device and browser alerts" />
           </div>
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><AlertCircle className="h-4 w-4 text-label" /></div>
-              <div><p className="text-sm font-bold text-ink">Security alerts</p><p className="text-xs text-label">Notify me of account lockouts</p></div>
+              <div><p className="text-sm font-bold text-ink">Account sign-in lockout alerts</p><p className="text-xs text-label">Email me when sign-in attempts lock the account</p></div>
             </div>
-            <Switch checked={alerts.alert_on_lockout} onCheckedChange={(checked) => handleToggle('alert_on_lockout', checked)} disabled={isPending} aria-label="Security alerts" />
+            <Switch checked={alerts.alert_on_lockout} onCheckedChange={(checked) => handleToggle('alert_on_lockout', checked)} disabled={isPending || settingsLoadFailed} aria-label="Account sign-in lockout alerts" />
           </div>
+          <p className="px-6 py-3 text-xs text-label">
+            Email delivery also requires the server email settings to be configured.
+          </p>
         </div>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-hairline bg-white shadow-sm">
-        <div className="border-b border-subtle-line px-6 py-4"><h2 className="text-base font-bold text-ink">Active Sessions</h2></div>
+        <div className="border-b border-subtle-line px-6 py-4"><h2 className="text-base font-bold text-ink">Session security</h2></div>
         <div className="space-y-4 px-6 py-4">
           <div className="flex items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted"><Smartphone className="h-4 w-4 text-label" /></div>
-              <div><p className="font-bold text-ink">Current Device</p><p className="text-xs text-label">Active now</p></div>
+              <div><p className="font-bold text-ink">This session</p><p className="text-xs text-label">Your current signed-in session</p></div>
             </div>
             <Badge variant="outline" className="border-ink/20 text-[10px] font-bold">Active</Badge>
           </div>
