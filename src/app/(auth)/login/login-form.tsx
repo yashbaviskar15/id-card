@@ -22,16 +22,16 @@ export function LoginForm({
   const [state, action, pending] = useActionState(signInAction, initialFormState);
 
   return (
-    <form action={action} className="mt-8 space-y-6" noValidate>
+    <form action={action} className="mt-7 space-y-5">
       <input type="hidden" name="next" value={next} />
 
       <div className="space-y-2.5">
-        <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-label">Email</Label>
+        <Label htmlFor="email" className="text-sm font-semibold text-ink">Email address</Label>
         <Input
           id="email"
           name="email"
           type="email"
-          autoComplete="username"
+          autoComplete="email"
           inputMode="email"
           required
           autoFocus

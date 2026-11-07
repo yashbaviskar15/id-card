@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { RevokeButton } from './give-access';
 import type { AccessOutcome, AccessScope, GrantStatus } from '@/lib/types';
@@ -77,7 +78,7 @@ function SearchAndSort({
   return (
     <div className="grid min-w-0 gap-2 sm:w-full sm:max-w-xl sm:grid-cols-[minmax(0,1fr)_auto]">
       <label className="relative block min-w-0">
-        <span className="sr-only">Search {label}</span>
+        <span className="sr-only">Search {label} on this page</span>
         <Search
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-label"
           aria-hidden="true"
@@ -85,12 +86,12 @@ function SearchAndSort({
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder={`Search ${label.toLowerCase()}...`}
+          placeholder={`Search this page...`}
           className="h-11 w-full min-w-0 rounded-xl border border-hairline bg-white pl-9 pr-3 text-sm text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/10"
         />
       </label>
       <label>
-        <span className="sr-only">Sort {label}</span>
+        <span className="sr-only">Sort {label} on this page</span>
         <select
           value={sort}
           onChange={(event) => onSortChange(event.target.value)}
@@ -107,19 +108,87 @@ function SearchAndSort({
   );
 }
 
+function PageNavigation({
+  label,
+  page,
+  itemCount,
+  hasNext,
+  onPrevious,
+  onNext,
+}: {
+  label: string;
+  page: number;
+  itemCount: number;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <nav
+      aria-label={`${label} pages`}
+      className="flex flex-col gap-3 border-t border-subtle-line bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+    >
+      <p className="text-xs text-label" aria-live="polite">
+        Page {page} · {itemCount} {label.toLowerCase()} shown
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onPrevious}
+          disabled={page <= 1}
+          className="min-h-10 rounded-lg border border-hairline bg-white px-4 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!hasNext}
+          className="min-h-10 rounded-lg border border-hairline bg-white px-4 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+        </button>
+      </div>
+    </nav>
+  );
+}
+
 export function AccessHistory({
   grants,
   events,
   now,
+  grantPage,
+  eventPage,
+  grantsHasNext,
+  eventsHasNext,
 }: {
   grants: GrantRow[];
   events: EventRow[];
   now: number;
+  grantPage: number;
+  eventPage: number;
+  grantsHasNext: boolean;
+  eventsHasNext: boolean;
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [grantQuery, setGrantQuery] = useState('');
   const [grantSort, setGrantSort] = useState('newest');
   const [eventQuery, setEventQuery] = useState('');
   const [eventSort, setEventSort] = useState('newest');
+  const navigateTo = useCallback((nextGrantPage: number, nextEventPage: number) => {
+    const params = new URLSearchParams();
+    if (nextGrantPage > 1) params.set('grantPage', String(nextGrantPage));
+    if (nextEventPage > 1) params.set('eventPage', String(nextEventPage));
+    const search = params.toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
+  }, [pathname, router]);
+
+  useEffect(() => {
+    if ((grants.length === 0 && grantPage > 1) || (events.length === 0 && eventPage > 1)) {
+      navigateTo(grants.length === 0 ? 1 : grantPage, events.length === 0 ? 1 : eventPage);
+    }
+  }, [eventPage, events.length, grantPage, grants.length, navigateTo]);
 
   const visibleGrants = useMemo(() => {
     const query = grantQuery.trim().toLowerCase();
@@ -178,7 +247,7 @@ export function AccessHistory({
           <div className="min-w-0">
             <h2 className="text-base font-bold text-ink">Access codes</h2>
             <p className="mt-1 text-sm text-label">
-              {grants.length} most recent. Revoking a code ends its live session.
+              10 codes per page. Revoking a code ends its live session.
             </p>
           </div>
           <SearchAndSort
@@ -238,9 +307,14 @@ export function AccessHistory({
             })}
           </ul>
         )}
-        <div className="border-t border-subtle-line bg-muted/40 px-4 py-2.5 text-xs text-label sm:px-6">
-          Showing {visibleGrants.length} of {grants.length} codes
-        </div>
+        <PageNavigation
+          label="Codes"
+          page={grantPage}
+          itemCount={visibleGrants.length}
+          hasNext={grantsHasNext}
+          onPrevious={() => navigateTo(grantPage - 1, eventPage)}
+          onNext={() => navigateTo(grantPage + 1, eventPage)}
+        />
       </section>
 
       <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm">
@@ -248,7 +322,7 @@ export function AccessHistory({
           <div className="min-w-0">
             <h2 className="text-base font-bold text-ink">Access log</h2>
             <p className="mt-1 text-sm text-label">
-              IP addresses are stored as short one-way digests, never as real addresses.
+              10 events per page. IP addresses are stored as one-way digests, never as real addresses.
             </p>
           </div>
           <SearchAndSort
@@ -288,9 +362,14 @@ export function AccessHistory({
             ))}
           </ul>
         )}
-        <div className="border-t border-subtle-line bg-muted/40 px-4 py-2.5 text-xs text-label sm:px-6">
-          Showing {visibleEvents.length} of {events.length} events
-        </div>
+        <PageNavigation
+          label="Events"
+          page={eventPage}
+          itemCount={visibleEvents.length}
+          hasNext={eventsHasNext}
+          onPrevious={() => navigateTo(grantPage, eventPage - 1)}
+          onNext={() => navigateTo(grantPage, eventPage + 1)}
+        />
       </section>
     </div>
   );

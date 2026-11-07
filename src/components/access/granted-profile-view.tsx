@@ -276,30 +276,30 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
   const photoUrl = await signedVisitorPhotoUrl(profile.photo_path);
 
   return (
-    <div className="min-h-dvh bg-muted/50">
-      <main className="mx-auto min-w-0 w-full max-w-7xl px-3 pb-28 pt-4 sm:px-6 sm:py-8 lg:px-8">
-        <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
-          <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm sm:rounded-3xl">
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-ink px-4 py-3 text-white sm:px-7 sm:py-4">
+      <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-[#f1f4f8] via-[#f8f9fa] to-[#f8f9fa]">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-3 pb-28 pt-4 sm:px-5 sm:py-8 lg:px-8">
+        <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6 lg:space-y-7">
+          <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-[0_18px_50px_rgba(17,24,39,0.06)] sm:rounded-3xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-ink to-slate-800 px-4 py-3 text-white sm:px-7 sm:py-4">
               <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
                   <Contact className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <span>Private identity</span>
               </div>
-              <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold">
+              <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold shadow-sm">
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                 Temporary access active
               </span>
             </div>
-            <div className="flex min-w-0 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-7 lg:p-8">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center self-center overflow-hidden rounded-2xl border-4 border-white bg-muted shadow-md sm:h-28 sm:w-28 sm:self-auto">
+            <div className="flex min-w-0 flex-col gap-4 bg-gradient-to-br from-white to-muted/40 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-7 lg:p-8">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center self-center overflow-hidden rounded-2xl border-4 border-white bg-muted shadow-lg ring-1 ring-ink/5 sm:h-32 sm:w-32 sm:self-auto">
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={photoUrl}
                     alt={`Profile photo of ${profile.full_name}`}
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain p-1"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
