@@ -1,19 +1,23 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createUserClient } from '@/lib/db/user';
-import { signedServiceDownloadUrl } from '@/lib/storage';
+import { dispositionName, DOCUMENTS_BUCKET } from '@/lib/storage';
+import { log } from '@/lib/log';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const NO_STORE = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate',
+  'Cache-Control': 'private, no-store, no-cache, must-revalidate',
   'X-Robots-Tag': 'noindex, nofollow, noarchive',
+  'X-Content-Type-Options': 'nosniff',
+  'Cross-Origin-Resource-Policy': 'same-origin',
 } as const;
 
 /**
  * Owner-only download. The row is read through the owner's own session, so RLS
- * scopes it to their folder; the file is then served through a ≤60 s signed URL
- * with an attachment disposition.
+ * scopes it to their folder; the file is also downloaded with that same session
+ * and proxied here instead of exposing a reusable signed storage URL.
  */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,12 +41,20 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return new NextResponse('Not found', { status: 404, headers: NO_STORE });
   }
 
-  // Signed URL must be minted through the service role because storage RLS
-  // might be too restrictive for the browser session in some environments.
-  const url = await signedServiceDownloadUrl(document.storage_path, document.name);
-  if (!url) {
+  const { data: file, error: storageError } = await supabase
+    .storage.from(DOCUMENTS_BUCKET).download(document.storage_path);
+  if (storageError || !file) {
+    log.warn('api.documents download failed', { code: storageError?.name });
     return new NextResponse('Not found', { status: 404, headers: NO_STORE });
   }
 
-  return NextResponse.redirect(url, { status: 302, headers: NO_STORE });
+  return new NextResponse(file.stream(), {
+    status: 200,
+    headers: {
+      ...NO_STORE,
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(file.size),
+      'Content-Disposition': `attachment; filename="${dispositionName(document.name)}"`,
+    },
+  });
 }

@@ -118,7 +118,7 @@ export function GiveAccess({
               type="checkbox"
               name="include_documents"
               value="true"
-              defaultChecked={sharedCount > 0}
+              defaultChecked={false}
               disabled={sharedCount === 0}
               className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink"
             />
@@ -128,7 +128,7 @@ export function GiveAccess({
               </span>
               <p className="mt-0.5 text-xs text-label">
                 {sharedCount > 0
-                  ? `Your ${sharedCount} shared document${sharedCount === 1 ? '' : 's'} will be visible for this code.`
+                  ? `Off by default. Select this only if you want to include your ${sharedCount} shared document${sharedCount === 1 ? '' : 's'}.`
                   : "You haven't shared any documents in the Vault yet."}
               </p>
             </div>

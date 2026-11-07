@@ -103,7 +103,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Sheet>
         </header>
 
-        <main className="mx-auto w-full min-w-0 max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
+        <main className="mx-auto w-full min-w-0 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>

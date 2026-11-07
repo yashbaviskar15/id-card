@@ -1,4 +1,5 @@
 import 'server-only';
+import { createHash } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/db/service';
 import {
@@ -9,7 +10,6 @@ import {
   visitorCookieName,
   type CookiePayload,
 } from '@/lib/crypto/cookies';
-import { signedServiceUrl } from '@/lib/storage';
 import { log } from '@/lib/log';
 import type { GrantedProfile } from '@/lib/types';
 
@@ -88,11 +88,13 @@ export async function loadGrantedProfile(
 }
 
 /**
- * The photo lives in the private bucket, so a visitor can only ever see it
- * through a short-lived signed URL minted server-side after the grant check.
+ * Visitor photos are served from an app route that re-validates the grant for
+ * every request. Do not mint a storage URL here: it could outlive revocation.
  */
-export async function signedVisitorPhotoUrl(path: string | null): Promise<string | null> {
-  return signedServiceUrl(path);
+export function visitorPhotoUrl(slug: string, path: string | null): string | null {
+  if (!path) return null;
+  const version = createHash('sha256').update(path).digest('hex').slice(0, 12);
+  return `/p/${encodeURIComponent(slug)}/photo?v=${version}`;
 }
 
 export interface GrantedDocumentTarget {

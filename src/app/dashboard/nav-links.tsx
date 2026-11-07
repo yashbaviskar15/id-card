@@ -8,6 +8,7 @@ import {
   IdCard,
   KeyRound,
   LayoutDashboard,
+  ShieldCheck,
   Settings2,
   UserRound,
   Vault,
@@ -20,6 +21,7 @@ const NAV = [
   { href: '/dashboard/vault', label: 'Vault', icon: Vault },
   { href: '/dashboard/info', label: 'Information', icon: UserRound },
   { href: '/dashboard/backup', label: 'Backup', icon: ArchiveRestore },
+  { href: '/dashboard/security', label: 'Security', icon: ShieldCheck },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings2 },
 ] as const;
 
