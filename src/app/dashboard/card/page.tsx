@@ -4,6 +4,7 @@ import { getProfile, loadCardData } from '@/lib/card/load';
 import { qrPayload } from '@/lib/qr/payload';
 import { ResponsiveCard } from '@/components/card/responsive-card';
 import { CardForm } from './card-form';
+import { Button } from '@/components/ui/button';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,12 +32,23 @@ export default async function CardPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6 lg:space-y-8">
-      <header>
-        <h1 className="page-title">Card &amp; QR</h1>
-        <p className="mt-1 max-w-prose text-sm text-label">
-          The card and its QR code are generated from what you save here. The QR encodes only your
-          permanent link — editing anything below never changes it.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="page-title">Card &amp; QR</h1>
+          <p className="mt-1 max-w-prose text-sm text-label">
+            The card and its QR code are generated from what you save here. The QR encodes only your
+            permanent link — editing anything below never changes it.
+          </p>
+        </div>
+        {profile ? (
+          <Button
+            render={<Link href="/dashboard/customize" />}
+            variant="outline"
+            className="h-10 gap-2"
+          >
+            Customize visitor page
+          </Button>
+        ) : null}
       </header>
 
       {card ? (

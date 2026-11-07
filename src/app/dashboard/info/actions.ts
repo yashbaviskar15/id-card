@@ -193,8 +193,22 @@ export async function deleteFieldAction(id: string): Promise<InfoActionResult> {
 export async function reorderFieldsAction(ids: string[]): Promise<InfoActionResult> {
   const parsedIds = z.array(z.uuid()).max(500).safeParse(ids);
   if (!parsedIds.success) return { ok: false, error: 'The information order is invalid.' };
+  if (new Set(parsedIds.data).size !== parsedIds.data.length) {
+    return { ok: false, error: 'The information order contains duplicates.' };
+  }
   const owner = await requireOwner('/dashboard/info');
   const supabase = await createUserClient();
+  const { data: ownedRows, error: loadError } = await supabase
+    .from('fields')
+    .select('id')
+    .eq('owner_id', owner.id);
+  if (loadError || (ownedRows?.length ?? 0) !== parsedIds.data.length) {
+    return { ok: false, error: 'Your information changed. Refresh the page and try again.' };
+  }
+  const ownedIds = new Set((ownedRows ?? []).map((row) => row.id));
+  if (parsedIds.data.some((id) => !ownedIds.has(id))) {
+    return { ok: false, error: 'The information order is invalid.' };
+  }
 
   for (const [sort, id] of parsedIds.data.entries()) {
     const { error } = await supabase
