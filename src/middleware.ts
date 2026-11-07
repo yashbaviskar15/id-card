@@ -30,7 +30,7 @@ function buildCsp(nonce: string, isDev: boolean): string {
     `img-src 'self' ${supabaseOrigin} data: blob:`,
     `font-src 'self' data:`,
     `connect-src 'self' ${supabaseOrigin} ${supabaseWs} https://challenges.cloudflare.com`,
-    `frame-src https://challenges.cloudflare.com`,
+    `frame-src 'self' https://challenges.cloudflare.com`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
@@ -49,6 +49,7 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isVisitorPath = path === '/p' || path.startsWith('/p/');
+  const isVisitorPreviewFile = /^\/p\/[^/]+\/doc\/[^/]+\/file$/.test(path);
   const session = isVisitorPath ? null : await updateSession(request);
   const userId = session?.userId ?? null;
 
@@ -59,6 +60,11 @@ export async function middleware(request: NextRequest) {
     next.cookies.set(cookie);
   }
   next.headers.set('Content-Security-Policy', csp);
+  if (isVisitorPreviewFile) {
+    // Permit only the session-checked document response to render in its same-origin watermarked viewer.
+    next.headers.set('Content-Security-Policy', csp.replace("frame-ancestors 'none'", "frame-ancestors 'self'"));
+    next.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  }
 
   // The public profile and its contact download are never cached and never
   // indexed, at every layer that could otherwise keep a copy.
