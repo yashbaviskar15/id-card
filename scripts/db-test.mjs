@@ -160,7 +160,7 @@ try {
   );
   await client.query(
     `insert into public.fields (owner_id, kind, label, value, is_public, sort)
-     values ($1, 'social_link', 'LinkedIn', 'https://www.linkedin.com/in/owner-a', true, 3)`,
+     values ($1, 'social_link', 'Social profile', 'https://social.example/owner-a', true, 3)`,
     [ownerA],
   );
   await client.query(
@@ -359,7 +359,7 @@ try {
     assert(Array.isArray(prof.emails) && prof.emails.length === 1, 'public email missing');
     assert(Array.isArray(prof.phones) && prof.phones.length === 1, 'public phone missing');
     assert(Array.isArray(prof.social_links) && prof.social_links.length === 1, 'public social link missing');
-    assert(prof.social_links[0].value === 'https://www.linkedin.com/in/owner-a', 'wrong public social link returned');
+    assert(prof.social_links[0].value === 'https://social.example/owner-a', 'wrong public social link returned');
   });
 
   await test('A-T6b full scope still excludes sensitive/notes/documents', async () => {

@@ -175,7 +175,7 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
               required
               maxLength={80}
               defaultValue={editing?.label ?? ''}
-              placeholder={selectedKind === 'social_link' ? 'Instagram, LinkedIn, Discord…' : 'e.g. Personal email'}
+              placeholder={selectedKind === 'social_link' ? 'Instagram, Discord, or another site…' : 'e.g. Personal email'}
               className="h-11"
             />
           </div>
