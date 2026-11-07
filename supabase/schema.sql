@@ -52,6 +52,9 @@ create table if not exists public.profiles (
   show_dob     boolean not null default false,
   show_address boolean not null default false,
   show_photo   boolean not null default false,
+  visitor_theme text not null default 'ink' check (visitor_theme in ('ink', 'ocean', 'forest')),
+  visitor_layout text not null default 'standard' check (visitor_layout in ('standard', 'compact')),
+  visitor_intro text not null default '' check (length(visitor_intro) <= 180),
   is_active    boolean not null default true,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
@@ -1053,6 +1056,9 @@ as $$
     'photo_path', case when g.scope = 'full' and p.show_photo then p.photo_path else null end,
     'dob',        case when g.scope = 'full' and p.show_dob then p.dob else null end,
     'address',    case when g.scope = 'full' and p.show_address then p.address else null end,
+    'visitor_theme', p.visitor_theme,
+    'visitor_layout', p.visitor_layout,
+    'visitor_intro', p.visitor_intro,
     'emails', coalesce((
       select jsonb_agg(jsonb_build_object('label', f.label, 'value', f.value) order by f.sort, f.created_at)
       from public.fields f

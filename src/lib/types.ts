@@ -21,6 +21,8 @@ export type FieldKind =
 export const PUBLIC_FIELD_KINDS = ['email', 'phone', 'social_link'] as const satisfies readonly FieldKind[];
 
 export type GrantStatus = 'active' | 'used' | 'expired' | 'revoked';
+export type VisitorTheme = 'ink' | 'ocean' | 'forest';
+export type VisitorLayout = 'standard' | 'compact';
 
 export type AccessOutcome =
   | 'granted'
@@ -47,6 +49,9 @@ export interface ProfileRow {
   show_dob: boolean;
   show_address: boolean;
   show_photo: boolean;
+  visitor_theme: VisitorTheme;
+  visitor_layout: VisitorLayout;
+  visitor_intro: string;
   /** Owner kill switch: false disables the public profile without touching the slug. */
   is_active: boolean;
   created_at: string;
@@ -193,6 +198,9 @@ export interface GrantedProfile {
   dob: string | null;
   /** Present only for a 'full' grant whose show_address flag is on. */
   address: string | null;
+  visitor_theme: VisitorTheme;
+  visitor_layout: VisitorLayout;
+  visitor_intro: string;
   emails: GrantContactItem[];
   phones: GrantContactItem[];
   /** Public, non-sensitive HTTPS links selected by the owner. */

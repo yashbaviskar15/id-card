@@ -18,11 +18,23 @@ export default async function DashboardOverviewPage() {
 
   return (
     <div className="min-w-0 space-y-6 lg:space-y-8">
-      <header>
-        <h1 className="page-title">Overview</h1>
-        <p className="mt-1 text-sm text-label">
-          Your digital identity, secure vault and access permissions in one place.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="page-title">Overview</h1>
+          <p className="mt-1 text-sm text-label">
+            Your digital identity, secure vault and access permissions in one place.
+          </p>
+        </div>
+        {profile ? (
+          <Button
+            render={<Link href="/dashboard/customize" />}
+            variant="outline"
+            className="h-10 gap-2"
+          >
+            Customize visitor page
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        ) : null}
       </header>
 
       {!profile || !card ? (
@@ -151,7 +163,7 @@ export default async function DashboardOverviewPage() {
                 <PrivacyRow label="Home address" shared={profile.show_address} />
               </dl>
               <Link
-                href="/dashboard/settings"
+                href="/dashboard/card"
                 className="mt-5 inline-flex text-xs font-medium text-label underline-offset-4 hover:text-ink hover:underline"
               >
                 Manage privacy settings

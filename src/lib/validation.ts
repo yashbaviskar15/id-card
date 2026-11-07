@@ -109,6 +109,12 @@ export const profileUpdateSchema = z.object({
   is_active: z.coerce.boolean(),
 });
 
+export const visitorPresentationSchema = z.object({
+  visitor_theme: z.enum(['ink', 'ocean', 'forest']),
+  visitor_layout: z.enum(['standard', 'compact']),
+  visitor_intro: z.string().trim().max(180, 'Keep your introduction under 180 characters.'),
+});
+
 export const fieldInputSchema = z.object({
   kind: z.enum([
     'email', 'phone', 'social_link', 'address', 'family_contact', 'emergency_contact',

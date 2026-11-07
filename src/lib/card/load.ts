@@ -7,7 +7,7 @@ import type { CardData } from '@/lib/card/data';
 import type { ProfileRow } from '@/lib/types';
 
 const PROFILE_COLUMNS =
-  'id, owner_id, slug, full_name, dob, address, photo_path, show_dob, show_address, show_photo, is_active, created_at, updated_at';
+  'id, owner_id, slug, full_name, dob, address, photo_path, show_dob, show_address, show_photo, visitor_theme, visitor_layout, visitor_intro, is_active, created_at, updated_at';
 
 export async function getProfile(ownerId: string): Promise<ProfileRow | null> {
   const supabase = await createUserClient();

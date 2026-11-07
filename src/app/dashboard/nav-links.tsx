@@ -8,6 +8,7 @@ import {
   IdCard,
   KeyRound,
   LayoutDashboard,
+  Paintbrush,
   ShieldCheck,
   Settings2,
   UserRound,
@@ -17,6 +18,7 @@ import {
 const NAV = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/card', label: 'Card & QR', icon: IdCard },
+  { href: '/dashboard/customize', label: 'Customize', icon: Paintbrush },
   { href: '/dashboard/access', label: 'Access', icon: KeyRound },
   { href: '/dashboard/vault', label: 'Vault', icon: Vault },
   { href: '/dashboard/info', label: 'Information', icon: UserRound },

@@ -18,7 +18,13 @@ import {
   UserRound,
 } from 'lucide-react';
 import { cn } from 'cn';
-import type { GrantedProfile, GrantContactItem, GrantDocument } from '@/lib/types';
+import type { GrantedProfile, GrantContactItem, GrantDocument, VisitorTheme } from '@/lib/types';
+
+const VISITOR_HEADER_THEMES: Record<VisitorTheme, string> = {
+  ink: 'bg-ink',
+  ocean: 'bg-sky-800',
+  forest: 'bg-emerald-800',
+};
 
 /** wa.me and tel: both want digits and a leading plus, not punctuation. */
 function whatsAppNumber(value: string): string {
@@ -427,17 +433,19 @@ export function GrantedProfileView({
     );
   }
 
+  const compact = profile.visitor_layout === 'compact';
+
   return (
     <div className="bg-page min-h-dvh overflow-x-hidden">
-      <main className="mx-auto w-full min-w-0 max-w-7xl px-3 pt-4 pb-28 sm:px-5 sm:py-8 lg:px-8">
+      <main className={`mx-auto w-full min-w-0 px-3 pt-4 pb-28 sm:px-5 sm:py-8 lg:px-8 ${compact ? 'max-w-5xl' : 'max-w-7xl'}`}>
         {reconnecting ? (
           <p role="status" className="mx-auto mb-3 max-w-6xl text-sm text-label">
             Connection interrupted. Retrying securely…
           </p>
         ) : null}
-        <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
+        <div className={`mx-auto space-y-5 sm:space-y-6 ${compact ? 'max-w-4xl' : 'max-w-6xl'}`}>
           <section className="surface shadow-card min-w-0 overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-ink px-4 py-3 text-white sm:px-6">
+            <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6 ${VISITOR_HEADER_THEMES[profile.visitor_theme]}`}>
               <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/10">
                   <Contact className="h-3.5 w-3.5" aria-hidden="true" />
@@ -449,8 +457,8 @@ export function GrantedProfileView({
                 Temporary access active
               </span>
             </div>
-            <div className="flex min-w-0 flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-7">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center self-center overflow-hidden rounded-xl border border-hairline bg-muted sm:h-28 sm:w-28 sm:self-auto">
+            <div className={`flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center sm:gap-6 ${compact ? 'p-4 sm:p-5' : 'p-5 sm:p-7'}`}>
+              <div className={`flex shrink-0 items-center justify-center self-center overflow-hidden rounded-xl border border-hairline bg-muted sm:self-auto ${compact ? 'h-20 w-20' : 'h-24 w-24 sm:h-28 sm:w-28'}`}>
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -465,9 +473,14 @@ export function GrantedProfileView({
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-left">
                 <p className="eyebrow">Shared with you</p>
-                <h1 className="mt-1.5 text-2xl font-semibold tracking-tight break-words text-ink sm:text-3xl [overflow-wrap:anywhere]">
+                <h1 className={`mt-1.5 font-semibold tracking-tight break-words text-ink [overflow-wrap:anywhere] ${compact ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}`}>
                   {profile.full_name}
                 </h1>
+                {profile.visitor_intro ? (
+                  <p className="mx-auto mt-2 max-w-2xl whitespace-pre-wrap break-words text-sm leading-6 text-label sm:mx-0">
+                    {profile.visitor_intro}
+                  </p>
+                ) : null}
                 <div className="mt-3 flex justify-center sm:justify-start">
                   <SessionTimer until={profile.session_expires_at} />
                 </div>
@@ -491,7 +504,7 @@ export function GrantedProfileView({
             </div>
           </section>
 
-          <div className="grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] lg:gap-6">
+          <div className={`grid min-w-0 items-start gap-4 sm:gap-5 lg:gap-6 ${compact ? 'grid-cols-1' : 'lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]'}`}>
             <div className="min-w-0 space-y-5">
               {profile.emails.length > 0 || profile.phones.length > 0 ? (
                 <section className="space-y-3">

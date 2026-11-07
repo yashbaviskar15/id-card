@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowUpDown, Eye, EyeOff, Plus, Search, Shield, ShieldOff, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpDown, ChevronDown, ChevronUp, Eye, EyeOff, Paintbrush, Plus, Search, Shield, ShieldOff, Trash2, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { deleteFieldAction, addFieldAction, updateFieldAction } from './actions';
+import { deleteFieldAction, addFieldAction, reorderFieldsAction, updateFieldAction } from './actions';
 import type { FieldKind } from '@/lib/types';
 
 export interface InformationField {
@@ -56,6 +57,15 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
 
   useEffect(() => setFields(initialFields), [initialFields]);
 
+  const manualOrderedFields = useMemo(
+    () => [...fields].sort((left, right) => left.sort - right.sort || left.label.localeCompare(right.label)),
+    [fields],
+  );
+  const manualPositions = useMemo(
+    () => new Map(manualOrderedFields.map((field, index) => [field.id, index])),
+    [manualOrderedFields],
+  );
+
   const visibleFields = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     const result = fields.filter((field) => (
@@ -71,9 +81,9 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
       if (sortMode === 'type') {
         return KIND_LABELS[left.kind].localeCompare(KIND_LABELS[right.kind]) || left.sort - right.sort;
       }
-      return left.sort - right.sort || left.label.localeCompare(right.label);
+      return manualPositions.get(left.id)! - manualPositions.get(right.id)!;
     });
-  }, [fields, query, sortMode]);
+  }, [fields, manualPositions, query, sortMode]);
   const pageCount = Math.max(1, Math.ceil(visibleFields.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pageFields = visibleFields.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -125,6 +135,24 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
     });
   }
 
+  function moveField(fieldId: string, direction: -1 | 1) {
+    if (query.trim() || sortMode !== 'manual') return;
+    const index = manualPositions.get(fieldId);
+    if (index === undefined || index + direction < 0 || index + direction >= manualOrderedFields.length) return;
+
+    const reordered = [...manualOrderedFields];
+    [reordered[index], reordered[index + direction]] = [reordered[index + direction], reordered[index]];
+    const nextFields = reordered.map((field, sort) => ({ ...field, sort }));
+    setFields(nextFields);
+    setError(null);
+
+    startTransition(async () => {
+      const result = await reorderFieldsAction(nextFields.map((field) => field.id));
+      if (!result.ok) setError(result.error ?? 'Could not reorder your information.');
+      router.refresh();
+    });
+  }
+
   function removeField(field: InformationField) {
     if (!window.confirm(`Delete "${field.label}"? This cannot be undone.`)) return;
     startTransition(async () => {
@@ -143,10 +171,20 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
             Organize your details and choose exactly what visitors can see.
           </p>
         </div>
-        <Button type="button" className="h-10 w-full gap-2 px-4 font-medium sm:w-auto" onClick={() => beginAdd()}>
-          <Plus className="h-4 w-4" />
-          Add information
-        </Button>
+        <div className="grid gap-2 sm:flex">
+          <Button
+            render={<Link href="/dashboard/customize" />}
+            variant="outline"
+            className="h-10 gap-2 font-medium"
+          >
+            <Paintbrush className="h-4 w-4" aria-hidden="true" />
+            Visitor design
+          </Button>
+          <Button type="button" className="h-10 w-full gap-2 px-4 font-medium sm:w-auto" onClick={() => beginAdd()}>
+            <Plus className="h-4 w-4" />
+            Add information
+          </Button>
+        </div>
       </header>
 
       {error ? (
@@ -321,6 +359,38 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
                     )}
                   </div>
                   <div role="cell" className="flex flex-wrap items-center justify-end gap-1 border-t border-subtle-line pt-2 md:border-0 md:pt-0">
+                    {sortMode === 'manual' ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10"
+                          aria-label={`Move ${field.label} up`}
+                          title="Move up"
+                          disabled={pending || Boolean(query.trim()) || (manualPositions.get(field.id) ?? 0) === 0}
+                          onClick={() => moveField(field.id, -1)}
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10"
+                          aria-label={`Move ${field.label} down`}
+                          title="Move down"
+                          disabled={
+                            pending
+                            || Boolean(query.trim())
+                            || (manualPositions.get(field.id) ?? 0) >= manualOrderedFields.length - 1
+                          }
+                          onClick={() => moveField(field.id, 1)}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : null}
                     <Button
                       type="button"
                       variant="ghost"
