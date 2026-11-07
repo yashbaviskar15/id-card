@@ -99,6 +99,19 @@
   }
 }
 
+html.interaction-locked,
+html.interaction-locked body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html.interaction-locked input,
+html.interaction-locked textarea,
+html.interaction-locked [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 @layer utilities {
   /* Application shell surface */
   .bg-page {
@@ -151,14 +164,18 @@
   }
 }
 
-/* The identity card is printed; keep it exact and never break it across pages. */
+/* Best-effort print deterrent. It cannot block OS screenshots or external capture. */
 @media print {
-  .no-print {
-    display: none !important;
+  body * {
+    visibility: hidden !important;
   }
-  .card-print-sheet {
-    box-shadow: none !important;
-    border: none !important;
+  body::before {
+    content: "Printing is disabled for this application.";
+    position: fixed;
+    inset: 20mm;
+    color: #0f172a;
+    font: 600 16pt system-ui, sans-serif;
+    visibility: visible !important;
   }
   @page {
     margin: 0;
