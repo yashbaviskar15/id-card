@@ -14,7 +14,7 @@ export const metadata = { title: 'Dashboard' };
 export default async function DashboardOverviewPage() {
   const owner = await requireOwner();
   const profile = await getProfile(owner.id);
-  const card = profile ? await loadCardData(owner.id) : null;
+  const card = profile ? await loadCardData(owner.id, profile) : null;
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-10">

@@ -104,7 +104,17 @@ export async function signInAction(_prev: FormState, formData: FormData): Promis
         lockFor('email', emailHash, RATE_LIMITS.passwordLockoutMinutes),
         ipHash ? lockFor('ip', ipHash, RATE_LIMITS.passwordLockoutMinutes) : Promise.resolve(),
       ]);
-      await alertOwnerLockout({ attempts: nextFailures, windowMinutes: RATE_LIMITS.passwordWindowMinutes });
+      if (isOwnerEmail(email)) {
+        const service = createServiceClient();
+        const { data: usersResult } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const ownerId = usersResult.users.find((user) => user.email?.toLowerCase() === email)?.id;
+        const { data: settings } = ownerId
+          ? await service.from('owner_settings').select('alert_on_lockout').eq('owner_id', ownerId).maybeSingle()
+          : { data: null };
+        if (settings?.alert_on_lockout ?? true) {
+          await alertOwnerLockout({ attempts: nextFailures, windowMinutes: RATE_LIMITS.passwordWindowMinutes });
+        }
+      }
       // No owner id is known for a failed attempt (the email may not exist), and
       // audit_log.owner_id is a valid FK, so this is logged, not audited.
       log.warn('auth.lockout', { attempts: nextFailures });
@@ -129,13 +139,20 @@ export async function signInAction(_prev: FormState, formData: FormData): Promis
   // New-device detection: alert only the first time this device is seen.
   const deviceHash = hmacHex(emailHash, `device:${userAgent ?? 'unknown'}`);
   const service = createServiceClient();
-  const { count } = await service
-    .from('audit_log')
-    .select('id', { count: 'exact', head: true })
-    .eq('owner_id', data.user.id)
-    .eq('action', 'auth.login')
-    .filter('detail->>device_hash', 'eq', deviceHash);
-  if (!count) {
+  const [deviceResult, settingsResult] = await Promise.all([
+    service
+      .from('audit_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', data.user.id)
+      .eq('action', 'auth.login')
+      .filter('detail->>device_hash', 'eq', deviceHash),
+    service
+      .from('owner_settings')
+      .select('alert_on_new_device')
+      .eq('owner_id', data.user.id)
+      .maybeSingle(),
+  ]);
+  if (!deviceResult.count && (settingsResult.data?.alert_on_new_device ?? true)) {
     await alertNewDeviceLogin({ userAgent: userAgent ?? 'unknown device' });
   }
 

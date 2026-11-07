@@ -299,7 +299,7 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
                   <img
                     src={photoUrl}
                     alt={`Profile photo of ${profile.full_name}`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                     referrerPolicy="no-referrer"
                   />
                 ) : (

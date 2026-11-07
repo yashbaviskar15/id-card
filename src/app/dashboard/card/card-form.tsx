@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,9 +47,29 @@ function Toggle({
   );
 }
 
-export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; hasPhoto: boolean }) {
+export function CardForm({
+  profile,
+  hasPhoto,
+  photoUrl,
+}: {
+  profile: ProfileRow | null;
+  hasPhoto: boolean;
+  photoUrl: string | null;
+}) {
   const [saveState, save, saving] = useActionState(saveProfileAction, initialFormState);
   const [photoState, upload, uploading] = useActionState(uploadPhotoAction, initialFormState);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedPhoto) {
+      setSelectedPhotoUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(selectedPhoto);
+    setSelectedPhotoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedPhoto]);
 
   return (
     <div className="min-w-0 space-y-5 sm:space-y-8">
@@ -156,9 +176,23 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
                   name="photo" 
                   type="file" 
                   accept="image/png,image/jpeg,image/webp,image/heic,image/tiff" 
+                onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
                   className="h-14 rounded-2xl border-hairline file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-black file:bg-ink file:text-white file:cursor-pointer transition-all hover:border-ink"
                 />
               </div>
+            {selectedPhotoUrl ? (
+              <div className="flex items-center gap-3 rounded-xl border border-hairline bg-muted/30 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selectedPhotoUrl}
+                  alt="Selected photo preview"
+                  className="h-20 w-16 shrink-0 rounded-lg border border-hairline bg-white object-contain"
+                />
+                <p className="min-w-0 break-words text-sm font-medium text-label">
+                  Preview shows the full photo without cropping.
+                </p>
+              </div>
+            ) : null}
               <p className="text-[10px] font-bold text-label uppercase tracking-widest">
                 PNG, JPEG, WebP · Max 8 MB
               </p>
@@ -181,10 +215,23 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
           </form>
 
           {hasPhoto ? (
-            <form action={removePhotoAction} className="flex min-w-0 flex-col justify-between rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:rounded-3xl sm:p-8">
-              <div className="space-y-2">
-                <h3 className="text-sm font-black text-ink">Current photo</h3>
-                <p className="text-sm font-medium text-label">Remove the current photo from the card.</p>
+            <form action={removePhotoAction} className="flex min-w-0 flex-col justify-between gap-5 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:rounded-3xl sm:p-8">
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-black text-ink">Current photo</h3>
+                  <p className="mt-1 text-sm font-medium text-label">The complete image is shown without cropping.</p>
+                </div>
+                {photoUrl ? (
+                  <div className="flex min-h-44 items-center justify-center overflow-hidden rounded-xl border border-hairline bg-muted/30 p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photoUrl}
+                      alt="Current card photo"
+                      className="max-h-56 w-full object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                ) : null}
               </div>
               <Button type="submit" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2 border-destructive text-destructive font-black transition-all hover:bg-destructive hover:text-white active:scale-95">
                 Remove photo

@@ -27,7 +27,7 @@ const EXPORTS = [
 export default async function CardPage() {
   const owner = await requireOwner('/dashboard/card');
   const profile = await getProfile(owner.id);
-  const card = profile ? await loadCardData(owner.id) : null;
+  const card = profile ? await loadCardData(owner.id, profile) : null;
 
   return (
     <div className="w-full min-w-0 space-y-5 sm:space-y-8">
@@ -123,7 +123,11 @@ export default async function CardPage() {
         </section>
       )}
 
-      <CardForm profile={profile} hasPhoto={Boolean(profile?.photo_path)} />
+      <CardForm
+        profile={profile}
+        hasPhoto={Boolean(profile?.photo_path)}
+        photoUrl={card?.photoUrl ?? null}
+      />
 
       <p className="text-xs text-label">
         Looking for the profile URL for a print run?{' '}
