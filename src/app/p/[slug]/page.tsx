@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { after } from 'next/server';
 import { headers } from 'next/headers';
 import { loadGrantedProfile, recordVisitorView } from '@/lib/access/visitor';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
@@ -33,11 +34,13 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   if (!granted) return <LockScreen slug={parsed.data} />;
 
   const headerList = await headers();
-  await recordVisitorView({
-    slug: parsed.data,
-    grantId: granted.grantId,
-    ipHash: hashIp(clientIpFromHeaders(headerList)),
-    userAgent: truncateUserAgent(headerList.get('user-agent')),
+  after(async () => {
+    await recordVisitorView({
+      slug: parsed.data,
+      grantId: granted.grantId,
+      ipHash: hashIp(clientIpFromHeaders(headerList)),
+      userAgent: truncateUserAgent(headerList.get('user-agent')),
+    });
   });
 
   return <GrantedProfileView slug={parsed.data} profile={granted.profile} />;

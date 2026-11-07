@@ -115,18 +115,21 @@ export async function setProfilePhoto(ownerId: string, photoPath: string | null)
  * The exact projection the identity card renders. Contact details come from the
  * owner's public email/phone fields; nothing sensitive is ever included.
  */
-export async function loadCardData(ownerId: string): Promise<CardData | null> {
+export async function loadCardData(ownerId: string, profileOverride?: ProfileRow | null): Promise<CardData | null> {
   const supabase = await createUserClient();
-  const profile = await getProfile(ownerId);
+  const profile = profileOverride === undefined ? await getProfile(ownerId) : profileOverride;
   if (!profile) return null;
 
-  const { data: contacts } = await supabase
-    .from('fields')
-    .select('kind, value, sort')
-    .eq('owner_id', ownerId)
-    .eq('is_public', true)
-    .in('kind', ['email', 'phone'])
-    .order('sort', { ascending: true });
+  const [{ data: contacts }, photoUrl] = await Promise.all([
+    supabase
+      .from('fields')
+      .select('kind, value, sort')
+      .eq('owner_id', ownerId)
+      .eq('is_public', true)
+      .in('kind', ['email', 'phone'])
+      .order('sort', { ascending: true }),
+    signedUrlFor(profile.photo_path),
+  ]);
 
   let email: string | null = null;
   let phone: string | null = null;
@@ -142,6 +145,6 @@ export async function loadCardData(ownerId: string): Promise<CardData | null> {
     address: profile.address,
     phone,
     email,
-    photoUrl: await signedUrlFor(profile.photo_path),
+    photoUrl,
   };
 }

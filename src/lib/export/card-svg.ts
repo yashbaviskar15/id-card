@@ -136,7 +136,7 @@ function photoFrame(data: CardData, id: string): string {
   if (data.photoUrl) {
     return (
       `<defs><clipPath id="${id}-photo"><rect x="${PAD}" y="${PAD}" width="${w}" height="${h}" rx="12"/></clipPath></defs>` +
-      `<image href="${escapeXml(data.photoUrl)}" x="${PAD}" y="${PAD}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id}-photo)"/>`
+      `<image href="${escapeXml(data.photoUrl)}" x="${PAD}" y="${PAD}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet" clip-path="url(#${id}-photo)"/>`
     );
   }
   return (

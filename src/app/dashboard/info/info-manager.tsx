@@ -48,6 +48,8 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
   const [selectedKind, setSelectedKind] = useState<FieldKind>('custom');
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('manual');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -72,6 +74,15 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
       return left.sort - right.sort || left.label.localeCompare(right.label);
     });
   }, [fields, query, sortMode]);
+  const pageCount = Math.max(1, Math.ceil(visibleFields.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageFields = visibleFields.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const firstVisible = visibleFields.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const lastVisible = Math.min(currentPage * pageSize, visibleFields.length);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, sortMode, pageSize]);
 
   function beginAdd(kind: FieldKind = 'custom') {
     setEditing(null);
@@ -276,7 +287,7 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
               <span role="columnheader" className="text-right">Actions</span>
             </div>
             <div className="divide-y divide-subtle-line">
-              {visibleFields.map((field) => (
+              {pageFields.map((field) => (
                 <div
                   key={field.id}
                   role="row"
@@ -372,6 +383,50 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
             )}
           </div>
         )}
+        {visibleFields.length > 0 ? (
+          <nav
+            aria-label="Saved information pages"
+            className="flex flex-col gap-3 border-t border-hairline px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+          >
+            <p className="text-sm text-label" aria-live="polite">
+              Showing {firstVisible}-{lastVisible} of {visibleFields.length}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-sm text-label">
+                Rows
+                <select
+                  value={pageSize}
+                  onChange={(event) => setPageSize(Number(event.target.value))}
+                  className="h-10 rounded-lg border border-hairline bg-white px-2 text-sm text-ink"
+                  aria-label="Rows per page"
+                >
+                  {[10, 25, 50].map((size) => <option key={size} value={size}>{size}</option>)}
+                </select>
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+              >
+                Previous
+              </Button>
+              <span className="min-w-20 text-center text-sm text-label" aria-current="page">
+                Page {currentPage} of {pageCount}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= pageCount}
+                onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          </nav>
+        ) : null}
       </section>
     </div>
   );

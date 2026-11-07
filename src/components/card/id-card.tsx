@@ -75,7 +75,7 @@ export function IdCardFront({ data }: { data: CardData }) {
               <img
                 src={data.photoUrl}
                 alt=""
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 referrerPolicy="no-referrer"
                 loading="eager"
               />
