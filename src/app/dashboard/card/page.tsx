@@ -30,7 +30,7 @@ export default async function CardPage() {
   const card = profile ? await loadCardData(owner.id) : null;
 
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 space-y-5 sm:space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-ink">Card &amp; QR</h1>
         <p className="mt-1 max-w-prose text-sm text-label">
@@ -41,13 +41,13 @@ export default async function CardPage() {
 
       {card ? (
         <>
-          <section className="grid gap-8 lg:grid-cols-2">
+          <section className="grid min-w-0 gap-5 lg:grid-cols-2 lg:gap-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
                 <h2 className="text-[10px] font-bold tracking-[0.25em] text-label uppercase">Front</h2>
               </div>
-              <div className="rounded-[32px] border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform hover:scale-[1.01]">
+              <div className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform md:hover:scale-[1.01] md:rounded-[32px]">
                 <ResponsiveCard face="front" data={card} />
               </div>
             </div>
@@ -56,17 +56,17 @@ export default async function CardPage() {
                 <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
                 <h2 className="text-[10px] font-bold tracking-[0.25em] text-label uppercase">Back</h2>
               </div>
-              <div className="rounded-[32px] border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform hover:scale-[1.01]">
+              <div className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform md:hover:scale-[1.01] md:rounded-[32px]">
                 <ResponsiveCard face="back" data={card} />
               </div>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-hairline bg-white p-8 shadow-sm">
+          <section className="min-w-0 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:rounded-3xl sm:p-8">
             <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-              <div className="max-w-md">
+              <div className="min-w-0 max-w-md">
                 <h2 className="text-lg font-black text-ink">Permanent link</h2>
-                <div className="mt-3 rounded-2xl bg-[#f8f9fa] p-4 font-mono text-sm break-all text-ink border border-hairline">
+                <div className="mt-3 min-w-0 break-all rounded-xl border border-hairline bg-[#f8f9fa] p-3 font-mono text-xs text-ink sm:rounded-2xl sm:p-4 sm:text-sm">
                   {qrPayload(card.slug)}
                 </div>
                 <p className="mt-3 text-xs font-medium text-label">
@@ -74,7 +74,7 @@ export default async function CardPage() {
                 </p>
               </div>
 
-              <div className="flex-1 space-y-8">
+              <div className="min-w-0 flex-1 space-y-6 sm:space-y-8">
                 <div>
                   <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Download the QR</h3>
                   <ul className="mt-4 flex flex-wrap gap-2">

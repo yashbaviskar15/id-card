@@ -111,7 +111,7 @@ export const profileUpdateSchema = z.object({
 
 export const fieldInputSchema = z.object({
   kind: z.enum([
-    'email', 'phone', 'address', 'family_contact', 'emergency_contact',
+    'email', 'phone', 'social_link', 'address', 'family_contact', 'emergency_contact',
     'important_date', 'note', 'account_record', 'custom',
   ]),
   label: z.string().trim().max(80).optional().or(z.literal('')),

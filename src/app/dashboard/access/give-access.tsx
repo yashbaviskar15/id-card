@@ -87,7 +87,7 @@ export function GiveAccess({
             defaultValue={defaultScope}
             className="h-9 w-full rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none"
           >
-            <option value="contact">Contact only — name, public emails and phones</option>
+            <option value="contact">Contact only — name, public contact details and shared links</option>
             <option value="full">Full profile — adds photo, date of birth, address</option>
           </select>
         </div>

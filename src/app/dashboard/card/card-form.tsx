@@ -52,10 +52,10 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
   const [photoState, upload, uploading] = useActionState(uploadPhotoAction, initialFormState);
 
   return (
-    <div className="space-y-8">
-      <form action={save} className="space-y-8 rounded-3xl border border-hairline bg-white p-8 shadow-sm" noValidate>
-        <div className="grid gap-8 sm:grid-cols-2">
-          <div className="space-y-2.5">
+    <div className="min-w-0 space-y-5 sm:space-y-8">
+      <form action={save} className="min-w-0 space-y-6 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:space-y-8 sm:rounded-3xl sm:p-8" noValidate>
+        <div className="grid min-w-0 gap-5 sm:grid-cols-2 sm:gap-8">
+          <div className="min-w-0 space-y-2.5">
             <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-label">Full name</Label>
             <Input
               id="full_name"
@@ -69,7 +69,7 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
             <FieldError messages={saveState.fieldErrors?.full_name} />
           </div>
 
-          <div className="space-y-2.5">
+          <div className="min-w-0 space-y-2.5">
             <Label htmlFor="dob" className="text-xs font-bold uppercase tracking-widest text-label">Date of birth</Label>
             <Input 
               id="dob" 
@@ -82,7 +82,7 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
           </div>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="min-w-0 space-y-2.5">
           <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-label">Address</Label>
           <Textarea 
             id="address" 
@@ -97,7 +97,7 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
 
         <fieldset className="space-y-4">
           <legend className="text-sm font-black text-ink">Visibility Settings</legend>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             <Toggle
               id="show_photo"
               name="show_photo"
@@ -140,18 +140,18 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
           </Alert>
         ) : null}
 
-        <Button type="submit" className="h-14 w-full sm:w-auto px-10 rounded-2xl text-lg font-black shadow-lg shadow-ink/10 transition-all active:scale-95" disabled={saving}>
+        <Button type="submit" className="h-12 w-full rounded-xl px-6 font-bold shadow-lg shadow-ink/10 transition-all active:scale-95 sm:h-14 sm:w-auto sm:rounded-2xl sm:px-10 sm:text-lg sm:font-black" disabled={saving}>
           {saving ? 'Saving…' : profile ? 'Save card' : 'Create my card'}
         </Button>
       </form>
 
       {profile ? (
-        <div className="grid gap-8 sm:grid-cols-2">
-          <form action={upload} className="space-y-6 rounded-3xl border border-hairline bg-white p-8 shadow-sm">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-8">
+          <form action={upload} className="min-w-0 space-y-5 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:space-y-6 sm:rounded-3xl sm:p-8">
             <div className="space-y-2.5">
               <Label htmlFor="photo" className="text-xs font-bold uppercase tracking-widest text-label">Card photo</Label>
               <div className="relative group">
-                <Input 
+                <Input
                   id="photo" 
                   name="photo" 
                   type="file" 
@@ -181,7 +181,7 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
           </form>
 
           {hasPhoto ? (
-            <form action={removePhotoAction} className="flex flex-col justify-between rounded-3xl border border-hairline bg-white p-8 shadow-sm">
+            <form action={removePhotoAction} className="flex min-w-0 flex-col justify-between rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:rounded-3xl sm:p-8">
               <div className="space-y-2">
                 <h3 className="text-sm font-black text-ink">Current photo</h3>
                 <p className="text-sm font-medium text-label">Remove the current photo from the card.</p>
@@ -191,7 +191,7 @@ export function CardForm({ profile, hasPhoto }: { profile: ProfileRow | null; ha
               </Button>
             </form>
           ) : (
-             <div className="flex items-center justify-center rounded-3xl border-2 border-dashed border-hairline bg-[#f8f9fa] p-8">
+             <div className="flex items-center justify-center rounded-2xl border-2 border-dashed border-hairline bg-[#f8f9fa] p-6 sm:rounded-3xl sm:p-8">
                <p className="text-sm font-bold text-label/40 uppercase tracking-widest">No photo uploaded</p>
              </div>
           )}

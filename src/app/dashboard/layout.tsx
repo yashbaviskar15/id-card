@@ -9,7 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const owner = await requireOwner();
 
   return (
-    <div className="min-h-dvh bg-[#f8f9fa]">
+    <div className="min-h-dvh min-w-0 bg-[#f8f9fa]">
       <header className="no-print sticky top-0 z-30 border-b border-hairline bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-4 xl:gap-6">
@@ -87,7 +87,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">{children}</main>
+      <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">{children}</main>
     </div>
   );
 }

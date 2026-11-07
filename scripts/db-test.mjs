@@ -158,15 +158,25 @@ try {
      values ($1, 'phone', 'Mobile', '+10000000000', true, 2)`,
     [ownerA],
   );
+  await client.query(
+    `insert into public.fields (owner_id, kind, label, value, is_public, sort)
+     values ($1, 'social_link', 'LinkedIn', 'https://www.linkedin.com/in/owner-a', true, 3)`,
+    [ownerA],
+  );
+  await client.query(
+    `insert into public.fields (owner_id, kind, label, value, is_public, sort)
+     values ($1, 'social_link', 'Private profile', 'https://example.invalid/private', false, 4)`,
+    [ownerA],
+  );
   // A private note + an encrypted sensitive value (must never reach a visitor).
   await client.query(
     `insert into public.fields (owner_id, kind, label, value, is_public, sort)
-     values ($1, 'note', 'Private', 'seed-marker-note', false, 3)`,
+     values ($1, 'note', 'Private', 'seed-marker-note', false, 5)`,
     [ownerA],
   );
   await client.query(
     `insert into public.fields (owner_id, kind, label, value_encrypted, is_sensitive, is_public, sort)
-     values ($1, 'account_record', 'Bank', 'v1.k1.nonce.ciphertext.tag', true, false, 4)`,
+     values ($1, 'account_record', 'Bank', 'v1.k1.nonce.ciphertext.tag', true, false, 6)`,
     [ownerA],
   );
 
@@ -348,6 +358,8 @@ try {
     assert(prof.address === null, 'contact grant leaked address');
     assert(Array.isArray(prof.emails) && prof.emails.length === 1, 'public email missing');
     assert(Array.isArray(prof.phones) && prof.phones.length === 1, 'public phone missing');
+    assert(Array.isArray(prof.social_links) && prof.social_links.length === 1, 'public social link missing');
+    assert(prof.social_links[0].value === 'https://www.linkedin.com/in/owner-a', 'wrong public social link returned');
   });
 
   await test('A-T6b full scope still excludes sensitive/notes/documents', async () => {
@@ -369,6 +381,7 @@ try {
     assert(!prof.includes('seed-marker-note'), 'note leaked into granted profile');
     assert(!prof.includes('v1.k1.nonce.ciphertext.tag'), 'encrypted value leaked');
     assert(!/aadhaar|pan|account/i.test(prof) || !prof.includes('Bank'), 'sensitive record leaked');
+    assert(!prof.includes('example.invalid/private'), 'private social link leaked');
     void v;
   });
 
@@ -446,14 +459,28 @@ try {
     }
   });
 
-  // --- constraint sanity: only emails/phones may be public ----------------
-  await test('A-T10 only email/phone may be public', async () => {
+  // --- constraint sanity: only shareable, non-sensitive kinds may be public -
+  await test('A-T10 public social links are allowed but other public kinds are rejected', async () => {
     await asPostgres();
+    const count = await scalar(
+      `select count(*) from public.fields where owner_id = $1 and kind = 'social_link' and is_public`,
+      [ownerA],
+    );
+    assert(Number(count) === 1, 'public social link could not be saved');
     await expectError(
       () =>
         client.query(
           `insert into public.fields (owner_id, kind, label, value, is_public)
            values ($1, 'address', 'Home', '1 Road', true)`,
+          [ownerA],
+        ),
+      'fields_public_kind_only',
+    );
+    await expectError(
+      () =>
+        client.query(
+          `insert into public.fields (owner_id, kind, label, value, is_public, is_sensitive)
+           values ($1, 'social_link', 'Sensitive link', 'https://example.invalid', true, true)`,
           [ownerA],
         ),
       'fields_public_kind_only',

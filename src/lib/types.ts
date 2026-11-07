@@ -8,6 +8,7 @@ export type AccessScope = 'contact' | 'full';
 export type FieldKind =
   | 'email'
   | 'phone'
+  | 'social_link'
   | 'address'
   | 'family_contact'
   | 'emergency_contact'
@@ -17,7 +18,7 @@ export type FieldKind =
   | 'custom';
 
 /** Only these kinds may ever be exposed to a visitor (enforced in the database too). */
-export const PUBLIC_FIELD_KINDS = ['email', 'phone'] as const satisfies readonly FieldKind[];
+export const PUBLIC_FIELD_KINDS = ['email', 'phone', 'social_link'] as const satisfies readonly FieldKind[];
 
 export type GrantStatus = 'active' | 'used' | 'expired' | 'revoked';
 
@@ -194,6 +195,8 @@ export interface GrantedProfile {
   address: string | null;
   emails: GrantContactItem[];
   phones: GrantContactItem[];
+  /** Public, non-sensitive HTTPS links selected by the owner. */
+  social_links: GrantContactItem[];
   /** Shared documents the owner opted into for this specific grant. */
   documents: GrantDocument[];
   can_view_documents: boolean;
