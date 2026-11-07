@@ -248,7 +248,7 @@ function DocumentsSection({
                 </div>
                 <span className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-hairline px-3 text-sm font-semibold text-ink transition-colors group-hover:border-ink">
                   <Download className="h-4 w-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">Download</span>
+                  <span>Download</span>
                 </span>
               </a>
             </li>
@@ -277,25 +277,23 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
 
   return (
     <div className="min-h-dvh bg-muted/50">
-      <main className="mx-auto w-full max-w-7xl px-4 pb-28 pt-6 sm:px-6 sm:py-10 lg:px-8">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-3 pb-28 pt-4 sm:px-6 sm:py-8 lg:px-8">
         <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-label">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-white">
-                <Contact className="h-4 w-4" aria-hidden="true" />
+          <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm sm:rounded-3xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-ink px-4 py-3 text-white sm:px-7 sm:py-4">
+              <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                  <Contact className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <span>Private identity</span>
+              </div>
+              <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold">
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                Temporary access active
               </span>
-              Private identity
             </div>
-            <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-hairline bg-white px-3 text-xs font-semibold text-ink">
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-              Access granted
-            </span>
-          </div>
-
-          <section className="overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm sm:rounded-3xl">
-            <div className="h-1.5 bg-ink" />
-            <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-7 lg:p-8">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center self-center overflow-hidden rounded-2xl border border-hairline bg-muted sm:h-28 sm:w-28 sm:self-auto">
+            <div className="flex min-w-0 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-7 lg:p-8">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center self-center overflow-hidden rounded-2xl border-4 border-white bg-muted shadow-md sm:h-28 sm:w-28 sm:self-auto">
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -309,18 +307,18 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
                 )}
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-left">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-label">Shared identity profile</p>
-                <h1 className="mt-2 break-words text-2xl font-bold tracking-tight text-ink sm:text-3xl lg:text-4xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-label">Shared with you</p>
+                <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink sm:text-3xl lg:text-4xl [overflow-wrap:anywhere]">
                   {profile.full_name}
                 </h1>
-                <div className="mt-4 flex justify-center sm:justify-start">
+                <div className="mt-3 flex justify-center sm:justify-start">
                   <SessionTimer until={profile.session_expires_at} />
                 </div>
               </div>
             </div>
           </section>
 
-          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] lg:gap-6">
+          <div className="grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] lg:gap-6">
             <div className="min-w-0 space-y-5">
               {profile.emails.length > 0 || profile.phones.length > 0 ? (
                 <section className="space-y-3">
@@ -328,7 +326,7 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
                     <h2 className="text-lg font-semibold text-ink">Contact information</h2>
                     <p className="text-sm text-label">Choose the most convenient way to get in touch.</p>
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4">
                     <ContactBlock title="Email" items={profile.emails} kind="email" />
                     <ContactBlock title="Phone" items={profile.phones} kind="phone" />
                   </div>
@@ -351,7 +349,7 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
               ) : null}
             </div>
 
-            <aside className="min-w-0 space-y-5">
+            <aside className="min-w-0 space-y-4 sm:space-y-5">
               <DocumentsSection
                 slug={slug}
                 documents={profile.documents ?? []}

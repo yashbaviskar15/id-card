@@ -30,9 +30,9 @@ export default async function CardPage() {
   const card = profile ? await loadCardData(owner.id) : null;
 
   return (
-    <div className="min-w-0 space-y-5 sm:space-y-8">
+    <div className="w-full min-w-0 space-y-5 sm:space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Card &amp; QR</h1>
+        <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">Card &amp; QR</h1>
         <p className="mt-1 max-w-prose text-sm text-label">
           The card and its QR code are generated from what you save here. The QR encodes only your
           permanent link — editing anything below never changes it.
@@ -41,22 +41,22 @@ export default async function CardPage() {
 
       {card ? (
         <>
-          <section className="grid min-w-0 gap-5 lg:grid-cols-2 lg:gap-8">
-            <div className="space-y-4">
+          <section aria-label="Card previews" className="grid w-full min-w-0 gap-4 sm:gap-6 lg:grid-cols-2 lg:gap-8">
+            <div className="min-w-0 space-y-3 sm:space-y-4">
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
                 <h2 className="text-[10px] font-bold tracking-[0.25em] text-label uppercase">Front</h2>
               </div>
-              <div className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform md:hover:scale-[1.01] md:rounded-[32px]">
+              <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform md:hover:scale-[1.01] md:rounded-[32px]">
                 <ResponsiveCard face="front" data={card} />
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-3 sm:space-y-4">
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-ink/20" />
                 <h2 className="text-[10px] font-bold tracking-[0.25em] text-label uppercase">Back</h2>
               </div>
-              <div className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform md:hover:scale-[1.01] md:rounded-[32px]">
+              <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white p-1 shadow-[0_20px_50px_rgba(17,24,39,0.08)] transition-transform md:hover:scale-[1.01] md:rounded-[32px]">
                 <ResponsiveCard face="back" data={card} />
               </div>
             </div>
@@ -82,7 +82,7 @@ export default async function CardPage() {
                       <li key={item.href}>
                         <a
                           href={item.href}
-                          className="inline-block rounded-full border-2 border-hairline px-5 py-2 text-sm font-bold text-ink transition-all hover:border-ink hover:bg-ink hover:text-white active:scale-95"
+                          className="inline-flex min-h-11 max-w-full items-center rounded-full border-2 border-hairline px-3 py-2 text-xs font-bold text-ink transition-all hover:border-ink hover:bg-ink hover:text-white active:scale-95 sm:px-5 sm:text-sm"
                         >
                           {item.label}
                         </a>
@@ -98,7 +98,7 @@ export default async function CardPage() {
                       <li key={item.href}>
                         <a
                           href={item.href}
-                          className="inline-block rounded-full border-2 border-hairline px-5 py-2 text-sm font-bold text-ink transition-all hover:border-ink hover:bg-ink hover:text-white active:scale-95"
+                          className="inline-flex min-h-11 max-w-full items-center rounded-full border-2 border-hairline px-3 py-2 text-xs font-bold text-ink transition-all hover:border-ink hover:bg-ink hover:text-white active:scale-95 sm:px-5 sm:text-sm"
                         >
                           {item.label}
                         </a>
