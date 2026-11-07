@@ -6,7 +6,7 @@ import { SessionTimer } from '@/components/access/session-timer';
 import {
   CalendarDays,
   Contact,
-  Download,
+  Eye,
   ExternalLink,
   FileText,
   LockKeyhole,
@@ -234,10 +234,10 @@ function DocumentsSection({
           {documents.map((document) => (
             <li key={document.id}>
               <a
-                href={`/p/${slug}/doc/${document.id}`}
+                href={`/p/${slug}/doc/${document.id}/view`}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Download ${document.name}`}
+                aria-label={`View ${document.name}`}
                 className="group flex min-h-[76px] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60 focus-visible:z-10 sm:gap-4 sm:px-6"
               >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-hairline bg-white text-label">
@@ -250,8 +250,8 @@ function DocumentsSection({
                   <p className="mt-1 text-xs text-label">{formatSize(document.size)}</p>
                 </div>
                 <span className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-hairline px-3 text-sm font-semibold text-ink transition-colors group-hover:border-ink">
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                  <span>Download</span>
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                  <span>View</span>
                 </span>
               </a>
             </li>
@@ -260,7 +260,7 @@ function DocumentsSection({
         <div className="flex items-start gap-2 border-t border-subtle-line bg-muted/50 px-5 py-3 sm:px-6">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-label" aria-hidden="true" />
           <p className="text-xs leading-5 text-label">
-            Downloads require this active session. A recipient may keep a file after downloading it.
+            Visitor access opens a watermarked view. Screenshots and screen recording cannot be reliably blocked.
           </p>
         </div>
       </div>
