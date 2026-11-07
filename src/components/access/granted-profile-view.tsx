@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Contact,
   Download,
+  ExternalLink,
   FileText,
   Mail,
   MapPin,
@@ -105,6 +106,52 @@ function ContactBlock({
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+function safeSocialUrl(value: string): URL | null {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function SocialLinks({ items }: { items: GrantContactItem[] }) {
+  const links = items.flatMap((item, index) => {
+    const url = safeSocialUrl(item.value);
+    return url ? [{ ...item, url, key: `${item.label ?? 'link'}-${index}` }] : [];
+  });
+  if (links.length === 0) return null;
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold text-ink">Find me online</h2>
+        <p className="text-sm text-label">Profiles the owner chose to share.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {links.map((item) => (
+          <a
+            key={item.key}
+            href={item.url.toString()}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="group flex min-h-16 min-w-0 items-center gap-3 rounded-xl border border-hairline bg-white p-4 transition-colors hover:border-ink hover:bg-muted/40 focus-visible:outline-offset-2"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-ink">
+              <ExternalLink className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-ink">{item.label || 'Website'}</span>
+              <span className="mt-0.5 block truncate text-xs text-label">{item.url.hostname}</span>
+            </span>
+            <ExternalLink className="h-4 w-4 shrink-0 text-label group-hover:text-ink" aria-hidden="true" />
+          </a>
+        ))}
+      </div>
     </section>
   );
 }
@@ -287,6 +334,8 @@ export async function GrantedProfileView({ slug, profile }: { slug: string; prof
                   </div>
                 </section>
               ) : null}
+
+              <SocialLinks items={profile.social_links ?? []} />
 
               {profile.dob || profile.address ? (
                 <section className="rounded-2xl border border-hairline bg-white p-5 shadow-sm sm:p-6">

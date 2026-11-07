@@ -15,11 +15,15 @@ import { randomUUID } from 'node:crypto';
 import type { FieldKind } from '@/lib/types';
 
 const fieldSchema = z.object({
-  kind: z.enum(['email', 'phone', 'address', 'family_contact', 'emergency_contact', 'important_date', 'note', 'account_record', 'custom']),
-  label: z.string().min(1).max(80),
+  kind: z.enum(['email', 'phone', 'social_link', 'address', 'family_contact', 'emergency_contact', 'important_date', 'note', 'account_record', 'custom']),
+  label: z.string().trim().min(1).max(80),
   value: z.string().min(1).max(2000),
   is_public: z.boolean().default(false),
   is_sensitive: z.boolean().default(false),
+}).superRefine((field, ctx) => {
+  if (field.kind === 'social_link' && !isSafeSocialUrl(field.value)) {
+    ctx.addIssue({ code: 'custom', path: ['value'], message: 'Use a complete HTTPS link for this social profile.' });
+  }
 });
 
 const fieldIdSchema = z.uuid();
@@ -27,7 +31,16 @@ const fieldIdSchema = z.uuid();
 export type InfoActionResult = { ok: boolean; error?: string };
 
 function publicAllowed(kind: FieldKind): boolean {
-  return kind === 'email' || kind === 'phone';
+  return kind === 'email' || kind === 'phone' || kind === 'social_link';
+}
+
+function isSafeSocialUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;
+  } catch {
+    return false;
+  }
 }
 
 export async function addFieldAction(formData: FormData): Promise<InfoActionResult> {
@@ -38,7 +51,10 @@ export async function addFieldAction(formData: FormData): Promise<InfoActionResu
     is_public: formData.get('is_public') === 'true',
     is_sensitive: formData.get('is_sensitive') === 'true',
   });
-  if (!parsed.success) return { ok: false, error: 'Enter a valid label and value.' };
+  if (!parsed.success) {
+    const valueIssue = parsed.error.issues.find((issue) => issue.path.includes('value'));
+    return { ok: false, error: valueIssue?.message ?? 'Enter a valid label and value.' };
+  }
 
   const owner = await requireOwner('/dashboard/info');
   const supabase = await createUserClient();
@@ -117,6 +133,9 @@ export async function updateFieldAction(id: string, formData: FormData): Promise
   if (valueEntry !== null) {
     const value = z.string().trim().min(1).max(2000).safeParse(valueEntry);
     if (!value.success) return { ok: false, error: 'Values must be between 1 and 2000 characters.' };
+    if (current.kind === 'social_link' && !isSafeSocialUrl(value.data)) {
+      return { ok: false, error: 'Use a complete HTTPS link for this social profile.' };
+    }
     plainValue = value.data;
   }
 

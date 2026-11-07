@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth/session';
 import { getProfile, loadCardData } from '@/lib/card/load';
-import { IdCard } from '@/components/card/id-card';
+import { ResponsiveCard } from '@/components/card/responsive-card';
 import { qrPayload } from '@/lib/qr/payload';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ShieldCheck, QrCode, Globe, Settings, FileText } from 'lucide-react';
@@ -17,19 +17,19 @@ export default async function DashboardOverviewPage() {
   const card = profile ? await loadCardData(owner.id) : null;
 
   return (
-    <div className="space-y-12">
+    <div className="min-w-0 space-y-6 sm:space-y-10">
       <header className="relative">
         <div className="absolute -top-24 -left-24 h-64 w-64 rounded-full bg-ink/5 blur-3xl" />
-        <h1 className="text-4xl font-black tracking-tighter text-ink">Dashboard</h1>
-        <p className="mt-2 text-lg font-medium text-label max-w-2xl">
+        <h1 className="text-3xl font-black tracking-tighter text-ink sm:text-4xl">Dashboard</h1>
+        <p className="mt-2 max-w-2xl text-base font-medium text-label sm:text-lg">
           Welcome back. Manage your digital identity, secure vault, and access permissions from one place.
         </p>
       </header>
 
       {!profile || !card ? (
-        <section className="relative overflow-hidden rounded-[32px] border border-hairline bg-white p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
+        <section className="relative min-w-0 overflow-hidden rounded-3xl border border-hairline bg-white p-5 shadow-[0_20px_50px_rgba(0,0,0,0.04)] sm:rounded-[32px] sm:p-10">
           <div className="relative z-10 max-w-xl">
-            <h2 className="text-3xl font-black tracking-tight text-ink">Initialize Your Identity</h2>
+            <h2 className="text-2xl font-black tracking-tight text-ink sm:text-3xl">Initialize Your Identity</h2>
             <p className="mt-4 text-base font-medium leading-relaxed text-label">
               You haven&apos;t created your identity card yet. Setting it up generates a permanent QR code and a unique profile link that will stay yours forever.
             </p>
@@ -43,10 +43,10 @@ export default async function DashboardOverviewPage() {
           <div className="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-l from-ink/5 to-transparent hidden lg:block" />
         </section>
       ) : (
-        <div className="grid gap-8 lg:grid-cols-3">
-          <section className="lg:col-span-2 space-y-8">
-            <div className="rounded-[32px] border border-hairline bg-white p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.04)]">
-              <div className="flex items-center justify-between mb-8">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-3 lg:gap-8">
+          <section className="min-w-0 space-y-5 lg:col-span-2 lg:space-y-8">
+            <div className="min-w-0 rounded-3xl border border-hairline bg-white p-4 shadow-[0_20px_50px_rgba(0,0,0,0.02)] transition-shadow hover:shadow-[0_25px_60px_rgba(0,0,0,0.04)] sm:rounded-[32px] sm:p-8">
+              <div className="mb-4 flex items-center justify-between sm:mb-8">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-ink animate-pulse" />
                   <h2 className="text-[10px] font-black tracking-[0.3em] text-label uppercase">Live Preview</h2>
@@ -58,14 +58,14 @@ export default async function DashboardOverviewPage() {
                 </Link>
               </div>
               
-              <div className="flex justify-center items-center py-6 bg-[#f8f9fa] rounded-[24px] border border-hairline/50 overflow-hidden">
-                <div className="scale-[0.6] sm:scale-[0.8] lg:scale-[0.85] origin-center">
-                  <IdCard face="front" data={card} className="shadow-2xl" />
+              <div className="flex min-w-0 justify-center rounded-2xl border border-hairline/50 bg-[#f8f9fa] p-2 sm:rounded-[24px] sm:p-6">
+                <div className="w-full max-w-3xl min-w-0">
+                  <ResponsiveCard face="front" data={card} />
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-6">
               <div className="rounded-[28px] border border-hairline bg-white p-6 shadow-sm hover:shadow-md transition-all group">
                 <div className="h-12 w-12 rounded-2xl bg-ink/5 flex items-center justify-center text-ink mb-4 group-hover:bg-ink group-hover:text-white transition-all">
                   <FileText className="h-6 w-6" />
@@ -94,8 +94,8 @@ export default async function DashboardOverviewPage() {
             </div>
           </section>
 
-          <aside className="space-y-8">
-            <div className="rounded-[32px] border border-hairline bg-white p-8 shadow-sm">
+          <aside className="min-w-0 space-y-5 lg:space-y-8">
+            <div className="min-w-0 rounded-3xl border border-hairline bg-white p-5 shadow-sm sm:rounded-[32px] sm:p-8">
               <div className="flex items-center gap-3 mb-6">
                 <Globe className="h-5 w-5 text-ink" />
                 <h2 className="text-sm font-black text-ink uppercase tracking-wider">Permanent URL</h2>
@@ -114,7 +114,7 @@ export default async function DashboardOverviewPage() {
               </Link>
             </div>
 
-            <div className="rounded-[32px] border border-hairline bg-ink p-8 text-white shadow-xl shadow-ink/20">
+            <div className="min-w-0 rounded-3xl border border-hairline bg-ink p-5 text-white shadow-xl shadow-ink/20 sm:rounded-[32px] sm:p-8">
               <div className="flex items-center gap-3 mb-6 text-white/60">
                 <Settings className="h-5 w-5" />
                 <h2 className="text-sm font-black uppercase tracking-wider">Privacy Status</h2>

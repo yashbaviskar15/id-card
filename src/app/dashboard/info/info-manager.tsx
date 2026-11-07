@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Plus, Shield, ShieldOff, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Eye, EyeOff, Plus, Search, Shield, ShieldOff, Trash2, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,35 +24,67 @@ export interface InformationField {
 const KIND_LABELS: Record<FieldKind, string> = {
   email: 'Email',
   phone: 'Phone',
+  social_link: 'Social link',
   address: 'Address',
-  family_contact: 'Family Contact',
-  emergency_contact: 'Emergency',
-  important_date: 'Date',
+  family_contact: 'Family contact',
+  emergency_contact: 'Emergency contact',
+  important_date: 'Important date',
   note: 'Note',
   account_record: 'Account',
   custom: 'Custom',
 };
 
 const KINDS = Object.keys(KIND_LABELS) as FieldKind[];
+type SortMode = 'manual' | 'label-asc' | 'label-desc' | 'type';
+
+function canShare(kind: FieldKind) {
+  return kind === 'email' || kind === 'phone' || kind === 'social_link';
+}
 
 export function InfoManager({ initialFields }: { initialFields: InformationField[] }) {
   const [fields, setFields] = useState(initialFields);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<InformationField | null>(null);
+  const [selectedKind, setSelectedKind] = useState<FieldKind>('custom');
+  const [query, setQuery] = useState('');
+  const [sortMode, setSortMode] = useState<SortMode>('manual');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   useEffect(() => setFields(initialFields), [initialFields]);
 
+  const visibleFields = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase();
+    const result = fields.filter((field) => (
+      !needle
+      || field.label.toLocaleLowerCase().includes(needle)
+      || KIND_LABELS[field.kind].toLocaleLowerCase().includes(needle)
+      || field.value.toLocaleLowerCase().includes(needle)
+    ));
+
+    return result.sort((left, right) => {
+      if (sortMode === 'label-asc') return left.label.localeCompare(right.label);
+      if (sortMode === 'label-desc') return right.label.localeCompare(left.label);
+      if (sortMode === 'type') {
+        return KIND_LABELS[left.kind].localeCompare(KIND_LABELS[right.kind]) || left.sort - right.sort;
+      }
+      return left.sort - right.sort || left.label.localeCompare(right.label);
+    });
+  }, [fields, query, sortMode]);
+
   function beginAdd(kind: FieldKind = 'custom') {
     setEditing(null);
+    setSelectedKind(kind);
     setError(null);
     setFormOpen(true);
-    requestAnimationFrame(() => {
-      const kindInput = document.getElementById('field-kind') as HTMLSelectElement | null;
-      if (kindInput) kindInput.value = kind;
-    });
+  }
+
+  function beginEdit(field: InformationField) {
+    setEditing(field);
+    setSelectedKind(field.kind);
+    setError(null);
+    setFormOpen(true);
   }
 
   function submitField(formData: FormData) {
@@ -91,28 +123,24 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
     });
   }
 
-  const grouped = new Map<FieldKind, InformationField[]>();
-  for (const field of fields) {
-    const current = grouped.get(field.kind) ?? [];
-    current.push(field);
-    grouped.set(field.kind, current);
-  }
-
   return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-ink">Information Manager</h1>
-          <p className="mt-1 text-sm text-label">Manage your personal data and privacy settings.</p>
+    <div className="min-w-0 space-y-6">
+      <header className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-label">Your profile data</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">Information manager</h1>
+          <p className="mt-2 max-w-prose text-sm leading-6 text-label">
+            Organize your details and choose exactly what visitors can see.
+          </p>
         </div>
-        <Button type="button" className="h-9 gap-2" onClick={() => beginAdd()}>
+        <Button type="button" className="h-11 w-full gap-2 sm:w-auto" onClick={() => beginAdd()}>
           <Plus className="h-4 w-4" />
-          Add field
+          Add information
         </Button>
       </header>
 
       {error ? (
-        <Alert variant="destructive">
+        <Alert variant="destructive" role="alert">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
@@ -124,103 +152,227 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
             event.preventDefault();
             submitField(new FormData(event.currentTarget));
           }}
-          className="grid gap-4 rounded-xl border border-hairline bg-white p-5 sm:grid-cols-2"
+          className="grid min-w-0 gap-4 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-6"
         >
           <div className="space-y-1.5">
-            <Label htmlFor="field-kind">Type</Label>
+            <Label htmlFor="field-kind">Information type</Label>
             <select
               id="field-kind"
               name="kind"
-              defaultValue={editing?.kind ?? 'custom'}
+              value={selectedKind}
               disabled={Boolean(editing)}
-              className="h-9 w-full rounded-md border border-hairline bg-white px-3 text-sm"
+              onChange={(event) => setSelectedKind(event.target.value as FieldKind)}
+              className="h-11 w-full rounded-lg border border-hairline bg-white px-3 text-sm text-ink"
             >
               {KINDS.map((kind) => <option key={kind} value={kind}>{KIND_LABELS[kind]}</option>)}
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="field-label">Label</Label>
-            <Input id="field-label" name="label" required maxLength={80} defaultValue={editing?.label ?? ''} />
+            <Label htmlFor="field-label">{selectedKind === 'social_link' ? 'Platform or link name' : 'Label'}</Label>
+            <Input
+              id="field-label"
+              name="label"
+              required
+              maxLength={80}
+              defaultValue={editing?.label ?? ''}
+              placeholder={selectedKind === 'social_link' ? 'Instagram, LinkedIn, Discord…' : 'e.g. Personal email'}
+              className="h-11"
+            />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="field-value">Value</Label>
+          <div className="min-w-0 space-y-1.5 sm:col-span-2">
+            <Label htmlFor="field-value">{selectedKind === 'social_link' ? 'Profile URL' : 'Value'}</Label>
             <Input
               id="field-value"
               name="value"
+              type={selectedKind === 'social_link' ? 'url' : 'text'}
               required={!editing}
               maxLength={2000}
-              placeholder={editing ? 'Leave blank to keep the current value' : 'Enter a value'}
+              placeholder={editing ? 'Leave blank to keep the current value' : selectedKind === 'social_link' ? 'https://…' : 'Enter a value'}
+              className="h-11 min-w-0"
             />
+            {selectedKind === 'social_link' ? (
+              <p className="text-xs leading-5 text-label">Use the full HTTPS profile or invite URL. Visitors can open it in a new tab.</p>
+            ) : null}
           </div>
           {!editing ? (
-            <div className="flex flex-wrap gap-5 sm:col-span-2">
-              <label className="flex items-center gap-2 text-sm text-label">
-                <input type="checkbox" name="is_sensitive" value="true" />
-                Store as sensitive (encrypted)
+            <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:flex-wrap sm:gap-6">
+              <label className="flex min-h-11 items-center gap-2 text-sm text-label">
+                <input type="checkbox" name="is_sensitive" value="true" className="h-4 w-4 accent-ink" />
+                Store encrypted as sensitive
               </label>
-              <label className="flex items-center gap-2 text-sm text-label">
-                <input type="checkbox" name="is_public" value="true" />
-                Share with visitors (email or phone only)
-              </label>
+              {canShare(selectedKind) ? (
+                <label className="flex min-h-11 items-center gap-2 text-sm text-label">
+                  <input type="checkbox" name="is_public" value="true" className="h-4 w-4 accent-ink" />
+                  Share with visitors who have an active access code
+                </label>
+              ) : null}
             </div>
           ) : null}
-          <div className="flex gap-2 sm:col-span-2">
-            <Button type="submit" disabled={pending}>{pending ? 'Saving…' : editing ? 'Save changes' : 'Add information'}</Button>
-            <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
+          <div className="flex flex-col-reverse gap-2 sm:col-span-2 sm:flex-row">
+            <Button type="submit" disabled={pending} className="h-11">
+              {pending ? 'Saving…' : editing ? 'Save changes' : 'Add information'}
+            </Button>
+            <Button type="button" variant="outline" className="h-11" onClick={() => setFormOpen(false)}>Cancel</Button>
           </div>
         </form>
       ) : null}
 
-      <div className="space-y-8">
-        {KINDS.map((kind) => {
-          const items = grouped.get(kind) ?? [];
-          if (items.length === 0 && kind !== 'email' && kind !== 'phone') return null;
-          return (
-            <section key={kind} className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-label">{KIND_LABELS[kind]}</h2>
-                {items.length === 0 ? (
-                  <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => beginAdd(kind)}>
-                    <Plus className="h-3 w-3" /> Add
-                  </Button>
-                ) : null}
-              </div>
-              <div className="overflow-hidden divide-y divide-subtle-line rounded-xl border border-hairline bg-white">
-                {items.length > 0 ? items.map((field) => (
-                  <div key={field.id} className="flex items-center gap-4 px-4 py-3 hover:bg-muted/30">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-semibold text-label">{field.label}</span>
-                        {field.is_sensitive ? <Badge variant="outline" className="h-4 gap-0.5 px-1 text-[10px]"><Shield className="h-2.5 w-2.5" /> Sensitive</Badge> : null}
-                        {field.is_public ? <Badge variant="outline" className="h-4 gap-0.5 px-1 text-[10px]"><Eye className="h-2.5 w-2.5" /> Public</Badge> : null}
-                      </div>
-                      <div className="mt-0.5 truncate font-medium text-ink">{field.is_sensitive ? '••••••••••••' : field.value}</div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label={`${field.is_sensitive ? 'Stop protecting' : 'Protect'} ${field.label}`} disabled={pending} onClick={() => updateFlag(field, 'is_sensitive', !field.is_sensitive)}>
-                        {field.is_sensitive ? <ShieldOff className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-                      </Button>
-                      {kind === 'email' || kind === 'phone' ? (
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label={`${field.is_public ? 'Hide' : 'Share'} ${field.label}`} disabled={pending} onClick={() => updateFlag(field, 'is_public', !field.is_public)}>
-                          {field.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm" aria-label="Saved information">
+        <div className="flex flex-col gap-3 border-b border-hairline p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div>
+            <h2 className="text-base font-semibold text-ink">Saved information</h2>
+            <p className="mt-1 text-sm text-label" aria-live="polite">
+              {visibleFields.length} of {fields.length} {fields.length === 1 ? 'item' : 'items'}
+            </p>
+          </div>
+          <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(12rem,1fr)_11rem]">
+            <div className="relative min-w-0">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-label" aria-hidden="true" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search your information"
+                aria-label="Search saved information"
+                className="h-11 min-w-0 pl-9 pr-9"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => setQuery('')}
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-label hover:bg-muted hover:text-ink"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
+            <label className="relative">
+              <span className="sr-only">Sort information</span>
+              <select
+                value={sortMode}
+                onChange={(event) => setSortMode(event.target.value as SortMode)}
+                className="h-11 w-full appearance-none rounded-lg border border-hairline bg-white pl-3 pr-9 text-sm text-ink"
+              >
+                <option value="manual">Custom order</option>
+                <option value="label-asc">Name A to Z</option>
+                <option value="label-desc">Name Z to A</option>
+                <option value="type">Type</option>
+              </select>
+              <ArrowUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-label" aria-hidden="true" />
+            </label>
+          </div>
+        </div>
+
+        {visibleFields.length > 0 ? (
+          <div role="table" aria-label="Saved personal information">
+            <div
+              role="row"
+              className="hidden grid-cols-[minmax(9rem,1fr)_minmax(10rem,1.5fr)_minmax(7rem,0.7fr)_auto] gap-4 bg-muted/60 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-label md:grid"
+            >
+              <span role="columnheader">Information</span>
+              <span role="columnheader">Value</span>
+              <span role="columnheader">Visibility</span>
+              <span role="columnheader" className="text-right">Actions</span>
+            </div>
+            <div className="divide-y divide-subtle-line">
+              {visibleFields.map((field) => (
+                <div
+                  key={field.id}
+                  role="row"
+                  className="grid min-w-0 gap-3 p-4 transition-colors hover:bg-muted/20 md:grid-cols-[minmax(9rem,1fr)_minmax(10rem,1.5fr)_minmax(7rem,0.7fr)_auto] md:items-center md:gap-4 md:px-5"
+                >
+                  <div role="cell" className="min-w-0">
+                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-label md:hidden">Information</span>
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                      <span className="max-w-full truncate text-sm font-semibold text-ink">{field.label}</span>
+                      {field.is_sensitive ? (
+                        <Badge variant="outline" className="h-5 gap-1 px-1.5 text-[10px]">
+                          <Shield className="h-3 w-3" /> Sensitive
+                        </Badge>
                       ) : null}
-                      <Button type="button" variant="ghost" size="sm" className="h-8" disabled={pending} onClick={() => { setEditing(field); setFormOpen(true); setError(null); }}>
-                        Edit
-                      </Button>
-                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label={`Delete ${field.label}`} disabled={pending} onClick={() => removeField(field)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
+                    <span className="mt-1 block text-xs text-label">{KIND_LABELS[field.kind]}</span>
                   </div>
-                )) : (
-                  <div className="px-4 py-6 text-center text-sm text-label">No {KIND_LABELS[kind].toLowerCase()} added yet.</div>
-                )}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+                  <div role="cell" className="min-w-0">
+                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-label md:hidden">Value</span>
+                    <span className="block break-all text-sm font-medium text-ink md:truncate">
+                      {field.is_sensitive ? '••••••••••••' : field.value}
+                    </span>
+                  </div>
+                  <div role="cell" className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-label md:hidden">Visibility</span>
+                    {field.is_public ? (
+                      <Badge variant="outline" className="h-6 gap-1 px-2 text-[11px]">
+                        <Eye className="h-3 w-3" /> Visitor
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-label">Private</span>
+                    )}
+                  </div>
+                  <div role="cell" className="flex flex-wrap items-center justify-end gap-1 border-t border-subtle-line pt-2 md:border-0 md:pt-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10"
+                      aria-label={`${field.is_sensitive ? 'Stop protecting' : 'Protect'} ${field.label}`}
+                      disabled={pending}
+                      onClick={() => updateFlag(field, 'is_sensitive', !field.is_sensitive)}
+                    >
+                      {field.is_sensitive ? <ShieldOff className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+                    </Button>
+                    {canShare(field.kind) ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10"
+                        aria-label={`${field.is_public ? 'Hide' : 'Share'} ${field.label} with visitors`}
+                        disabled={pending || field.is_sensitive}
+                        onClick={() => updateFlag(field, 'is_public', !field.is_public)}
+                      >
+                        {field.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    ) : null}
+                    <Button type="button" variant="outline" size="sm" className="h-10" disabled={pending} onClick={() => beginEdit(field)}>
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-destructive"
+                      aria-label={`Delete ${field.label}`}
+                      disabled={pending}
+                      onClick={() => removeField(field)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="px-5 py-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-label">
+              {query ? <Search className="h-5 w-5" aria-hidden="true" /> : <Plus className="h-5 w-5" aria-hidden="true" />}
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-ink">{query ? 'No matching information' : 'Start building your profile'}</h3>
+            <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-label">
+              {query ? 'Try another name, value, or information type.' : 'Add contact details, important information, and social profiles. Nothing is shared until you choose to share it.'}
+            </p>
+            {query ? (
+              <Button type="button" variant="outline" className="mt-4" onClick={() => setQuery('')}>Clear search</Button>
+            ) : (
+              <Button type="button" className="mt-4 gap-2" onClick={() => beginAdd()}>
+                <Plus className="h-4 w-4" /> Add your first item
+              </Button>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
