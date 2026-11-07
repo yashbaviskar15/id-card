@@ -20,6 +20,7 @@ function buildVCard(profile: GrantedProfile): string {
 
   for (const item of profile.phones) lines.push(`TEL;TYPE=CELL:${esc(item.value)}`);
   for (const item of profile.emails) lines.push(`EMAIL;TYPE=INTERNET:${esc(item.value)}`);
+  for (const item of profile.social_links ?? []) lines.push(`URL:${esc(item.value)}`);
   if (profile.address) lines.push(`ADR;TYPE=HOME:;;${esc(profile.address)};;;;`);
   if (profile.dob) lines.push(`BDAY:${esc(profile.dob)}`);
 

@@ -1,14 +1,20 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { createServiceClient } from '@/lib/db/service';
 import { loadGrantedDocument } from '@/lib/access/visitor';
-import { signedServiceDownloadUrl } from '@/lib/storage';
+import { dispositionName, DOCUMENTS_BUCKET } from '@/lib/storage';
+import { log } from '@/lib/log';
 import { slugSchema } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 const NO_STORE = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate',
+  'Cache-Control': 'private, no-store, no-cache, must-revalidate',
   'X-Robots-Tag': 'noindex, nofollow, noarchive',
+  'X-Content-Type-Options': 'nosniff',
+  'Cross-Origin-Resource-Policy': 'same-origin',
 } as const;
 
 /**
@@ -17,8 +23,8 @@ const NO_STORE = {
  * It sits under `/p/<slug>`, so the path-scoped visitor cookie is required and
  * the grant is re-validated on this request. The database returns a storage
  * path only when the grant opted into documents and the document is still
- * shared; the file itself is then handed over through a ≤60 s signed URL, so no
- * link a visitor could keep ever outlives the session.
+ * shared. The bytes are proxied through this route instead of redirecting to a
+ * storage URL, so a copied storage link cannot survive grant revocation.
  */
 export async function GET(
   _request: NextRequest,
@@ -37,10 +43,20 @@ export async function GET(
     return new NextResponse('Unauthorized', { status: 401, headers: NO_STORE });
   }
 
-  const url = await signedServiceDownloadUrl(document.storagePath, document.name);
-  if (!url) {
+  const { data: file, error } = await createServiceClient()
+    .storage.from(DOCUMENTS_BUCKET).download(document.storagePath);
+  if (error || !file) {
+    log.warn('access.document download failed', { code: error?.name });
     return new NextResponse('Not found', { status: 404, headers: NO_STORE });
   }
 
-  return NextResponse.redirect(url, { status: 302, headers: NO_STORE });
+  return new NextResponse(file.stream(), {
+    status: 200,
+    headers: {
+      ...NO_STORE,
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(file.size),
+      'Content-Disposition': `attachment; filename="${dispositionName(document.name)}"`,
+    },
+  });
 }

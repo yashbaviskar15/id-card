@@ -3,16 +3,15 @@ import { log } from '@/lib/log';
 import { createServiceClient } from '@/lib/db/service';
 
 /**
- * Private Storage access. Every file lives in a private bucket under the owner's
- * folder, and the only way to read one is a signed URL that expires within 1 hour.
- * Public URLs are never generated anywhere in the app.
+ * Private Storage access. Visitor downloads are streamed through grant-checked
+ * routes; only owner card previews use a short-lived signed URL.
  */
 
 /** Private bucket that holds every owner file. Never public. */
 export const DOCUMENTS_BUCKET = 'documents';
 
-/** Signed URLs are valid for 1 hour to prevent expiry during slow loads or caching. */
-export const SIGNED_URL_TTL_SECONDS = 3600;
+/** Only used for owner card previews; downloads use authenticated routes. */
+export const SIGNED_URL_TTL_SECONDS = 300;
 
 const UNSAFE_DISPOSITION_CHARS = /[^A-Za-z0-9._-]+/g;
 
@@ -42,47 +41,5 @@ export async function signedUrlFor(path: string | null): Promise<string | null> 
     return null;
   }
   if (!data) return null;
-  return data.signedUrl;
-}
-
-/** Owner-scoped download URL: forces an attachment carrying the display name. */
-export async function signedDownloadUrl(path: string, filename: string): Promise<string | null> {
-  const supabase = createServiceClient();
-  const { data, error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, { download: dispositionName(filename) });
-  if (error || !data) return null;
-  return data.signedUrl;
-}
-
-/**
- * Service-role variants. Only ever called after an owner session, a visitor
- * session or a share link has been validated server side — situations where
- * there is no usable owner cookie to mint the URL with.
- */
-export async function signedServiceUrl(path: string | null): Promise<string | null> {
-  if (!path) return null;
-  const supabase = createServiceClient();
-  const { data, error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (error) {
-    console.error('storage.signedServiceUrl failed', { path, error });
-    log.warn('storage.signedServiceUrl failed', { path, code: error.name, message: error.message });
-    return null;
-  }
-  if (!data) return null;
-  return data.signedUrl;
-}
-
-export async function signedServiceDownloadUrl(path: string, filename: string): Promise<string | null> {
-  const supabase = createServiceClient();
-  const { data, error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, { download: dispositionName(filename) });
-  if (error) {
-    console.error('storage.signedServiceDownloadUrl failed', { path, error });
-  }
-  if (error || !data) return null;
   return data.signedUrl;
 }

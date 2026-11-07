@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { after } from 'next/server';
 import { headers } from 'next/headers';
-import { loadGrantedProfile, recordVisitorView, signedVisitorPhotoUrl } from '@/lib/access/visitor';
+import { loadGrantedProfile, recordVisitorView, visitorPhotoUrl } from '@/lib/access/visitor';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
 import { slugSchema } from '@/lib/validation';
 import { GrantedProfileView } from '@/components/access/granted-profile-view';
@@ -43,6 +43,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     });
   });
 
-  const photoUrl = await signedVisitorPhotoUrl(granted.profile.photo_path);
+  const photoUrl = visitorPhotoUrl(parsed.data, granted.profile.photo_path);
   return <GrantedProfileView slug={parsed.data} profile={granted.profile} photoUrl={photoUrl} />;
 }

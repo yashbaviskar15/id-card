@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/db/service';
-import { readVisitorSession, signedVisitorPhotoUrl } from '@/lib/access/visitor';
+import { readVisitorSession, visitorPhotoUrl } from '@/lib/access/visitor';
 import { log } from '@/lib/log';
 import { slugSchema } from '@/lib/validation';
 import type { GrantedProfile } from '@/lib/types';
@@ -125,7 +125,7 @@ export async function GET(
         const hash = JSON.stringify(profile);
         if (hash !== lastHash) {
           const photoChanged = profile.photo_path !== knownPhotoPath;
-          const photoUrl = photoChanged ? await signedVisitorPhotoUrl(profile.photo_path) : undefined;
+          const photoUrl = photoChanged ? visitorPhotoUrl(parsed.data, profile.photo_path) : undefined;
           if (closed) return;
           knownPhotoPath = profile.photo_path;
           lastHash = hash;

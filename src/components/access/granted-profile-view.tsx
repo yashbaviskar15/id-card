@@ -260,7 +260,7 @@ function DocumentsSection({
         <div className="flex items-start gap-2 border-t border-subtle-line bg-muted/50 px-5 py-3 sm:px-6">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-label" aria-hidden="true" />
           <p className="text-xs leading-5 text-label">
-            Downloads are temporary and only available while this access session is active.
+            Downloads require this active session. A recipient may keep a file after downloading it.
           </p>
         </div>
       </div>
@@ -471,6 +471,22 @@ export function GrantedProfileView({
                 <div className="mt-3 flex justify-center sm:justify-start">
                   <SessionTimer until={profile.session_expires_at} />
                 </div>
+                {profile.phones[0] || profile.emails[0] ? (
+                  <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
+                    {profile.phones[0] ? (
+                      <ActionLink href={`tel:${profile.phones[0].value.replace(/[^\d+]/g, '')}`}>
+                        <Phone aria-hidden="true" />
+                        Call
+                      </ActionLink>
+                    ) : null}
+                    {profile.emails[0] ? (
+                      <ActionLink href={`mailto:${encodeURIComponent(profile.emails[0].value)}`}>
+                        <Mail aria-hidden="true" />
+                        Email
+                      </ActionLink>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           </section>
@@ -488,7 +504,20 @@ export function GrantedProfileView({
                     <ContactBlock title="Phone" items={profile.phones} kind="phone" />
                   </div>
                 </section>
-              ) : null}
+              ) : (
+                <section className="surface shadow-card flex items-start gap-3 p-5 sm:p-6">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-label">
+                    <LockKeyhole className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-semibold text-ink">Contact details are private</h2>
+                    <p className="mt-1 text-sm leading-6 text-label">
+                      The owner has not shared an email address or phone number for this visit.
+                      You can use any social links shown below.
+                    </p>
+                  </div>
+                </section>
+              )}
 
               <SocialLinks items={profile.social_links ?? []} />
 
@@ -517,7 +546,7 @@ export function GrantedProfileView({
                 <div>
                   <h2 className="text-sm font-semibold text-ink">Private by design</h2>
                   <p className="mt-1 text-sm leading-5 text-label">
-                    This view is temporary. Shared information and documents are available only for this session.
+                    This page closes when the session ends. Recipients may keep information or files they already saved.
                   </p>
                 </div>
               </div>
