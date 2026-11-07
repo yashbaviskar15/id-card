@@ -9,8 +9,22 @@ import { AccessHistory, type EventRow, type GrantRow } from './access-history';
 import type { AccessScope } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
+const GRANTS_PAGE_SIZE = 10;
+const EVENTS_PAGE_SIZE = 10;
 
-export default async function AccessPage() {
+function readPage(value: string | undefined): number {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, 100_000) : 1;
+}
+
+export default async function AccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ grantPage?: string; eventPage?: string }>;
+}) {
+  const params = await searchParams;
+  const grantPage = readPage(params.grantPage);
+  const eventPage = readPage(params.eventPage);
   const owner = await requireOwner('/dashboard/access');
   const [reauthenticated, supabase] = await Promise.all([
     isReauthenticated(owner.id),
@@ -23,14 +37,16 @@ export default async function AccessPage() {
       .select('id, scope, include_documents, created_at, expires_at, used_at, session_expires_at, revoked_at')
       .eq('owner_id', owner.id)
       .order('created_at', { ascending: false })
-      .limit(25)
+      .order('id', { ascending: false })
+      .range((grantPage - 1) * GRANTS_PAGE_SIZE, grantPage * GRANTS_PAGE_SIZE)
       .returns<GrantRow[]>(),
     supabase
       .from('access_log')
       .select('id, outcome, ip_hash, user_agent, created_at')
       .eq('owner_id', owner.id)
       .order('created_at', { ascending: false })
-      .limit(40)
+      .order('id', { ascending: false })
+      .range((eventPage - 1) * EVENTS_PAGE_SIZE, eventPage * EVENTS_PAGE_SIZE)
       .returns<EventRow[]>(),
     supabase
       .from('owner_settings')
@@ -44,8 +60,12 @@ export default async function AccessPage() {
       .eq('is_shared', true),
   ]);
 
-  const grants = grantsResult.data ?? [];
-  const events = eventsResult.data ?? [];
+  const grantRows = grantsResult.data ?? [];
+  const eventRows = eventsResult.data ?? [];
+  const grantsHasNext = grantRows.length > GRANTS_PAGE_SIZE;
+  const eventsHasNext = eventRows.length > EVENTS_PAGE_SIZE;
+  const grants = grantRows.slice(0, GRANTS_PAGE_SIZE);
+  const events = eventRows.slice(0, EVENTS_PAGE_SIZE);
   const sharedCount = sharedCountResult.count ?? 0;
   const now = Date.now();
 
@@ -81,7 +101,15 @@ export default async function AccessPage() {
         <ReauthPanel action="hand out a code" />
       )}
 
-      <AccessHistory grants={grants} events={events} now={now} />
+      <AccessHistory
+        grants={grants}
+        events={events}
+        now={now}
+        grantPage={grantPage}
+        eventPage={eventPage}
+        grantsHasNext={grantsHasNext}
+        eventsHasNext={eventsHasNext}
+      />
     </div>
   );
 }
