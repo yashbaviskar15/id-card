@@ -62,7 +62,7 @@ export function CardForm({
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedPhoto) {
+    if (!selectedPhoto || !/\.(jpe?g|png|webp)$/i.test(selectedPhoto.name)) {
       setSelectedPhotoUrl(null);
       return;
     }
@@ -175,26 +175,30 @@ export function CardForm({
                   id="photo" 
                   name="photo" 
                   type="file" 
-                  accept="image/png,image/jpeg,image/webp,image/heic,image/tiff" 
-                onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
+                  accept="image/png,image/jpeg,image/webp,image/heic,image/heif,image/tiff"
+                  onChange={(event) => setSelectedPhoto(event.target.files?.[0] ?? null)}
                   className="h-14 rounded-2xl border-hairline file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-black file:bg-ink file:text-white file:cursor-pointer transition-all hover:border-ink"
                 />
               </div>
-            {selectedPhotoUrl ? (
+              {selectedPhoto ? (
               <div className="flex items-center gap-3 rounded-xl border border-hairline bg-muted/30 p-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selectedPhotoUrl}
-                  alt="Selected photo preview"
-                  className="h-20 w-16 shrink-0 rounded-lg border border-hairline bg-white object-contain"
-                />
+                {selectedPhotoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={selectedPhotoUrl}
+                    alt="Selected photo preview"
+                    className="h-20 w-16 shrink-0 rounded-lg border border-hairline bg-white object-contain"
+                  />
+                ) : (
+                  <span className="flex h-20 w-16 shrink-0 items-center justify-center rounded-lg border border-hairline bg-white text-xs font-semibold text-label">Image</span>
+                )}
                 <p className="min-w-0 break-words text-sm font-medium text-label">
-                  Preview shows the full photo without cropping.
+                  {selectedPhotoUrl ? 'Full photo preview, without cropping.' : 'This image will be optimized and shown after upload.'}
                 </p>
               </div>
             ) : null}
               <p className="text-[10px] font-bold text-label uppercase tracking-widest">
-                PNG, JPEG, WebP · Max 8 MB
+                PNG, JPEG, WebP, HEIC, TIFF · Max 8 MB. Auto-rotated and optimized for display.
               </p>
             </div>
 

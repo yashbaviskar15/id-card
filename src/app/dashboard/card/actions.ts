@@ -12,6 +12,7 @@ import { writeAudit } from '@/lib/audit';
 import { log } from '@/lib/log';
 import { requireOwner } from '@/lib/auth/session';
 import { storagePathFor, validateUpload } from '@/lib/files/validate';
+import { normalizeProfilePhoto } from '@/lib/files/normalize-photo';
 import type { FormState } from '@/app/(auth)/form-state';
 
 const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
@@ -141,21 +142,41 @@ export async function uploadPhotoAction(_prev: FormState, formData: FormData): P
       too_large: 'The photo is too large.',
       empty: 'That file is empty.',
       blocked_extension: 'That file type is not allowed.',
-      type_not_allowed: 'Use a PNG, JPEG, WebP, HEIC or TIFF image.',
+      type_not_allowed: 'Use a PNG, JPEG, WebP, HEIC, HEIF or TIFF image.',
       type_mismatch: 'That file does not look like an image.',
       content_mismatch: 'The file contents do not match its name.',
     };
     return { ok: false, error: messages[validated.reason] ?? 'That file cannot be used.' };
   }
 
+  let photoBuffer: Buffer;
+  try {
+    photoBuffer = await normalizeProfilePhoto(validated.data.buffer);
+  } catch (cause) {
+    log.warn('photo.normalize failed', {
+      message: cause instanceof Error ? cause.message : 'unknown error',
+      mime: validated.data.mime,
+    });
+    return { ok: false, error: 'Could not read this image. Save it as JPEG or PNG and try again.' };
+  }
+
+  const photoData = {
+    ...validated.data,
+    mime: 'image/jpeg',
+    extension: 'jpg',
+    safeName: validated.data.safeName.replace(/\.[^.]+$/, '') || 'profile-photo',
+    size: photoBuffer.byteLength,
+    buffer: photoBuffer,
+  };
+
   const supabase = await createUserClient();
   const previous = (await getProfile(owner.id))?.photo_path ?? null;
-  const objectPath = storagePathFor(owner.id, validated.data);
+  const objectPath = storagePathFor(owner.id, photoData);
 
   const upload = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .upload(objectPath, validated.data.buffer, {
-      contentType: validated.data.mime,
+    .upload(objectPath, photoData.buffer, {
+      contentType: photoData.mime,
       upsert: false,
     });
   if (upload.error) {
@@ -181,7 +202,7 @@ export async function uploadPhotoAction(_prev: FormState, formData: FormData): P
     actor: 'owner',
     action: 'profile.photo_set',
     entityType: 'profile',
-    detail: { mime: validated.data.mime, size: validated.data.size },
+    detail: { mime: photoData.mime, size: photoData.size },
     ipHash,
     userAgent,
   });
