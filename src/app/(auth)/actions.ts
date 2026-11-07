@@ -224,14 +224,31 @@ export async function changePasswordAction(_prev: FormState, formData: FormData)
   const { error } = await supabase.auth.updateUser({ password: parsed.data });
   if (error) return { ok: false, error: 'Could not update the password. Try again.' };
 
-  // Invalidate every other session, then report success.
-  await supabase.auth.signOut({ scope: 'others' }).catch(() => {});
+  // Password change and session revocation are separate operations.
+  let otherSessionsSignedOut = true;
+  try {
+    const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
+    otherSessionsSignedOut = !signOutError;
+    if (signOutError) {
+      log.warn('auth.password_changed session revocation failed', { message: signOutError.message });
+    }
+  } catch (cause) {
+    otherSessionsSignedOut = false;
+    log.warn('auth.password_changed session revocation failed', {
+      message: cause instanceof Error ? cause.message : 'unknown error',
+    });
+  }
   await clearReauthenticated();
 
   const { ipHash, userAgent } = await requestContext();
   await writeAudit({ ownerId, actor: 'owner', action: 'auth.password_changed', ipHash, userAgent });
   await alertPasswordChanged();
-  return { ok: true, message: 'Password changed. Every other device has been signed out.' };
+  return {
+    ok: true,
+    message: otherSessionsSignedOut
+      ? 'Password changed. Every other device has been signed out.'
+      : 'Password changed, but other devices could not be signed out. Sign them out from session security.',
+  };
 }
 
 /* ---------------------------- complete reset ------------------------------ */
