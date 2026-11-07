@@ -15,7 +15,7 @@ export function ForgotForm() {
   return (
     <form action={action} className="mt-7 space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-semibold text-ink">Account email</Label>
+        <Label htmlFor="email" className="font-medium text-ink">Account email</Label>
         <Input
           id="email"
           name="email"
@@ -25,7 +25,7 @@ export function ForgotForm() {
           aria-describedby="reset-link-help"
           required
           autoFocus
-          className="h-12 rounded-xl border-hairline focus:border-ink focus:ring-ink"
+          className="h-11 border-hairline focus:border-ink focus:ring-ink"
         />
         <p id="reset-link-help" className="text-xs leading-5 text-label">
           The secure link expires after 30 minutes and can only be used once.
@@ -33,18 +33,18 @@ export function ForgotForm() {
       </div>
 
       {state.message ? (
-        <Alert role="status" className="rounded-xl">
+        <Alert role="status">
           <AlertDescription className="leading-5">{state.message}</AlertDescription>
         </Alert>
       ) : null}
 
-      <Button type="submit" className="h-12 w-full rounded-xl font-bold" disabled={pending}>
+      <Button type="submit" className="h-11 w-full font-medium" disabled={pending}>
         {pending ? 'Sending…' : 'Email me a reset link'}
       </Button>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-sm text-label">
         Remember your password?{' '}
-        <Link href="/login" className="font-semibold text-ink underline underline-offset-4">
+        <Link href="/login" className="font-medium text-ink underline underline-offset-4">
           Sign in
         </Link>
       </p>

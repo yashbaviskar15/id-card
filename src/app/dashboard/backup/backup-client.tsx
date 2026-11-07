@@ -54,21 +54,21 @@ export function BackupClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:space-y-8">
       <header>
-        <h1 className="text-xl font-bold text-ink">Backup &amp; Export</h1>
+        <h1 className="page-title">Backup &amp; export</h1>
         <p className="mt-1 text-sm text-label">Download your vault and personal records.</p>
       </header>
 
       {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <section className="space-y-4 rounded-xl border border-hairline bg-white p-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <Database className="h-5 w-5 text-ink" />
+        <section className="surface shadow-card space-y-4 p-5 sm:p-6">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+            <Database className="h-4.5 w-4.5 text-ink" />
           </div>
           <div>
-            <h2 className="font-bold text-ink">Database Export</h2>
+            <h2 className="text-sm font-semibold text-ink">Database export</h2>
             <p className="mt-1 text-sm text-label">
               Download profile data, personal fields, and document metadata in JSON or CSV format.
             </p>
@@ -79,23 +79,23 @@ export function BackupClient() {
           </div>
         </section>
 
-        <section className="space-y-4 rounded-xl border border-hairline bg-white p-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <FileArchive className="h-5 w-5 text-ink" />
+        <section className="surface shadow-card space-y-4 p-5 sm:p-6">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+            <FileArchive className="h-4.5 w-4.5 text-ink" />
           </div>
           <div>
-            <h2 className="font-bold text-ink">File Archive</h2>
+            <h2 className="text-sm font-semibold text-ink">File archive</h2>
             <p className="mt-1 text-sm text-label">Download a ZIP archive containing every document in your vault.</p>
           </div>
           <DownloadLink href="/api/backup?format=zip">Download ZIP</DownloadLink>
           <p className="text-xs text-label">This archive is not encrypted. Store it in a secure location.</p>
         </section>
 
-        <section className="space-y-4 rounded-xl border border-hairline bg-ink p-6 text-white sm:col-span-2">
+        <section className="space-y-4 rounded-xl border border-ink bg-ink p-5 text-white sm:col-span-2 sm:p-6">
           <div className="flex items-start gap-4">
-            <Shield className="mt-1 h-6 w-6 shrink-0" />
+            <Shield className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="w-full space-y-3">
-              <h2 className="font-bold">Encrypted Full Backup</h2>
+              <h2 className="text-sm font-semibold">Encrypted full backup</h2>
               <p className="text-sm text-white/80">
                 Create one AES-256-GCM encrypted file with your personal data and documents. The passphrase cannot be recovered.
               </p>

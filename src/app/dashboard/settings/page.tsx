@@ -15,9 +15,9 @@ export default async function SettingsPage() {
     .single();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:space-y-8">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Settings</h1>
+        <h1 className="page-title">Settings</h1>
         <p className="mt-1 text-sm text-label">
           Manage your account security and preferences.
         </p>

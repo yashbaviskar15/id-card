@@ -138,13 +138,12 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
     <div className="min-w-0 space-y-6">
       <header className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-label">Your profile data</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">Information manager</h1>
-          <p className="mt-2 max-w-prose text-sm leading-6 text-label">
+          <h1 className="page-title">Information manager</h1>
+          <p className="mt-1 max-w-prose text-sm text-label">
             Organize your details and choose exactly what visitors can see.
           </p>
         </div>
-        <Button type="button" className="h-11 w-full gap-2 sm:w-auto" onClick={() => beginAdd()}>
+        <Button type="button" className="h-10 w-full gap-2 px-4 font-medium sm:w-auto" onClick={() => beginAdd()}>
           <Plus className="h-4 w-4" />
           Add information
         </Button>
@@ -163,7 +162,7 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
             event.preventDefault();
             submitField(new FormData(event.currentTarget));
           }}
-          className="grid min-w-0 gap-4 rounded-2xl border border-hairline bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-6"
+          className="surface shadow-card grid min-w-0 gap-4 p-5 sm:grid-cols-2 sm:p-6"
         >
           <div className="space-y-1.5">
             <Label htmlFor="field-kind">Information type</Label>
@@ -228,7 +227,7 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
         </form>
       ) : null}
 
-      <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm" aria-label="Saved information">
+      <section className="surface shadow-card min-w-0 overflow-hidden" aria-label="Saved information">
         <div className="flex flex-col gap-3 border-b border-hairline p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div>
             <h2 className="text-base font-semibold text-ink">Saved information</h2>

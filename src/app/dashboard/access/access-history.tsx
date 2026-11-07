@@ -242,10 +242,10 @@ export function AccessHistory({
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm">
+      <section className="surface shadow-card min-w-0 overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-subtle-line p-4 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-ink">Access codes</h2>
+            <h2 className="text-sm font-semibold text-ink">Access codes</h2>
             <p className="mt-1 text-sm text-label">
               10 codes per page. Revoking a code ends its live session.
             </p>
@@ -317,10 +317,10 @@ export function AccessHistory({
         />
       </section>
 
-      <section className="min-w-0 overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm">
+      <section className="surface shadow-card min-w-0 overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-subtle-line p-4 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-ink">Access log</h2>
+            <h2 className="text-sm font-semibold text-ink">Access log</h2>
             <p className="mt-1 text-sm text-label">
               10 events per page. IP addresses are stored as one-way digests, never as real addresses.
             </p>

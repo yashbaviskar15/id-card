@@ -10,27 +10,24 @@ export function AuthScreen({
   children: ReactNode;
 }) {
   return (
-    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#f8f9fa] px-4 py-10 sm:px-6 sm:py-14">
-      <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full bg-ink/5 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-48 -right-40 h-[30rem] w-[30rem] rounded-full bg-ink/5 blur-3xl" />
-
-      <div className="relative z-10 w-full max-w-md">
-        <header className="mb-7 flex flex-col items-center text-center sm:mb-8">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-ink text-2xl font-black text-white shadow-lg shadow-ink/15">
+    <main className="bg-page flex min-h-dvh items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
+      <div className="w-full max-w-md">
+        <header className="mb-6 flex flex-col items-center text-center">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink text-base font-semibold text-white">
             P
-          </div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-label">Private Identity</p>
+          </span>
+          <p className="eyebrow mt-3">Private Identity</p>
         </header>
 
-        <section className="rounded-3xl border border-hairline bg-white p-6 shadow-[0_24px_70px_rgba(17,24,39,0.08)] sm:p-9">
+        <section className="surface shadow-card p-6 sm:p-8">
           <div className="text-center">
-            <h1 className="text-2xl font-black tracking-tight text-ink sm:text-3xl">{title}</h1>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-label sm:text-base">{description}</p>
+            <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">{title}</h1>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-label">{description}</p>
           </div>
           {children}
         </section>
 
-        <p className="mt-6 text-center text-xs font-semibold text-label/60">
+        <p className="mt-6 text-center text-xs text-label">
           Private Identity Vault · Secure owner access
         </p>
       </div>
