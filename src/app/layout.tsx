@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { InteractionGuard } from '@/components/security/interaction-guard';
 import './globals.css';
 
 /**
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={manrope.variable}>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
+        <InteractionGuard />
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster position="top-center" />
       </body>
