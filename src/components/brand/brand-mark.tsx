@@ -18,7 +18,7 @@ export function BrandMark({
       alt={title}
       width={40}
       height={40}
-      className={cn('shrink-0', className)}
+      className={cn('brand-mark shrink-0', className)}
       unoptimized
     />
   );
