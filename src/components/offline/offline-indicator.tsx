@@ -38,17 +38,27 @@ export function OfflineIndicator() {
 
   const showInstall = Boolean(installEvent) && !installed;
   if (online !== false && pending === 0 && !showInstall) return null;
+  const installOnly = showInstall && online !== false && pending === 0;
 
   async function install() {
     if (!installEvent) return;
-    await installEvent.prompt();
-    await installEvent.userChoice;
-    setInstallEvent(null);
+    try {
+      await installEvent.prompt();
+      await installEvent.userChoice;
+    } catch {
+      // A browser may reject a stale install prompt.
+    } finally {
+      setInstallEvent(null);
+    }
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3 print:hidden">
-      <div className="flex w-full max-w-3xl flex-wrap items-center gap-3 rounded-xl border border-subtle-line bg-white/95 px-4 py-3 text-sm shadow-card backdrop-blur">
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] print:hidden lg:left-64 lg:justify-end lg:px-6">
+      <div
+        className={`flex w-full flex-wrap items-center gap-3 rounded-xl border border-subtle-line bg-white/95 px-4 py-3 text-sm shadow-card backdrop-blur ${
+          installOnly ? 'max-w-md sm:flex-nowrap sm:justify-between' : 'max-w-3xl'
+        }`}
+      >
         {online === false ? (
           <div className="flex min-w-0 flex-1 items-start gap-2 text-ink">
             <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -68,7 +78,14 @@ export function OfflineIndicator() {
           </span>
         ) : null}
 
-        <span className="grow" />
+        {installOnly ? (
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-ink">Install Private Identity</p>
+            <p className="text-xs leading-5 text-label">Add the app for quick access on this device.</p>
+          </div>
+        ) : null}
+
+        {!installOnly ? <span className="grow" /> : null}
 
         {pending > 0 ? (
           <button
@@ -85,8 +102,10 @@ export function OfflineIndicator() {
         {showInstall ? (
           <button
             type="button"
-            onClick={install}
-            className="flex items-center gap-2 rounded-lg bg-ink px-3 py-1.5 font-medium text-white hover:opacity-90"
+            onClick={() => void install()}
+            className={`flex shrink-0 items-center gap-2 rounded-lg bg-ink px-3 py-1.5 font-medium text-white hover:opacity-90 ${
+              installOnly ? 'w-full justify-center sm:w-auto' : ''
+            }`}
           >
             <Download className="h-4 w-4" aria-hidden="true" />
             Install app
