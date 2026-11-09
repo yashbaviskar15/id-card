@@ -37,12 +37,13 @@ export interface OwnerShareLink {
   status: ShareLinkStatus;
 }
 
-/** The visitor-facing target of a live share link. Never carries a token. */
+/** Active share-link data used only on the server; rendered pages expose no storage path or token. */
 export interface ShareLinkTarget {
   ownerId: string;
   name: string;
   mime: string;
   size: number;
+  storagePath: string;
   requiresPassword: boolean;
 }
 
@@ -113,7 +114,7 @@ export async function resolveShareLink(token: string): Promise<ShareLinkTarget |
   const { data, error } = await supabase
     .from('share_links')
     .select(
-      'owner_id, password_hash, expires_at, max_downloads, download_count, revoked_at, documents(name, mime, size)',
+      'owner_id, password_hash, expires_at, max_downloads, download_count, revoked_at, documents(name, mime, size, storage_path)',
     )
     .eq('token_hash', hashToken(token))
     .maybeSingle();
@@ -127,7 +128,7 @@ export async function resolveShareLink(token: string): Promise<ShareLinkTarget |
   type Joined = Pick<
     ShareLinkRow,
     'owner_id' | 'password_hash' | 'expires_at' | 'max_downloads' | 'download_count' | 'revoked_at'
-  > & { documents: { name: string; mime: string; size: number } | null };
+  > & { documents: { name: string; mime: string; size: number; storage_path: string } | null };
 
   const row = data as unknown as Joined;
   if (shareLinkStatus(row, Date.now()) !== 'active') return null;
@@ -138,6 +139,7 @@ export async function resolveShareLink(token: string): Promise<ShareLinkTarget |
     name: row.documents.name,
     mime: row.documents.mime,
     size: Number(row.documents.size),
+    storagePath: row.documents.storage_path,
     requiresPassword: row.password_hash !== null,
   };
 }
