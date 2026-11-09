@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { flush, pendingCount, subscribeToOutbox } from '@/lib/offline/outbox';
 import { registerOfflineHandlers } from '@/lib/offline/handlers';
 
@@ -11,7 +12,7 @@ interface OfflineContextValue {
 }
 
 const OfflineContext = createContext<OfflineContextValue>({
-  online: true,
+  online: false,
   pending: 0,
   sync: () => undefined,
 });
@@ -21,7 +22,8 @@ export function useOffline(): OfflineContextValue {
 }
 
 export function OfflineProvider({ children }: { children: React.ReactNode }) {
-  const [online, setOnline] = useState(true);
+  const pathname = usePathname();
+  const [online, setOnline] = useState(false);
   const [pending, setPending] = useState(0);
 
   const refreshPending = useCallback(async () => {
@@ -29,8 +31,9 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const sync = useCallback(() => {
+    if (!navigator.onLine || !pathname?.startsWith('/dashboard')) return;
     void flush().then(refreshPending);
-  }, [refreshPending]);
+  }, [pathname, refreshPending]);
 
   useEffect(() => {
     registerOfflineHandlers();

@@ -14,6 +14,18 @@ import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 import { createGrantAction, revokeGrantAction } from './actions';
 import { initialGrantState } from './form-state';
 import type { AccessScope } from '@/lib/types';
+import type { GrantFormState } from './form-state';
+
+async function submitGrantSafely(previousState: GrantFormState, formData: FormData): Promise<GrantFormState> {
+  try {
+    return await createGrantAction(previousState, formData);
+  } catch {
+    return {
+      ok: false,
+      error: 'Connection interrupted before the code was confirmed. Check Access History before retrying.',
+    };
+  }
+}
 
 /** Ends a grant now; used both under a fresh code and in the grants table. */
 export function RevokeButton({
@@ -26,27 +38,40 @@ export function RevokeButton({
   label?: string;
 }) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { online } = useOffline();
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      disabled={pending || !online}
-      onClick={() =>
-        startTransition(async () => {
-          const data = new FormData();
-          data.set('grant_id', grantId);
-          await revokeGrantAction(data);
-          onRevoked?.();
-          router.refresh();
-        })
-      }
-    >
-      {pending ? 'Revoking…' : label}
-    </Button>
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={pending || !online}
+        onClick={() =>
+          startTransition(async () => {
+            setError(null);
+            try {
+              const data = new FormData();
+              data.set('grant_id', grantId);
+              const result = await revokeGrantAction(data);
+              if (!result.ok) {
+                setError(result.error);
+                return;
+              }
+              onRevoked?.();
+              router.refresh();
+            } catch {
+              setError('Connection interrupted. Check Access History before retrying.');
+            }
+          })
+        }
+      >
+        {pending ? 'Revoking…' : label}
+      </Button>
+      {error ? <span role="alert" className="max-w-48 text-right text-xs text-destructive">{error}</span> : null}
+    </div>
   );
 }
 
@@ -59,7 +84,7 @@ export function GiveAccess({
   defaultValidity: number;
   sharedCount: number;
 }) {
-  const [state, submit, pending] = useActionState(createGrantAction, initialGrantState);
+  const [state, submit, pending] = useActionState(submitGrantSafely, initialGrantState);
   const [copied, setCopied] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const router = useRouter();

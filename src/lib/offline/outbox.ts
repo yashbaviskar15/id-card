@@ -46,10 +46,12 @@ export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
-export async function enqueue(kind: string, label: string, payload: unknown): Promise<void> {
-  await addOutboxRecord({ kind, label, payload, createdAt: Date.now() });
+export async function enqueue(kind: string, label: string, payload: unknown): Promise<boolean> {
+  const id = await addOutboxRecord({ kind, label, payload, createdAt: Date.now() });
+  if (id === null) return false;
   emit();
-  void flush();
+  if (!isOffline()) void flush();
+  return true;
 }
 
 export async function pendingCount(): Promise<number> {

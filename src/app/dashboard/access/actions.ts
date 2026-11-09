@@ -28,84 +28,97 @@ async function requestContext() {
 export async function createGrantAction(_prev: GrantFormState, formData: FormData): Promise<GrantFormState> {
   const owner = await requireOwner('/dashboard/access');
 
-  if (!(await isReauthenticated())) {
-    return { ok: false, error: 'Enter your password again before handing out a code.' };
-  }
-
-  const scopeParsed = scopeSchema.safeParse(formData.get('scope'));
-  const validityParsed = validityMinutesSchema.safeParse(formData.get('validity_minutes'));
-  const includeDocuments = includeDocumentsSchema.safeParse(formData.get('include_documents'));
-  if (!scopeParsed.success || !validityParsed.success) {
-    return { ok: false, error: 'Choose a scope and a validity between 1 and 30 minutes.' };
-  }
-  const withDocuments = includeDocuments.success && includeDocuments.data;
-
-  const profile = await getProfile(owner.id);
-  if (!profile) {
-    return { ok: false, error: 'Save your card first, then hand out a code.' };
-  }
-  if (!profile.is_active) {
-    return { ok: false, error: 'Your profile is switched off, so no code could work. Switch it back on in Card & QR.' };
-  }
-
-  const expiresAt = new Date(Date.now() + validityParsed.data * 60_000).toISOString();
-  const supabase = await createUserClient();
-
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const code = generateAccessCode();
-    const codeHash = buildAccessCodeProof(profile.slug, code);
-
-    const { data, error } = await supabase
-      .from('access_grants')
-      .insert({
-        owner_id: owner.id,
-        code_hash: codeHash,
-        scope: scopeParsed.data,
-        include_documents: withDocuments,
-        expires_at: expiresAt,
-      })
-      .select('id, expires_at')
-      .single<{ id: string; expires_at: string }>();
-
-    if (!error && data) {
-      const { ipHash, userAgent } = await requestContext();
-      await writeAudit({
-        ownerId: owner.id,
-        actor: 'owner',
-        action: 'access.grant_create',
-        entityType: 'access_grant',
-        entityId: data.id,
-        detail: { scope: scopeParsed.data, validity_minutes: validityParsed.data, include_documents: withDocuments },
-        ipHash,
-        userAgent,
-      });
-      return {
-        ok: true,
-        code,
-        grantId: data.id,
-        expiresAt: data.expires_at,
-        scope: scopeParsed.data,
-      };
+  try {
+    if (!(await isReauthenticated())) {
+      return { ok: false, error: 'Enter your password again before handing out a code.' };
     }
 
-    // The only expected unique violation is a code collision; retry with a new one.
-    if (error?.code !== '23505') {
-      log.warn('access.grant create failed', { code: error?.code });
-      return { ok: false, error: 'Could not create the code. Try again.' };
+    const scopeParsed = scopeSchema.safeParse(formData.get('scope'));
+    const validityParsed = validityMinutesSchema.safeParse(formData.get('validity_minutes'));
+    const includeDocuments = includeDocumentsSchema.safeParse(formData.get('include_documents'));
+    if (!scopeParsed.success || !validityParsed.success) {
+      return { ok: false, error: 'Choose a scope and a validity between 1 and 30 minutes.' };
     }
-  }
+    const withDocuments = includeDocuments.success && includeDocuments.data;
 
-  return { ok: false, error: 'Could not create the code. Try again.' };
+    const profile = await getProfile(owner.id);
+    if (!profile) {
+      return { ok: false, error: 'Save your card first, then hand out a code.' };
+    }
+    if (!profile.is_active) {
+      return { ok: false, error: 'Your profile is switched off, so no code could work. Switch it back on in Card & QR.' };
+    }
+
+    const expiresAt = new Date(Date.now() + validityParsed.data * 60_000).toISOString();
+    const supabase = await createUserClient();
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const code = generateAccessCode();
+      const codeHash = buildAccessCodeProof(profile.slug, code);
+
+      const { data, error } = await supabase
+        .from('access_grants')
+        .insert({
+          owner_id: owner.id,
+          code_hash: codeHash,
+          scope: scopeParsed.data,
+          include_documents: withDocuments,
+          expires_at: expiresAt,
+        })
+        .select('id, expires_at')
+        .single<{ id: string; expires_at: string }>();
+
+      if (!error && data) {
+        const { ipHash, userAgent } = await requestContext();
+        await writeAudit({
+          ownerId: owner.id,
+          actor: 'owner',
+          action: 'access.grant_create',
+          entityType: 'access_grant',
+          entityId: data.id,
+          detail: { scope: scopeParsed.data, validity_minutes: validityParsed.data, include_documents: withDocuments },
+          ipHash,
+          userAgent,
+        });
+        return {
+          ok: true,
+          code,
+          grantId: data.id,
+          expiresAt: data.expires_at,
+          scope: scopeParsed.data,
+        };
+      }
+
+      // The only expected unique violation is a code collision; retry with a new one.
+      if (error?.code !== '23505') {
+        log.warn('access.grant create failed', { code: error?.code });
+        return { ok: false, error: 'Could not create the code. Check the connection and try again.' };
+      }
+    }
+
+    return { ok: false, error: 'Could not create the code. Try again.' };
+  } catch (cause) {
+    const missingConfiguration = cause instanceof Error && cause.message.startsWith('Invalid server environment');
+    log.warn('access.grant create threw', { category: missingConfiguration ? 'configuration' : 'unexpected' });
+    return {
+      ok: false,
+      error: missingConfiguration
+        ? 'Access-code creation is not configured on the server. Verify the required variables in SETUP.md and redeploy.'
+        : 'The request could not be completed. Check your connection and Access History before retrying.',
+    };
+  }
 }
 
 /**
  * Ends a grant immediately. The visitor's next request fails the database check,
  * so a live session stops working at once — no waiting for the cookie to expire.
  */
-export async function revokeGrantAction(formData: FormData): Promise<void> {
+export async function revokeGrantAction(
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const owner = await requireOwner('/dashboard/access');
   const parsed = z.uuid().safeParse(formData.get('grant_id'));
-  if (!parsed.success) return;
+  if (!parsed.success) return { ok: false, error: 'That access code no longer exists.' };
 
   const supabase = await createUserClient();
   const { error } = await supabase
@@ -116,7 +129,7 @@ export async function revokeGrantAction(formData: FormData): Promise<void> {
     .is('revoked_at', null);
   if (error) {
     log.warn('access.grant revoke failed', { code: error.code });
-    return;
+    return { ok: false, error: 'Could not revoke the code. Check your connection and try again.' };
   }
 
   const { ipHash, userAgent } = await requestContext();
@@ -131,4 +144,5 @@ export async function revokeGrantAction(formData: FormData): Promise<void> {
   });
 
   revalidatePath('/dashboard/access');
+  return { ok: true };
 }
