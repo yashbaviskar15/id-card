@@ -88,7 +88,20 @@ on requests; the middleware also forwards refreshed cookies to the current reque
 redirect responses. A browser tab that has been idle past the project's configured limit will
 still need the owner to sign in again.
 
-## 6. Redeploy
+## 6. Understand Offline Mode
+
+Open the app once while online so the service worker can install and cache its static shell.
+Private dashboard pages, visitor sessions, files, access codes, share links, sign-in and security
+actions are intentionally not cached: their authorization, expiry and revocation must be checked
+against the server. When offline, navigation to server-backed pages and downloads is stopped
+with a clear message instead of showing a failed request.
+
+Card and information edits can be queued locally and sync after reconnecting. These queued values
+are sensitive browser data, so use this feature only on a trusted personal device and sync before
+signing out. A first visit while offline cannot install the PWA, and the app cannot safely
+complete server-backed actions without connectivity.
+
+## 7. Redeploy
 
 After adding the environment variables, you need to redeploy your project for the changes to take effect:
 

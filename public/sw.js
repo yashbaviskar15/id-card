@@ -8,7 +8,7 @@
  * Caches can be wiped on demand via `postMessage('CLEAR_CACHES')`, which the app
  * sends on sign-out so no owner data survives on a shared device.
  */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const STATIC_CACHE = `identity-static-${VERSION}`;
 const LOGO_SVG = `<svg viewBox="0 0 48 48" width="40" height="40" role="img" aria-label="Private Identity"><rect width="48" height="48" rx="9" fill="#000000"/><path d="M15 9.5h10.4c8.3 0 13.1 4.1 13.1 11.4 0 7.2-4.8 11.5-13.1 11.5H22v7.5H15V9.5Zm7 6.8v9.4h3.5c4 0 6.1-1.4 6.1-4.7 0-3.2-2.1-4.7-6.1-4.7H22Z" fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd"/></svg>`;
 const OFFLINE_HTML = `<!doctype html>
@@ -35,8 +35,8 @@ const OFFLINE_HTML = `<!doctype html>
     <main>
       <header class="brand">${LOGO_SVG}<span class="name">Private Identity</span></header>
       <h1>You are offline</h1>
-      <p class="message">The app is installed and ready, but your private account data and server actions need an internet connection.</p>
-      <p class="note">Reconnect to load your dashboard and safely sync changes. Access codes, sign-in, file sharing, and security settings are not available offline.</p>
+      <p class="message">The app shell is ready, but private dashboard pages are not cached for offline browsing.</p>
+      <p class="note">Explicitly queued card or information edits stay in this browser until you reconnect. Sign-in, access codes, file sharing, downloads, and security settings need an internet connection.</p>
       <a class="btn" href="/dashboard">Try again</a>
     </main>
   </body>
@@ -91,8 +91,6 @@ self.addEventListener('message', (event) => {
   }
 });
 
-const STATIC_EXT = /\.(?:js|css|mjs|woff2?|ttf|otf|png|jpe?g|gif|svg|webp|avif|ico|json)$/i;
-
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
 }
@@ -129,13 +127,21 @@ function offlineResponse() {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     },
   });
 }
 
 async function handleNavigation(request) {
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    if (response.status === 502 || response.status === 503 || response.status === 504) {
+      return offlineResponse();
+    }
+    return response;
   } catch {
     return offlineResponse();
   }
@@ -158,7 +164,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/icons/') ||
     url.pathname.startsWith('/fonts/') ||
     url.pathname === '/manifest.webmanifest' ||
-    STATIC_EXT.test(url.pathname)
+    url.pathname === '/favicon.ico'
   ) {
     event.respondWith(cacheFirst(request));
     return;
