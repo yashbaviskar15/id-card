@@ -64,60 +64,78 @@ function ActionLink({ href, children, external }: { href: string; children: Reac
   );
 }
 
-function ContactBlock({
-  title,
-  items,
-  kind,
-}: {
-  title: string;
-  items: GrantContactItem[];
-  kind: 'email' | 'phone';
-}) {
-  if (items.length === 0) return null;
+type ContactKind = 'email' | 'phone';
+
+function ContactMethod({ item, kind }: { item: GrantContactItem; kind: ContactKind }) {
   const Icon = kind === 'email' ? Mail : Phone;
+  const label = item.label || (kind === 'email' ? 'Email address' : 'Phone number');
 
   return (
-    <section className="min-w-0 rounded-2xl border border-hairline bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-ink">
-          <Icon className="h-5 w-5" aria-hidden="true" />
+    <li className="min-w-0 rounded-xl border border-hairline bg-white p-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-ink">
+          <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold text-ink">{title}</h2>
-          <p className="text-sm text-label">{kind === 'email' ? 'Send a direct email' : 'Call or message directly'}</p>
-        </div>
+        <p className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.08em] text-label">
+          {label}
+        </p>
       </div>
-      <ul className="space-y-5">
-        {items.map((item, index) => (
-          <li key={`${kind}-${index}`} className="min-w-0 border-t border-subtle-line pt-4 first:border-0 first:pt-0">
-            <dl className="min-w-0">
-              {item.label ? <dt className="mb-1 text-xs font-medium text-label">{item.label}</dt> : null}
-              <dd className="break-words text-base font-semibold leading-6 text-ink [overflow-wrap:anywhere] sm:text-lg">
-                {item.value}
-              </dd>
-            </dl>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {kind === 'email' ? (
-                <ActionLink href={`mailto:${encodeURIComponent(item.value)}`}>
-                  <Mail aria-hidden="true" />
-                  Email
-                </ActionLink>
-              ) : (
-                <>
-                  <ActionLink href={`tel:${item.value.replace(/[^\d+]/g, '')}`}>
-                    <Phone aria-hidden="true" />
-                    Call
-                  </ActionLink>
-                  {whatsAppNumber(item.value) ? (
-                    <ActionLink href={`https://wa.me/${whatsAppNumber(item.value)}`} external>
-                      <MessageCircle aria-hidden="true" />
-                      Message
-                    </ActionLink>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </li>
+      <p className="mt-3 break-words text-[15px] font-semibold leading-6 text-ink [overflow-wrap:anywhere]">
+        {item.value}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {kind === 'email' ? (
+          <ActionLink href={`mailto:${encodeURIComponent(item.value)}`}>
+            <Mail aria-hidden="true" />
+            Email
+          </ActionLink>
+        ) : (
+          <>
+            <ActionLink href={`tel:${item.value.replace(/[^\d+]/g, '')}`}>
+              <Phone aria-hidden="true" />
+              Call
+            </ActionLink>
+            {whatsAppNumber(item.value) ? (
+              <ActionLink href={`https://wa.me/${whatsAppNumber(item.value)}`} external>
+                <MessageCircle aria-hidden="true" />
+                Message
+              </ActionLink>
+            ) : null}
+          </>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function ContactSection({
+  emails,
+  phones,
+}: {
+  emails: GrantContactItem[];
+  phones: GrantContactItem[];
+}) {
+  if (emails.length === 0 && phones.length === 0) return null;
+
+  const methods: { kind: ContactKind; item: GrantContactItem; key: string }[] = [];
+  const rowCount = Math.max(emails.length, phones.length);
+
+  for (let index = 0; index < rowCount; index += 1) {
+    const email = emails[index];
+    const phone = phones[index];
+    if (email) methods.push({ kind: 'email', item: email, key: `email-${index}` });
+    if (phone) methods.push({ kind: 'phone', item: phone, key: `phone-${index}` });
+  }
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-base font-semibold text-ink">Contact details</h2>
+        <p className="text-sm text-label">Choose the most convenient way to get in touch.</p>
+      </div>
+      <ul className="grid min-w-0 items-start gap-3 sm:grid-cols-2">
+        {methods.map(({ kind, item, key }) => (
+          <ContactMethod key={key} item={item} kind={kind} />
         ))}
       </ul>
     </section>
@@ -510,19 +528,10 @@ export function GrantedProfileView({
             </div>
           </section>
 
-          <div className={`grid min-w-0 items-start gap-4 sm:gap-5 lg:gap-6 ${compact ? 'grid-cols-1' : 'lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]'}`}>
+          <div className={`grid min-w-0 items-start gap-5 sm:gap-6 lg:gap-8 ${compact ? 'grid-cols-1' : 'lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]'}`}>
             <div className="min-w-0 space-y-5">
               {profile.emails.length > 0 || profile.phones.length > 0 ? (
-                <section className="space-y-3">
-                  <div>
-                    <h2 className="text-base font-semibold text-ink">Contact information</h2>
-                    <p className="text-sm text-label">Choose the most convenient way to get in touch.</p>
-                  </div>
-                  <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4">
-                    <ContactBlock title="Email" items={profile.emails} kind="email" />
-                    <ContactBlock title="Phone" items={profile.phones} kind="phone" />
-                  </div>
-                </section>
+                <ContactSection emails={profile.emails} phones={profile.phones} />
               ) : (
                 <section className="surface shadow-card flex items-start gap-3 p-5 sm:p-6">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-label">
