@@ -7,7 +7,7 @@ import { isOwnerEmail, serverEnv } from '@/lib/env.server';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
 import { hashEmail } from '@/lib/crypto/proofs';
 import { hmacHex } from '@/lib/crypto/random';
-import { emailSchema, passwordSchema } from '@/lib/validation';
+import { emailSchema, passwordSchema, totpCodeSchema } from '@/lib/validation';
 import {
   RATE_LIMITS,
   countAuthFailures,
@@ -21,6 +21,7 @@ import { alertNewDeviceLogin, alertOwnerLockout, alertPasswordChanged } from '@/
 import { clearReauthenticated, markReauthenticated } from '@/lib/auth/reauth';
 import { getOwnerIdOrNull } from '@/lib/auth/session';
 import { createServiceClient } from '@/lib/db/service';
+import type { User } from '@supabase/supabase-js';
 import type { FormState } from './form-state';
 
 const GENERIC_ERROR = 'Email or password is incorrect.';
@@ -54,6 +55,49 @@ async function verifyTurnstile(token: string | null): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Shared post-authentication side effects. Runs once the owner is fully
+ * authenticated (password-only, or password plus a verified second factor):
+ * records the attempt, clears re-authentication, alerts on a first-seen device,
+ * and writes the audit entry.
+ */
+async function finalizeLogin(
+  user: User,
+  context: { emailHash: string; ipHash: string | null; userAgent: string | null },
+): Promise<void> {
+  const { emailHash, ipHash, userAgent } = context;
+  await recordAuthAttempt({ emailHash, ipHash, success: true });
+  await clearReauthenticated();
+
+  const deviceHash = hmacHex(emailHash, `device:${userAgent ?? 'unknown'}`);
+  const service = createServiceClient();
+  const [deviceResult, settingsResult] = await Promise.all([
+    service
+      .from('audit_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', user.id)
+      .eq('action', 'auth.login')
+      .filter('detail->>device_hash', 'eq', deviceHash),
+    service
+      .from('owner_settings')
+      .select('alert_on_new_device')
+      .eq('owner_id', user.id)
+      .maybeSingle(),
+  ]);
+  if (!deviceResult.count && (settingsResult.data?.alert_on_new_device ?? true)) {
+    await alertNewDeviceLogin({ userAgent: userAgent ?? 'unknown device' });
+  }
+
+  await writeAudit({
+    ownerId: user.id,
+    actor: 'owner',
+    action: 'auth.login',
+    detail: { device_hash: deviceHash },
+    ipHash,
+    userAgent,
+  });
 }
 
 /* --------------------------------- sign in -------------------------------- */
@@ -133,39 +177,75 @@ export async function signInAction(_prev: FormState, formData: FormData): Promis
     return { ok: false, error: GENERIC_ERROR };
   }
 
-  await recordAuthAttempt({ emailHash, ipHash, success: true });
-  await clearReauthenticated();
-
-  // New-device detection: alert only the first time this device is seen.
-  const deviceHash = hmacHex(emailHash, `device:${userAgent ?? 'unknown'}`);
-  const service = createServiceClient();
-  const [deviceResult, settingsResult] = await Promise.all([
-    service
-      .from('audit_log')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_id', data.user.id)
-      .eq('action', 'auth.login')
-      .filter('detail->>device_hash', 'eq', deviceHash),
-    service
-      .from('owner_settings')
-      .select('alert_on_new_device')
-      .eq('owner_id', data.user.id)
-      .maybeSingle(),
-  ]);
-  if (!deviceResult.count && (settingsResult.data?.alert_on_new_device ?? true)) {
-    await alertNewDeviceLogin({ userAgent: userAgent ?? 'unknown device' });
+  // If the account has a verified authenticator factor, the password alone is
+  // only the first step: require the 6-digit code before finishing the sign-in.
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  if ((factors?.totp?.length ?? 0) > 0) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.currentLevel !== 'aal2') {
+      await recordAuthAttempt({ emailHash, ipHash, success: true });
+      return { ok: false, mfaRequired: true };
+    }
   }
 
-  await writeAudit({
-    ownerId: data.user.id,
-    actor: 'owner',
-    action: 'auth.login',
-    detail: { device_hash: deviceHash },
-    ipHash,
-    userAgent,
-  });
-
+  await finalizeLogin(data.user, { emailHash, ipHash, userAgent });
   redirect(safeNext(formData.get('next')));
+}
+
+/* ----------------------------- two-factor step ---------------------------- */
+
+/**
+ * Completes a sign-in that required a second factor. The session is at aal1
+ * after the password step; verifying the TOTP code raises it to aal2.
+ */
+export async function verifyMfaLoginAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const next = safeNext(formData.get('next'));
+  const parsed = totpCodeSchema.safeParse(formData.get('code'));
+  if (!parsed.success) {
+    return { ok: false, mfaRequired: true, error: 'Enter the 6-digit code from your authenticator app.' };
+  }
+
+  const supabase = await createUserClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || !isOwnerEmail(user.email)) {
+    return { ok: false, error: 'Your sign-in session has ended. Sign in again.' };
+  }
+
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === 'aal2') {
+    redirect(next);
+  }
+
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const factor = factors?.totp?.[0];
+  if (!factor) {
+    return { ok: false, error: 'Two-factor is not set up for this account. Sign in again.' };
+  }
+
+  const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+    factorId: factor.id,
+  });
+  if (challengeError || !challenge) {
+    return { ok: false, mfaRequired: true, error: 'The two-factor check could not start. Try again.' };
+  }
+
+  const { error: verifyError } = await supabase.auth.mfa.verify({
+    factorId: factor.id,
+    challengeId: challenge.id,
+    code: parsed.data,
+  });
+  if (verifyError) {
+    const { ipHash, userAgent } = await requestContext();
+    await writeAudit({ ownerId: user.id, actor: 'owner', action: 'auth.mfa_verify_failed', ipHash, userAgent });
+    return { ok: false, mfaRequired: true, error: 'That code is not valid. Check your authenticator app and try again.' };
+  }
+
+  const { ipHash, userAgent } = await requestContext();
+  const emailHash = hashEmail(user.email ?? 'unknown@example.invalid');
+  await finalizeLogin(user, { emailHash, ipHash, userAgent });
+  redirect(next);
 }
 
 /* ------------------------------ sign out ---------------------------------- */

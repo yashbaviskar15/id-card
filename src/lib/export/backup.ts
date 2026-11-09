@@ -1,5 +1,5 @@
 import 'server-only';
-import { createCipheriv, randomBytes, scryptSync } from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { zipSync, strToU8 } from 'fflate';
 import { createUserClient } from '@/lib/db/user';
 import { decryptField, fieldAad, isEncryptedEnvelope } from '@/lib/crypto/fields';
@@ -17,6 +17,26 @@ export class BackupDataError extends Error {
   constructor() {
     super('Backup data could not be loaded.');
     this.name = 'BackupDataError';
+  }
+}
+
+/**
+ * `.idbackup` envelope layout, shared by export and import so the two can never
+ * drift apart. Changing any of these values breaks every existing backup file,
+ * so the amount of data a backup carries may change but the container may not.
+ */
+export const BACKUP_MAGIC = 'IDB1';
+export const BACKUP_SALT_BYTES = 16;
+export const BACKUP_NONCE_BYTES = 12;
+export const BACKUP_TAG_BYTES = 16;
+export const BACKUP_KEY_BYTES = 32;
+const BACKUP_HEADER_BYTES =
+  BACKUP_MAGIC.length + BACKUP_SALT_BYTES + BACKUP_NONCE_BYTES + BACKUP_TAG_BYTES;
+
+export class BackupDecryptError extends Error {
+  constructor() {
+    super('The backup file could not be decrypted. Check the passphrase and the file.');
+    this.name = 'BackupDecryptError';
   }
 }
 
@@ -90,11 +110,46 @@ export async function buildBackupZip(ownerId: string, includeData: boolean): Pro
 }
 
 export function encryptBackup(zip: Uint8Array, passphrase: string): Buffer {
-  const salt = randomBytes(16);
-  const nonce = randomBytes(12);
-  const key = scryptSync(passphrase, salt, 32);
+  const salt = randomBytes(BACKUP_SALT_BYTES);
+  const nonce = randomBytes(BACKUP_NONCE_BYTES);
+  const key = scryptSync(passphrase, salt, BACKUP_KEY_BYTES);
   const cipher = createCipheriv('aes-256-gcm', key, nonce);
   const ciphertext = Buffer.concat([cipher.update(zip), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return Buffer.concat([Buffer.from('IDB1'), salt, nonce, tag, ciphertext]);
+  return Buffer.concat([Buffer.from(BACKUP_MAGIC), salt, nonce, tag, ciphertext]);
+}
+
+/**
+ * Reverse of `encryptBackup` — the single source of truth for the `.idbackup`
+ * envelope. The layout is fixed (and the unit tests pin it):
+ *
+ *   magic(4) | salt(16) | nonce(12) | gcm-tag(16) | ciphertext(rest)
+ *
+ * A wrong passphrase, a truncated file or a tampered byte all fail the GCM tag
+ * check and surface as one `BackupDecryptError`, so no partial plaintext ever
+ * escapes and the caller cannot tell "wrong key" from "damaged file".
+ */
+export function decryptBackup(bundle: Uint8Array, passphrase: string): Buffer {
+  const buffer = Buffer.from(bundle);
+  if (buffer.length <= BACKUP_HEADER_BYTES) throw new BackupDecryptError();
+  if (buffer.subarray(0, BACKUP_MAGIC.length).toString('latin1') !== BACKUP_MAGIC) {
+    throw new BackupDecryptError();
+  }
+
+  const magicEnd = BACKUP_MAGIC.length;
+  const salt = buffer.subarray(magicEnd, magicEnd + BACKUP_SALT_BYTES);
+  const nonceStart = magicEnd + BACKUP_SALT_BYTES;
+  const nonce = buffer.subarray(nonceStart, nonceStart + BACKUP_NONCE_BYTES);
+  const tagStart = nonceStart + BACKUP_NONCE_BYTES;
+  const tag = buffer.subarray(tagStart, tagStart + BACKUP_TAG_BYTES);
+  const ciphertext = buffer.subarray(tagStart + BACKUP_TAG_BYTES);
+
+  try {
+    const key = scryptSync(passphrase, salt, BACKUP_KEY_BYTES);
+    const decipher = createDecipheriv('aes-256-gcm', key, nonce);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  } catch {
+    throw new BackupDecryptError();
+  }
 }

@@ -21,6 +21,15 @@ export const validityMinutesSchema = z.coerce
   .min(1, 'Minimum 1 minute.')
   .max(30, 'Maximum 30 minutes.');
 
+export const visitorSessionMinutesSchema = z.coerce
+  .number()
+  .int()
+  .min(1, 'Minimum 1 minute.')
+  .max(60, 'Maximum 60 minutes.');
+
+/** Six digits from an authenticator app. */
+export const totpCodeSchema = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code.');
+
 /** Unchecked checkboxes are simply absent from the form data, so this is false. */
 export const includeDocumentsSchema = z.coerce.boolean();
 

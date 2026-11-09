@@ -11,6 +11,7 @@ import {
   isEncryptedEnvelope,
   maskValue,
 } from '@/lib/crypto/fields';
+import { alertSensitiveReveal } from '@/lib/mail';
 import { randomUUID } from 'node:crypto';
 import type { FieldKind } from '@/lib/types';
 
@@ -220,4 +221,37 @@ export async function reorderFieldsAction(ids: string[]): Promise<InfoActionResu
   }
   revalidatePath('/dashboard/info');
   return { ok: true };
+}
+
+export type RevealFieldResult = { ok: true; value: string } | { ok: false; error: string };
+
+/**
+ * Decrypts one sensitive value for an explicit reveal in the dashboard. The
+ * decrypted value is returned to the caller only; the owner alert that follows
+ * is sent through the server-only mail adapter so no client code needs it.
+ */
+export async function revealFieldAction(id: string): Promise<RevealFieldResult> {
+  const parsedId = fieldIdSchema.safeParse(id);
+  if (!parsedId.success) return { ok: false, error: 'This information could not be found.' };
+
+  const owner = await requireOwner('/dashboard/info');
+  const supabase = await createUserClient();
+  const { data: current, error } = await supabase
+    .from('fields')
+    .select('id, kind, label, value, value_encrypted, is_sensitive')
+    .eq('id', parsedId.data)
+    .eq('owner_id', owner.id)
+    .maybeSingle();
+  if (error || !current) return { ok: false, error: 'This information could not be found.' };
+
+  if (!current.is_sensitive) return { ok: true, value: current.value ?? '' };
+
+  const encrypted = typeof current.value_encrypted === 'string' ? current.value_encrypted : null;
+  const value = encrypted && isEncryptedEnvelope(encrypted)
+    ? decryptField(encrypted, fieldAad(owner.id, current.id, 'value_encrypted'))
+    : (current.value ?? '');
+
+  // Best-effort, never blocks the reveal. Failures are swallowed by the adapter.
+  void alertSensitiveReveal({ field: current.label ?? current.kind }).catch(() => {});
+  return { ok: true, value };
 }

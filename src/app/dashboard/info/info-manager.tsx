@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { deleteFieldAction, addFieldAction, reorderFieldsAction, updateFieldAction } from './actions';
+import { deleteFieldAction, addFieldAction, reorderFieldsAction, revealFieldAction, updateFieldAction } from './actions';
 import { runOrQueue } from '@/lib/offline/run';
 import type { FieldKind } from '@/lib/types';
 
@@ -63,6 +63,7 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
   const [pageSize, setPageSize] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -232,6 +233,26 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
         return;
       }
       router.refresh();
+    });
+  }
+
+  function toggleReveal(field: InformationField) {
+    setError(null);
+    if (revealed[field.id] !== undefined) {
+      setRevealed((current) => {
+        const next = { ...current };
+        delete next[field.id];
+        return next;
+      });
+      return;
+    }
+    startTransition(async () => {
+      const result = await revealFieldAction(field.id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setRevealed((current) => ({ ...current, [field.id]: result.value }));
     });
   }
 
@@ -424,7 +445,7 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
                   <div role="cell" className="min-w-0">
                     <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-label md:hidden">Value</span>
                     <span className="block break-all text-sm font-medium text-ink md:truncate">
-                      {field.is_sensitive ? '••••••••••••' : field.value}
+                      {field.is_sensitive ? (revealed[field.id] ?? '••••••••••••') : field.value}
                     </span>
                   </div>
                   <div role="cell" className="flex items-center gap-2">
@@ -492,6 +513,20 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
                         onClick={() => updateFlag(field, 'is_public', !field.is_public)}
                       >
                         {field.is_public ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    ) : null}
+                    {field.is_sensitive ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10"
+                        aria-label={`${revealed[field.id] !== undefined ? 'Hide' : 'Reveal'} ${field.label}`}
+                        title={revealed[field.id] !== undefined ? 'Hide value' : 'Reveal value'}
+                        disabled={pending}
+                        onClick={() => toggleReveal(field)}
+                      >
+                        {revealed[field.id] !== undefined ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     ) : null}
                     <Button type="button" variant="outline" size="sm" className="h-10" disabled={pending} onClick={() => beginEdit(field)}>
