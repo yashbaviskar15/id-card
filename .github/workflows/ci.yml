@@ -40,6 +40,20 @@ jobs:
       - name: Dependency audit
         run: npm run audit
 
+      # Best-effort security sweep. Every command here also gates elsewhere, so
+      # a missing tool (gitleaks is provided by the action above, not always on
+      # the PATH) must never turn into a red build.
+      - name: Security sweep
+        continue-on-error: true
+        run: |
+          npm run scan:deny-list
+          npm run scan:colors
+          if command -v gitleaks >/dev/null 2>&1; then
+            gitleaks detect --no-banner --redact --config gitleaks.toml
+          else
+            echo "gitleaks binary not on PATH; the 'Secret scan' action above is the authoritative secret scan."
+          fi
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -51,3 +65,25 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Best-effort Lighthouse pass over the public profile lock screen — the one
+      # page an unauthenticated visitor can always reach, and DB-free so it needs
+      # no Supabase project. Kept non-blocking: a slow CI runner or an
+      # unavailable Chrome must not fail the pipeline.
+      - name: Lighthouse (lock screen)
+        continue-on-error: true
+        run: |
+          npm run start &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:3000/login; then break; fi
+            sleep 2
+          done
+          npx --yes lighthouse http://localhost:3000/p/lock \
+            --quiet \
+            --chrome-flags="--headless=new --no-sandbox" \
+            --only-categories=performance,accessibility,best-practices \
+            --output=json --output-path=lighthouse-lock.json || true
+          kill "$SERVER_PID" 2>/dev/null || true
+          node -e "const r=require('./lighthouse-lock.json');console.log('Lighthouse scores:',Object.fromEntries(Object.entries(r.categories).map(([k,v])=>[k,Math.round((v.score??0)*100)])))" || true
+

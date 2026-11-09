@@ -52,6 +52,7 @@ export async function middleware(request: NextRequest) {
   const isVisitorPreviewFile = /^\/p\/[^/]+\/doc\/[^/]+\/file$/.test(path);
   const session = isVisitorPath ? null : await updateSession(request);
   const userId = session?.userId ?? null;
+  const needsMfa = session?.needsMfa ?? false;
 
   // Re-issue the response so the forwarded request headers reach the app.
   const next = NextResponse.next({ request: { headers: requestHeaders } });
@@ -73,17 +74,25 @@ export async function middleware(request: NextRequest) {
     next.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }
 
-  // Owner area: require a session. The OWNER_EMAIL allow-list is re-checked
-  // server-side in the dashboard layout (middleware has no DB access).
+  // Owner area: require a session and, when two-factor is enabled, a completed
+  // second factor. The OWNER_EMAIL allow-list is re-checked server-side in the
+  // dashboard layout (middleware has no DB access).
   if (path.startsWith('/dashboard') && !userId) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', path);
     return NextResponse.redirect(url);
   }
+  if (path.startsWith('/dashboard') && needsMfa) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', path);
+    return NextResponse.redirect(url);
+  }
 
-  // Already signed in and visiting /login -> go to the dashboard.
-  if (path === '/login' && userId) {
+  // Already fully signed in and visiting /login -> go to the dashboard. A
+  // session that still owes a second factor is allowed to stay on /login.
+  if (path === '/login' && userId && !needsMfa) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     url.search = '';

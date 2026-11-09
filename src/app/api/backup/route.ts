@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getOwnerOrNull } from '@/lib/auth/session';
 import { isReauthenticated } from '@/lib/auth/reauth';
 import { buildBackupZip, loadBackupData } from '@/lib/export/backup';
+import { alertBackupExported } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
   try {
     if (format === 'zip') {
       const zip = await buildBackupZip(owner.id, false);
+      void alertBackupExported().catch(() => {});
       return new NextResponse(new Uint8Array(zip), {
         headers: {
           ...NO_STORE,
@@ -57,6 +59,7 @@ export async function GET(request: NextRequest) {
 
     const data = await loadBackupData(owner.id);
     if (format === 'csv') {
+      void alertBackupExported().catch(() => {});
       return new NextResponse(toCsv(data), {
         headers: {
           ...NO_STORE,
@@ -66,6 +69,7 @@ export async function GET(request: NextRequest) {
       });
     }
     if (format === 'json') {
+      void alertBackupExported().catch(() => {});
       return new NextResponse(JSON.stringify(data, null, 2), {
         headers: {
           ...NO_STORE,

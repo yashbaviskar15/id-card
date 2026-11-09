@@ -52,9 +52,6 @@ create table if not exists public.profiles (
   show_dob     boolean not null default false,
   show_address boolean not null default false,
   show_photo   boolean not null default false,
-  visitor_theme text not null default 'ink' check (visitor_theme in ('ink', 'ocean', 'forest')),
-  visitor_layout text not null default 'standard' check (visitor_layout in ('standard', 'compact')),
-  visitor_intro text not null default '' check (length(visitor_intro) <= 180),
   is_active    boolean not null default true,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
@@ -1056,6 +1053,89 @@ as $$
     'photo_path', case when g.scope = 'full' and p.show_photo then p.photo_path else null end,
     'dob',        case when g.scope = 'full' and p.show_dob then p.dob else null end,
     'address',    case when g.scope = 'full' and p.show_address then p.address else null end,
+    'emails', coalesce((
+      select jsonb_agg(jsonb_build_object('label', f.label, 'value', f.value) order by f.sort, f.created_at)
+      from public.fields f
+      where f.owner_id = p.owner_id
+        and f.kind = 'email'
+        and f.is_public
+        and not f.is_sensitive
+    ), '[]'::jsonb),
+    'phones', coalesce((
+      select jsonb_agg(jsonb_build_object('label', f.label, 'value', f.value) order by f.sort, f.created_at)
+      from public.fields f
+      where f.owner_id = p.owner_id
+        and f.kind = 'phone'
+        and f.is_public
+        and not f.is_sensitive
+    ), '[]'::jsonb),
+    'social_links', coalesce((
+      select jsonb_agg(jsonb_build_object('label', f.label, 'value', f.value) order by f.sort, f.created_at)
+      from public.fields f
+      where f.owner_id = p.owner_id
+        and f.kind = 'social_link'
+        and f.is_public
+        and not f.is_sensitive
+    ), '[]'::jsonb),
+    -- Metadata only: never the storage path, never a signed URL.
+    'documents', case when g.include_documents then coalesce((
+      select jsonb_agg(
+               jsonb_build_object('id', d.id, 'name', d.name, 'mime', d.mime, 'size', d.size)
+               order by d.created_at desc
+             )
+      from public.documents d
+      where d.owner_id = p.owner_id and d.is_shared
+    ), '[]'::jsonb) else '[]'::jsonb end,
+    'can_view_documents', g.include_documents,
+    'session_expires_at', g.session_expires_at
+  )
+  from public.access_grants g
+  join public.profiles p on p.owner_id = g.owner_id
+  where g.id = p_grant_id
+    and p.slug = p_slug
+    and p.is_active
+    and g.used_at is not null
+    and g.revoked_at is null
+    and g.session_expires_at > now();
+$$;
+
+revoke all on function public.get_granted_profile(uuid, text) from public, anon, authenticated;
+grant execute on function public.get_granted_profile(uuid, text) to service_role;
+
+-- >>> 0004_visitor_presentation.sql >>>
+-- Owner-controlled visitor presentation. Values are deliberately constrained
+-- so presentation settings can never inject arbitrary CSS or markup.
+alter table public.profiles
+  add column visitor_theme text not null default 'ink'
+    check (visitor_theme in ('ink', 'ocean', 'forest')),
+  add column visitor_layout text not null default 'standard'
+    check (visitor_layout in ('standard', 'compact')),
+  add column visitor_intro text not null default ''
+    check (length(visitor_intro) <= 180);
+
+comment on column public.profiles.visitor_theme is
+  'Allow-listed visitor header theme; does not affect authorization or field visibility.';
+comment on column public.profiles.visitor_layout is
+  'Allow-listed visitor layout density; does not affect authorization or field visibility.';
+comment on column public.profiles.visitor_intro is
+  'Plain-text visitor introduction, limited to 180 characters.';
+
+create or replace function public.get_granted_profile(
+  p_grant_id uuid,
+  p_slug     text
+)
+returns jsonb
+language sql
+security definer
+set search_path = public, pg_temp
+stable
+as $$
+  select jsonb_build_object(
+    'full_name', p.full_name,
+    'scope', g.scope,
+    'photo_path', case when g.scope = 'full' and p.show_photo then p.photo_path else null end,
+    'dob',        case when g.scope = 'full' and p.show_dob then p.dob else null end,
+    'address',    case when g.scope = 'full' and p.show_address then p.address else null end,
     'visitor_theme', p.visitor_theme,
     'visitor_layout', p.visitor_layout,
     'visitor_intro', p.visitor_intro,
@@ -1107,3 +1187,104 @@ $$;
 
 revoke all on function public.get_granted_profile(uuid, text) from public, anon, authenticated;
 grant execute on function public.get_granted_profile(uuid, text) to service_role;
+
+-- >>> 0005_share_links.sql >>>
+-- ----------------------------------------------------------------------------
+-- 0005 — Share links.
+--
+-- A share link hands out one vault document without an access code: the token
+-- travels in the URL, only its hash is stored, and it can expire, be revoked or
+-- be capped by a download count. `share_links` itself has been present since
+-- 0001; this migration adds the single privileged function that consumes a
+-- download atomically (row lock + count increment) so two concurrent requests
+-- can never overshoot max_downloads.
+-- ----------------------------------------------------------------------------
+
+-- ----------------------------------------------------------------------------
+-- consume_share_download — the single atomic path that turns a token hash into
+--   one streamable object. Under a row lock it rejects a missing, revoked,
+--   expired or exhausted link (returning null), then increments the counter,
+--   stamps last_accessed_at and returns the storage target.
+-- ----------------------------------------------------------------------------
+
+create or replace function public.consume_share_download(p_token_hash text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_link public.share_links%rowtype;
+  v_doc  public.documents%rowtype;
+begin
+  select * into v_link
+  from public.share_links
+  where token_hash = p_token_hash
+  for update;
+
+  if not found then
+    return null;
+  end if;
+
+  if v_link.revoked_at is not null then
+    return null;
+  end if;
+
+  if v_link.expires_at <= now() then
+    return null;
+  end if;
+
+  if v_link.max_downloads is not null and v_link.download_count >= v_link.max_downloads then
+    return null;
+  end if;
+
+  update public.share_links
+    set download_count = download_count + 1,
+        last_accessed_at = now()
+    where id = v_link.id
+    returning * into v_link;
+
+  select * into v_doc
+  from public.documents
+  where id = v_link.document_id and owner_id = v_link.owner_id;
+
+  if not found then
+    return null;
+  end if;
+
+  return jsonb_build_object(
+    'share_id', v_link.id,
+    'owner_id', v_link.owner_id,
+    'storage_path', v_doc.storage_path,
+    'name', v_doc.name,
+    'mime', v_doc.mime
+  );
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- Privileges: definer functions stay service-role only.
+-- ----------------------------------------------------------------------------
+
+revoke all on function public.consume_share_download(text) from public, anon, authenticated;
+grant execute on function public.consume_share_download(text) to service_role;
+
+-- >>> 0006_auth_security.sql >>>
+-- ----------------------------------------------------------------------------
+-- 0006 — Authentication & security.
+--
+-- Two-factor recovery codes live in `backup_recovery_codes` (created in 0001).
+-- That migration gave the owner SELECT (metadata only) and DELETE policies and
+-- stated that writes are service-role only. Rotating the codes needs a
+-- server-side write that is still bound to the owner, so this migration adds the
+-- matching owner-scoped INSERT policy. RLS stays in force: a row can only be
+-- inserted (or deleted) for the authenticated owner.
+--
+-- Codes are never stored in the clear: the application writes argon2id hashes.
+-- No other schema change is required — `owner_settings.totp_enabled` and the
+-- privacy-default columns already exist from 0001.
+-- ----------------------------------------------------------------------------
+
+drop policy if exists backup_recovery_codes_insert_own on public.backup_recovery_codes;
+create policy backup_recovery_codes_insert_own on public.backup_recovery_codes
+  for insert to authenticated with check (owner_id = auth.uid());

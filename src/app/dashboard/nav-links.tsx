@@ -9,6 +9,8 @@ import {
   KeyRound,
   LayoutDashboard,
   Paintbrush,
+  Search,
+  Share2,
   ShieldCheck,
   Settings2,
   UserRound,
@@ -17,9 +19,11 @@ import {
 
 const NAV = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/search', label: 'Search', icon: Search },
   { href: '/dashboard/card', label: 'Card & QR', icon: IdCard },
   { href: '/dashboard/customize', label: 'Customize', icon: Paintbrush },
   { href: '/dashboard/access', label: 'Access', icon: KeyRound },
+  { href: '/dashboard/share', label: 'Share links', icon: Share2 },
   { href: '/dashboard/vault', label: 'Vault', icon: Vault },
   { href: '/dashboard/info', label: 'Information', icon: UserRound },
   { href: '/dashboard/backup', label: 'Backup', icon: ArchiveRestore },

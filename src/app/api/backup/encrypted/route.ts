@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getOwnerOrNull } from '@/lib/auth/session';
 import { isReauthenticated } from '@/lib/auth/reauth';
 import { buildBackupZip, encryptBackup } from '@/lib/export/backup';
+import { alertBackupExported } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     const zip = await buildBackupZip(owner.id, true);
     const encrypted = encryptBackup(zip, parsed.data.passphrase);
+    void alertBackupExported().catch(() => {});
     return new NextResponse(new Uint8Array(encrypted), {
       headers: {
         ...NO_STORE,

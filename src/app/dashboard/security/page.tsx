@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth/session';
+import { isReauthenticated } from '@/lib/auth/reauth';
 import { createUserClient } from '@/lib/db/user';
 import { SecurityClient } from './security-client';
+import { MfaPanel, type MfaFactor } from './mfa-panel';
 import { ArrowUpRight, Check, CircleAlert, FileLock2, KeyRound, ShieldCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,7 @@ type GrantStatus = {
 };
 type DocumentStatus = { is_shared: boolean };
 type AccessEvent = { outcome: string; created_at: string };
+type SecuritySettings = { totp_enabled: boolean };
 
 function StatusCard({
   title,
@@ -54,9 +57,12 @@ function StatusCard({
 
 export default async function SecurityPage() {
   const owner = await requireOwner('/dashboard/security');
-  const supabase = await createUserClient();
+  const [reauthenticated, supabase] = await Promise.all([
+    isReauthenticated(owner.id),
+    createUserClient(),
+  ]);
   const now = Date.now();
-  const [profileResult, grantsResult, documentsResult, eventsResult] = await Promise.all([
+  const [profileResult, grantsResult, documentsResult, eventsResult, settingsResult, recoveryResult, factorsResult] = await Promise.all([
     supabase
       .from('profiles')
       .select('is_active')
@@ -80,6 +86,17 @@ export default async function SecurityPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle<AccessEvent>(),
+    supabase
+      .from('owner_settings')
+      .select('totp_enabled')
+      .eq('owner_id', owner.id)
+      .maybeSingle<SecuritySettings>(),
+    supabase
+      .from('backup_recovery_codes')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', owner.id)
+      .is('used_at', null),
+    supabase.auth.mfa.listFactors(),
   ]);
 
   const activeAccessCount = (grantsResult.data ?? []).filter((grant) => {
@@ -91,6 +108,13 @@ export default async function SecurityPage() {
   }).length;
   const sharedDocumentCount = (documentsResult.data ?? []).filter((document) => document.is_shared).length;
   const dataLoadFailed = Boolean(profileResult.error || grantsResult.error || documentsResult.error || eventsResult.error);
+  const mfaFactors: MfaFactor[] = (factorsResult.data?.all ?? []).map((factor) => ({
+    id: factor.id,
+    friendlyName: factor.friendly_name ?? null,
+    status: factor.status,
+    createdAt: factor.created_at,
+  }));
+  const totpEnabled = Boolean(settingsResult.data?.totp_enabled) || mfaFactors.some((factor) => factor.status === 'verified');
 
   return (
     <div className="min-w-0 space-y-5 sm:space-y-6">
@@ -150,6 +174,13 @@ export default async function SecurityPage() {
           good={Boolean(eventsResult.data)}
         />
       </div>
+
+      <MfaPanel
+        totpEnabled={totpEnabled}
+        factors={mfaFactors}
+        unusedRecoveryCodes={recoveryResult.count ?? 0}
+        reauthenticated={reauthenticated}
+      />
 
       <SecurityClient activeAccessCount={activeAccessCount} />
     </div>

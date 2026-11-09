@@ -24,9 +24,9 @@ const DOCUMENT_COLUMNS =
 
 /**
  * Escapes the LIKE metacharacters so a search term is matched literally instead
- * of being interpreted as a pattern.
+ * of being interpreted as a pattern. Shared with the global search.
  */
-function escapeLike(term: string): string {
+export function escapeLike(term: string): string {
   return term.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
