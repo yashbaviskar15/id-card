@@ -31,6 +31,7 @@ async function requestContext() {
 export async function createShareLinkAction(_prev: ShareState, formData: FormData): Promise<ShareState> {
   const owner = await requireOwner('/dashboard/share');
 
+  try {
   if (!(await isReauthenticated(owner.id))) {
     return { ok: false, error: 'Enter your password again before creating a share link.' };
   }
@@ -114,16 +115,35 @@ export async function createShareLinkAction(_prev: ShareState, formData: FormDat
     // The only expected unique violation is a token collision; retry with a new one.
     if (error?.code !== '23505') {
       log.warn('share.link_create failed', { code: error?.code });
-      return { ok: false, error: 'Could not create the link. Try again.' };
+      const missingSchema = ['42P01', '42703', 'PGRST204', 'PGRST205'].includes(error?.code ?? '');
+      return {
+        ok: false,
+        error: missingSchema
+          ? 'Share-link database migrations are missing. Apply migrations 0001–0007 from SETUP.md.'
+          : 'Could not create the link. Check the connection and try again.',
+      };
     }
   }
 
   return { ok: false, error: 'Could not create the link. Try again.' };
+  } catch (cause) {
+    const category = cause instanceof Error && cause.message.startsWith('Invalid server environment')
+      ? 'configuration'
+      : 'unexpected';
+    log.warn('share.link_create threw', { category });
+    return {
+      ok: false,
+      error: category === 'configuration'
+        ? 'Share links are not configured on the server. Verify the required variables in SETUP.md and redeploy.'
+        : 'The link request could not be completed. Check the connection and your Share Links list before retrying.',
+    };
+  }
 }
 
 /** Ends a share link immediately: the next visitor request fails the DB check. */
 export async function revokeShareLinkAction(shareId: string): Promise<ShareState> {
   const owner = await requireOwner('/dashboard/share');
+  try {
   const parsed = z.uuid().safeParse(shareId);
   if (!parsed.success) return { ok: false, error: 'That link no longer exists.' };
 
@@ -153,4 +173,8 @@ export async function revokeShareLinkAction(shareId: string): Promise<ShareState
 
   revalidatePath('/dashboard/share');
   return { ok: true };
+  } catch {
+    log.warn('share.link_revoke threw');
+    return { ok: false, error: 'The revoke request could not be completed. Refresh the list before retrying.' };
+  }
 }

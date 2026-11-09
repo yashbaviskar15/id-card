@@ -24,7 +24,7 @@ const OFFLINE_HTML = `<!doctype html>
       main{width:min(100%,420px);padding:32px 24px;border:1px solid #dde1e7;border-radius:18px;background:#fff;text-align:center;box-shadow:0 8px 28px #11182712}
       .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;text-align:left}
       .brand svg{display:block;border-radius:11px}
-      .name{display:block;font-size:15px;font-weight:700}.tagline{margin-top:3px;color:#667085;font-size:12px}
+      .name{display:block;font-size:15px;font-weight:700}
       h1{margin:0;font-size:21px}.message{margin:10px 0 0;color:#667085;font-size:14px;line-height:1.6}
       .note{margin-top:22px;padding:12px;border-radius:10px;background:#f3f4f6;color:#475467;font-size:12px;line-height:1.55}
       a.btn{display:inline-block;margin-top:22px;padding:10px 18px;border:1px solid #dde1e7;border-radius:10px;color:#111827;font-size:14px;font-weight:600;text-decoration:none}
@@ -33,7 +33,7 @@ const OFFLINE_HTML = `<!doctype html>
   </head>
   <body>
     <main>
-      <header class="brand">${LOGO_SVG}<span><span class="name">Private Identity</span><span class="tagline">Secure Contact Sharing</span></span></header>
+      <header class="brand">${LOGO_SVG}<span class="name">Private Identity</span></header>
       <h1>You are offline</h1>
       <p class="message">The app is installed and ready, but your private account data and server actions need an internet connection.</p>
       <p class="note">Reconnect to load your dashboard and safely sync changes. Access codes, sign-in, file sharing, and security settings are not available offline.</p>

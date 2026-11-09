@@ -50,6 +50,9 @@ export function createMiddlewareClient(request: NextRequest, response: NextRespo
         },
         setAll(cookiesToSet) {
           for (const { name, value, options } of cookiesToSet) {
+            // Make refreshed tokens visible to downstream middleware and the
+            // current request as well as the browser's next request.
+            request.cookies.set(name, value);
             response.cookies.set(name, value, options);
           }
         },

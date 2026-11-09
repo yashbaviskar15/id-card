@@ -167,23 +167,22 @@ export async function generateRecoveryCodesAction(): Promise<
 
   const supabase = await createUserClient();
   const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () => generateRecoveryCode());
-  const rows = await Promise.all(
-    codes.map(async (code) => ({ owner_id: owner.id, code_hash: await hashPassword(code) })),
-  );
-
-  const { error: deleteError } = await supabase
-    .from('backup_recovery_codes')
-    .delete()
-    .eq('owner_id', owner.id);
-  if (deleteError) {
-    log.warn('security.recovery_codes.clear failed', { code: deleteError.code });
-    return { ok: false, error: 'Could not replace your recovery codes. Try again.' };
+  const hashes: string[] = [];
+  for (const code of codes) {
+    hashes.push(await hashPassword(code));
   }
 
-  const { error: insertError } = await supabase.from('backup_recovery_codes').insert(rows);
-  if (insertError) {
-    log.warn('security.recovery_codes.insert failed', { code: insertError.code });
-    return { ok: false, error: 'Could not save your recovery codes. Try again.' };
+  const { error } = await supabase.rpc('replace_backup_recovery_codes', {
+    p_code_hashes: hashes,
+  });
+  if (error) {
+    log.warn('security.recovery_codes.replace failed', { code: error.code });
+    return {
+      ok: false,
+      error: error.code === '42883' || error.code === 'PGRST202'
+        ? 'Recovery-code setup is missing a database migration. Apply migrations 0001–0007 from SETUP.md.'
+        : 'Could not save your recovery codes. Check the connection and try again.',
+    };
   }
 
   const { ipHash, userAgent } = await requestContext();
@@ -195,7 +194,9 @@ export async function generateRecoveryCodesAction(): Promise<
     ipHash,
     userAgent,
   });
-  await alertRecoveryCodesRegenerated();
+  await alertRecoveryCodesRegenerated().catch(() => {
+    log.warn('security.recovery_codes.alert failed');
+  });
   revalidatePath(SECURITY_PATH);
   return { ok: true, codes };
 }

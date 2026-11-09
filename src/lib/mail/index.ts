@@ -9,12 +9,12 @@ import { log } from '@/lib/log';
  * Failures never block the calling request.
  */
 async function deliver(subject: string, text: string): Promise<void> {
-  const env = serverEnv();
-  if (!env.RESEND_API_KEY || !env.ALERT_FROM_EMAIL || !env.ALERT_TO_EMAIL) {
-    log.warn('alert (no email provider configured)', { subject });
-    return;
-  }
   try {
+    const env = serverEnv();
+    if (!env.RESEND_API_KEY || !env.ALERT_FROM_EMAIL || !env.ALERT_TO_EMAIL) {
+      log.warn('alert (no email provider configured)', { subject });
+      return;
+    }
     const resend = new Resend(env.RESEND_API_KEY);
     await resend.emails.send({
       from: env.ALERT_FROM_EMAIL,

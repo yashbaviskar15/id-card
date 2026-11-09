@@ -40,13 +40,15 @@ Ensure these are also correctly set in your Vercel project:
 
 ## 3. Apply Database Migrations
 
-Share-link downloads and recovery-code generation depend on migrations `0005` and `0006`.
-Push the migrations to the Supabase project used by this deployment before testing those
-features. From a trusted machine with the Supabase CLI installed and the correct project
-selected, run:
+The deployed Supabase project must have **all migrations `0001` through `0007`**. In
+particular, access-code document permissions require `0002`, share-link downloads require
+`0005`, recovery-code writes require `0006`, and atomic recovery-code rotation requires
+`0007`. From a trusted machine with the Supabase CLI installed, link the exact project used
+by `NEXT_PUBLIC_SUPABASE_URL`, then review and apply pending migrations:
 
 ```bash
 npx supabase link --project-ref <your-project-ref>
+npx supabase migration list --linked
 npx supabase db push --linked --yes
 ```
 
@@ -57,14 +59,33 @@ through client-visible variables; keep the connection string only in server-side
 
 ## 4. Verify Passkey Configuration
 
-Passkeys require both browser WebAuthn support and passkey endpoints on the Supabase Auth
-service. Confirm the Supabase project used by `NEXT_PUBLIC_SUPABASE_URL` supports passkeys,
-and that its WebAuthn relying-party domain is `ecard-personal.aravanta.tech` with the HTTPS
-origin `https://ecard-personal.aravanta.tech`. A `404` or `501` from the Auth `/passkeys`
-endpoint indicates a project-side Auth capability/configuration issue; redeploying the Next.js
-app alone will not enable it.
+In the Supabase Dashboard, open the project used by `NEXT_PUBLIC_SUPABASE_URL`, then go to
+**Authentication > Configuration > Passkeys** (on some dashboard versions this appears as
+**Authentication > Passkeys**). Enable passkey authentication and set:
 
-## 5. Redeploy
+| Setting | Value |
+| :--- | :--- |
+| Relying Party Display Name | `Private Identity Card` |
+| Relying Party ID | `ecard-personal.aravanta.tech` |
+| Relying Party Origins | `https://ecard-personal.aravanta.tech` |
+
+The ID is the bare hostname: do not include `https://`, a port, or a path. Origins must be
+the exact HTTPS origin used in the browser. Save the settings, redeploy the app, then sign in
+with a supported browser and add a passkey under **Dashboard > Settings > Passkeys**. A
+`404`/`501` response or an unavailable endpoint means passkeys are not enabled/supported for
+that Supabase Auth project; changing application code or redeploying alone cannot enable the
+Auth feature. See the [official Supabase passkeys guide](https://supabase.com/docs/guides/auth/passkeys).
+
+## 5. Review Session Expiry
+
+In the Supabase Dashboard, open **Authentication > Sessions** and review the inactivity
+timeout and maximum session lifetime. If the owner should remain signed in during regular
+use, do not set an unusually short inactivity timeout. The app refreshes Supabase auth tokens
+on requests; the middleware also forwards refreshed cookies to the current request and to
+redirect responses. A browser tab that has been idle past the project's configured limit will
+still need the owner to sign in again.
+
+## 6. Redeploy
 
 After adding the environment variables, you need to redeploy your project for the changes to take effect:
 

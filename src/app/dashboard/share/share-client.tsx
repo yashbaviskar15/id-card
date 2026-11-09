@@ -65,13 +65,17 @@ function RevokeShareButton({ shareId, onRevoked }: { shareId: string; onRevoked?
         onClick={() =>
           startTransition(async () => {
             setError(null);
-            const result = await revokeShareLinkAction(shareId);
-            if (!result.ok) {
-              setError(result.error ?? 'Could not revoke the link.');
-              return;
+            try {
+              const result = await revokeShareLinkAction(shareId);
+              if (!result.ok) {
+                setError(result.error ?? 'Could not revoke the link.');
+                return;
+              }
+              onRevoked?.();
+              router.refresh();
+            } catch {
+              setError('The revoke request was interrupted. Refresh the list before retrying.');
             }
-            onRevoked?.();
-            router.refresh();
           })
         }
       >
