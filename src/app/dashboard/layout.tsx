@@ -2,17 +2,10 @@ import Link from 'next/link';
 import { requireOwner } from '@/lib/auth/session';
 import { NavLinks } from './nav-links';
 import { SignOutForm } from '@/components/offline/sign-out-form';
+import { BrandMark } from '@/components/brand/brand-mark';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { LogOut, Menu } from 'lucide-react';
-
-function BrandMark() {
-  return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-sm font-bold text-white">
-      P
-    </span>
-  );
-}
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const owner = await requireOwner();

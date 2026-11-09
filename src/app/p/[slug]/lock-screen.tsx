@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { LockKeyhole, ShieldCheck } from 'lucide-react';
+import { BrandMark } from '@/components/brand/brand-mark';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { initialFormState } from '@/app/(auth)/form-state';
@@ -20,7 +21,7 @@ export function LockScreen({ slug }: { slug: string }) {
     <main className="bg-page flex min-h-dvh items-center justify-center px-4 py-10 sm:px-6">
       <div className="w-full max-w-md">
         <header className="mb-6 flex items-center justify-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink text-base font-semibold text-white">P</span>
+          <BrandMark size={40} />
           <div className="text-left">
             <p className="text-sm font-semibold text-ink">Private Identity</p>
             <p className="text-xs text-label">Secure contact sharing</p>

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BrandMark } from '@/components/brand/brand-mark';
 
 export function AuthScreen({
   title,
@@ -13,9 +14,7 @@ export function AuthScreen({
     <main className="bg-page flex min-h-dvh items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
       <div className="w-full max-w-md">
         <header className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink text-base font-semibold text-white">
-            P
-          </span>
+          <BrandMark size={40} />
           <p className="eyebrow mt-3">Private Identity</p>
         </header>
 
