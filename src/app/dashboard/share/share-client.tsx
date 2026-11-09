@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from 'cn';
-import { Copy, Link2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Link2, Search } from 'lucide-react';
 import { useOffline } from '@/components/offline/offline-provider';
 import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 import { createShareLinkAction, revokeShareLinkAction } from './actions';
 import { initialShareState } from './form-state';
+import {
+  filterAndSortShareLinks,
+  paginateShareLinks,
+  type ShareLinkSort,
+  type ShareLinkStatusFilter,
+} from '@/lib/share/list';
 
 export interface ShareDocumentOption {
   id: string;
@@ -246,14 +252,96 @@ export function ShareCreator({ documents }: { documents: ShareDocumentOption[] }
 }
 
 export function ShareLinks({ links }: { links: ShareLinkItem[] }) {
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState<ShareLinkStatusFilter>('all');
+  const [sort, setSort] = useState<ShareLinkSort>('newest');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const filteredLinks = useMemo(
+    () => filterAndSortShareLinks(links, query, status, sort),
+    [links, query, sort, status],
+  );
+  const {
+    items: visibleLinks,
+    page: currentPage,
+    pageCount,
+    firstIndex,
+  } = paginateShareLinks(filteredLinks, page, pageSize);
+
+  function updateQuery(value: string) {
+    setQuery(value);
+    setPage(1);
+  }
+
+  function updateStatus(value: ShareLinkStatusFilter) {
+    setStatus(value);
+    setPage(1);
+  }
+
+  function updateSort(value: ShareLinkSort) {
+    setSort(value);
+    setPage(1);
+  }
+
   return (
     <section className="surface shadow-card overflow-hidden">
-      <div className="border-b border-subtle-line p-4 sm:p-6">
-        <h2 className="text-sm font-semibold text-ink">Your links</h2>
-        <p className="mt-1 text-sm text-label">
+      <div className="space-y-4 border-b border-subtle-line p-4 sm:p-6">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold text-ink">Your links</h2>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-label">
+              {links.length} total
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-label">
           The link itself is never stored — only its hash — so it is shown once at creation and cannot be
           recovered here. Revoke any link to stop it working immediately.
-        </p>
+          </p>
+        </div>
+        {links.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-[minmax(12rem,1fr)_10rem_11rem]">
+            <div className="relative min-w-0">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-label"
+                aria-hidden="true"
+              />
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => updateQuery(event.target.value)}
+                placeholder="Search documents or status"
+                aria-label="Search share links"
+                className="h-10 border-hairline pl-9"
+              />
+            </div>
+            <label className="sr-only" htmlFor="share-status-filter">Filter share links by status</label>
+            <select
+              id="share-status-filter"
+              value={status}
+              onChange={(event) => updateStatus(event.target.value as ShareLinkStatusFilter)}
+              className="h-10 w-full rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="expired">Expired</option>
+              <option value="revoked">Revoked</option>
+              <option value="exhausted">Exhausted</option>
+            </select>
+            <label className="sr-only" htmlFor="share-sort">Sort share links</label>
+            <select
+              id="share-sort"
+              value={sort}
+              onChange={(event) => updateSort(event.target.value as ShareLinkSort)}
+              className="h-10 w-full rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="name">Document name</option>
+              <option value="expires">Expiring soon</option>
+              <option value="downloads">Most downloads</option>
+            </select>
+          </div>
+        ) : null}
       </div>
 
       {links.length === 0 ? (
@@ -266,12 +354,32 @@ export function ShareLinks({ links }: { links: ShareLinkItem[] }) {
             Create a link above to share one of your documents with someone.
           </p>
         </div>
+      ) : filteredLinks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-5 py-14 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-hairline bg-muted/30">
+            <Search className="h-5 w-5 text-label" aria-hidden="true" />
+          </div>
+          <h3 className="mt-4 text-sm font-semibold text-ink">No matching links</h3>
+          <p className="mt-1 text-sm text-label">Try another document name or status.</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => {
+              updateQuery('');
+              updateStatus('all');
+            }}
+          >
+            Clear filters
+          </Button>
+        </div>
       ) : (
         <ul className="divide-y divide-subtle-line">
-          {links.map((link) => (
+          {visibleLinks.map((link) => (
             <li
               key={link.id}
-              className="grid min-w-0 gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6"
+              className="grid min-w-0 gap-3 p-4 transition-colors hover:bg-muted/20 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6"
             >
               <div className="flex min-w-0 flex-col gap-1.5">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -302,6 +410,43 @@ export function ShareLinks({ links }: { links: ShareLinkItem[] }) {
           ))}
         </ul>
       )}
+      {filteredLinks.length > 0 ? (
+        <nav
+          aria-label="Share link pages"
+          className="flex flex-col gap-3 border-t border-subtle-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+        >
+          <p className="text-sm text-label" aria-live="polite">
+            Showing {firstIndex + 1}–{Math.min(firstIndex + pageSize, filteredLinks.length)} of {filteredLinks.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              aria-label="Previous share links page"
+              onClick={() => setPage(currentPage - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              Previous
+            </Button>
+            <span className="min-w-16 text-center text-xs tabular-nums text-label">
+              Page {currentPage} of {pageCount}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= pageCount}
+              aria-label="Next share links page"
+              onClick={() => setPage(currentPage + 1)}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </div>
+        </nav>
+      ) : null}
     </section>
   );
 }

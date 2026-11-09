@@ -1,6 +1,7 @@
 import { requireOwner } from '@/lib/auth/session';
 import { createUserClient } from '@/lib/db/user';
 import { log } from '@/lib/log';
+import { escapeLike } from '@/lib/vault/load';
 import { VaultClient, type VaultCategory, type VaultDocument } from './vault-client';
 
 export const dynamic = 'force-dynamic';
@@ -40,10 +41,10 @@ export default async function VaultPage({
   const readDocuments = (targetPage: number) => {
     let request = supabase
       .from('documents')
-      .select('id, name, size, created_at, is_shared, categories(name)')
+      .select('id, name, size, created_at, is_shared, categories(name)', { count: 'exact' })
       .eq('owner_id', owner.id);
 
-    if (query) request = request.ilike('name', `%${query}%`);
+    if (query) request = request.ilike('name', `%${escapeLike(query)}%`);
     if (category === '__none') request = request.is('category_id', null);
     else if (category) request = request.eq('category_id', category);
 
@@ -53,7 +54,7 @@ export default async function VaultPage({
       .returns<DocumentRowWithCategory[]>();
   };
 
-  const [pageResult, categoriesResult] = await Promise.all([
+  const [pageResult, categoriesResult, totalDocumentsResult, sharedDocumentsResult] = await Promise.all([
     readDocuments(page),
     supabase
       .from('categories')
@@ -61,6 +62,15 @@ export default async function VaultPage({
       .eq('owner_id', owner.id)
       .order('sort', { ascending: true })
       .returns<VaultCategory[]>(),
+    supabase
+      .from('documents')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', owner.id),
+    supabase
+      .from('documents')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', owner.id)
+      .eq('is_shared', true),
   ]);
 
   const hasNextPage = (pageResult.data?.length ?? 0) > PAGE_SIZE;
@@ -70,6 +80,12 @@ export default async function VaultPage({
   }
   if (categoriesResult.error) {
     log.warn('vault.categories read failed', { message: categoriesResult.error.message });
+  }
+  if (totalDocumentsResult.error) {
+    log.warn('vault.total documents count failed', { message: totalDocumentsResult.error.message });
+  }
+  if (sharedDocumentsResult.error) {
+    log.warn('vault.shared documents count failed', { message: sharedDocumentsResult.error.message });
   }
 
   const documents: VaultDocument[] = (documentsResult.data ?? []).slice(0, PAGE_SIZE).map((row) => ({
@@ -92,6 +108,9 @@ export default async function VaultPage({
       hasNextPage={hasNextPage}
       documentsLoadFailed={Boolean(documentsResult.error)}
       categoriesLoadFailed={Boolean(categoriesResult.error)}
+      filteredCount={documentsResult.count ?? 0}
+      totalDocuments={totalDocumentsResult.error ? null : totalDocumentsResult.count ?? 0}
+      sharedDocuments={sharedDocumentsResult.error ? null : sharedDocumentsResult.count ?? 0}
     />
   );
 }

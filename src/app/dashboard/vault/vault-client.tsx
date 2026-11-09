@@ -2,13 +2,14 @@
 
 import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cn } from 'cn';
-import { Download, FileText, Search, Trash2 } from 'lucide-react';
+import { ArrowUpRight, Download, FileText, Files, FolderOpen, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useOffline } from '@/components/offline/offline-provider';
 import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 import { uploadDocumentAction, setDocumentSharedAction, deleteDocumentAction } from './actions';
@@ -184,6 +185,9 @@ export function VaultClient({
   hasNextPage,
   documentsLoadFailed,
   categoriesLoadFailed,
+  filteredCount,
+  totalDocuments,
+  sharedDocuments,
 }: {
   documents: VaultDocument[];
   categories: VaultCategory[];
@@ -194,6 +198,9 @@ export function VaultClient({
   hasNextPage: boolean;
   documentsLoadFailed: boolean;
   categoriesLoadFailed: boolean;
+  filteredCount: number;
+  totalDocuments: number | null;
+  sharedDocuments: number | null;
 }) {
   const [state, submit, pending] = useActionState(uploadDocumentAction, initialVaultState);
   const formRef = useRef<HTMLFormElement>(null);
@@ -239,17 +246,59 @@ export function VaultClient({
   }, [categoryValue, documents.length, documentsLoadFailed, navigateTo, page, queryValue]);
 
   const hasFilters = Boolean(queryValue || categoryValue);
-  const emptyVault = documents.length === 0 && page === 1 && !hasFilters;
+  const emptyVault = filteredCount === 0 && page === 1 && !hasFilters && totalDocuments === 0;
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <header>
-        <h1 className="page-title">Document vault</h1>
-        <p className="mt-1 max-w-2xl text-sm text-label">
-          Secure storage for your private files. Shared documents can be viewed by visitors who
-          hold a valid access code.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow">Private storage</p>
+          <h1 className="page-title mt-1">Document vault</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-label">
+            Keep important files organized, private by default, and ready to share when you choose.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/share"
+          className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full gap-2 sm:w-auto')}
+        >
+          <Share2 className="h-4 w-4" aria-hidden="true" />
+          Create a share link
+          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
       </header>
+
+      <section aria-label="Vault overview" className="grid gap-3 sm:grid-cols-3">
+        <article className="surface shadow-card flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-ink">
+            <Files className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="eyebrow">Documents</p>
+            <p className="mt-0.5 text-xl font-semibold text-ink tnum">{totalDocuments ?? '—'}</p>
+          </div>
+        </article>
+        <article className="surface shadow-card flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-ink">
+            <Share2 className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="eyebrow">Visitor-visible</p>
+            <p className="mt-0.5 text-xl font-semibold text-ink tnum">{sharedDocuments ?? '—'}</p>
+          </div>
+        </article>
+        <article className="surface shadow-card flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-ink">
+            <FolderOpen className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="eyebrow">Categories</p>
+            <p className="mt-0.5 text-xl font-semibold text-ink tnum">
+              {categoriesLoadFailed ? '—' : categories.length}
+            </p>
+          </div>
+        </article>
+      </section>
 
       {documentsLoadFailed ? (
         <Alert variant="destructive">
@@ -267,7 +316,20 @@ export function VaultClient({
       ) : null}
 
       <section className="surface shadow-card p-5 sm:p-7">
-        <h2 className="eyebrow">Upload a document</h2>
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-ink">
+            <Upload className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold text-ink">Add a document</h2>
+            <p className="mt-1 text-sm text-label">
+              Upload a file to keep it in your vault. It stays private until you enable visitor access.
+            </p>
+          </div>
+          <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">
+            Private by default
+          </Badge>
+        </div>
 
         <form
           ref={formRef}
@@ -318,7 +380,8 @@ export function VaultClient({
               ))}
             </select>
           </div>
-          <Button type="submit" className="h-11 px-5 font-medium" disabled={pending || !online}>
+          <Button type="submit" className="h-11 gap-2 px-5 font-medium" disabled={pending || !online}>
+            <Upload className="h-4 w-4" aria-hidden="true" />
             {pending ? 'Processing…' : 'Upload'}
           </Button>
         </form>
@@ -339,40 +402,70 @@ export function VaultClient({
         ) : null}
       </section>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-label" aria-hidden="true" />
-          <Input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search your vault…"
-            aria-label="Search documents"
-            className="h-11 border-hairline pl-9 focus:border-ink"
-          />
-        </div>
-        <div className="relative w-full sm:w-56">
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            aria-label="Filter by category"
-            className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111827'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
-          >
-            <option value="">All categories</option>
-            {categories.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-            <option value="__none">Uncategorized</option>
-          </select>
-        </div>
-      </div>
-
       <section className="surface shadow-card overflow-hidden">
+        <div className="space-y-4 border-b border-subtle-line p-4 sm:p-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-ink">Your documents</h2>
+              <p className="mt-1 text-sm text-label">
+                {documentsLoadFailed
+                  ? 'The library could not be loaded.'
+                  : `${filteredCount} ${filteredCount === 1 ? 'document' : 'documents'}${hasFilters ? ' match your filters' : ' in this view'}`}
+              </p>
+            </div>
+            {hasFilters ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-fit text-label"
+                onClick={() => {
+                  setQuery('');
+                  setCategory('');
+                }}
+              >
+                Clear filters
+              </Button>
+            ) : null}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[minmax(12rem,1fr)_14rem]">
+            <div className="relative min-w-0">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-label"
+                aria-hidden="true"
+              />
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search document names"
+                aria-label="Search documents"
+                className="h-10 border-hairline pl-9 focus:border-ink"
+              />
+            </div>
+            <div>
+              <label className="sr-only" htmlFor="vault-category-filter">Filter by category</label>
+              <select
+                id="vault-category-filter"
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                className="h-10 w-full cursor-pointer appearance-none rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23111827'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+              >
+                <option value="">All categories</option>
+                {categories.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+                <option value="__none">Uncategorized</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {documentsLoadFailed ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
             <FileText className="h-8 w-8 text-destructive/50" aria-hidden="true" />
             <h3 className="mt-4 text-sm font-semibold text-ink">Documents unavailable</h3>
             <p className="mt-1 max-w-sm text-sm text-label">
@@ -380,18 +473,26 @@ export function VaultClient({
             </p>
           </div>
         ) : documents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-hairline bg-muted/30">
               <FileText className="h-6 w-6 text-label" aria-hidden="true" />
             </div>
             <h3 className="mt-4 text-sm font-semibold text-ink">
-              {emptyVault ? 'Your vault is empty' : 'No matches found'}
+              {emptyVault ? 'Your vault is empty' : 'No documents found'}
             </h3>
             <p className="mt-1 max-w-xs text-sm text-label">
               {emptyVault
                 ? 'Upload your first document to keep it safe in your private vault.'
-                : 'We couldn\'t find any documents matching your current filters.'}
+                : 'Try a different name or category, or clear the active filters.'}
             </p>
+            {emptyVault ? (
+              <Label
+                htmlFor="file"
+                className="mt-4 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-ink/85"
+              >
+                Choose a file
+              </Label>
+            ) : null}
           </div>
         ) : (
           <ul className="divide-y divide-subtle-line">
@@ -403,10 +504,10 @@ export function VaultClient({
         {!documentsLoadFailed && documents.length > 0 ? (
           <nav
             aria-label="Vault pages"
-            className="flex flex-col gap-3 border-t border-subtle-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 border-t border-subtle-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"
           >
             <p className="text-sm text-label" aria-live="polite">
-              Page {page} · Showing {documents.length} of up to {pageSize} items{hasNextPage ? ' · More documents available' : ''}
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredCount)} of {filteredCount}
             </p>
             <div className="flex gap-2">
               <Button
