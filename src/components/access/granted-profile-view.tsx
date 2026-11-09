@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { SessionTimer } from '@/components/access/session-timer';
+import { BrandMark } from '@/components/brand/brand-mark';
 import {
   CalendarDays,
   Contact,
@@ -21,9 +22,9 @@ import { cn } from 'cn';
 import type { GrantedProfile, GrantContactItem, GrantDocument, VisitorTheme } from '@/lib/types';
 
 const VISITOR_HEADER_THEMES: Record<VisitorTheme, string> = {
-  ink: 'bg-ink',
-  ocean: 'bg-sky-800',
-  forest: 'bg-emerald-800',
+  ink: 'bg-gradient-to-r from-slate-950 to-slate-800',
+  ocean: 'bg-gradient-to-r from-sky-950 to-sky-800',
+  forest: 'bg-gradient-to-r from-emerald-950 to-emerald-800',
 };
 
 /** wa.me and tel: both want digits and a leading plus, not punctuation. */
@@ -89,8 +90,12 @@ function ContactBlock({
       <ul className="space-y-5">
         {items.map((item, index) => (
           <li key={`${kind}-${index}`} className="min-w-0 border-t border-subtle-line pt-4 first:border-0 first:pt-0">
-            {item.label ? <p className="mb-1 text-xs font-medium text-label">{item.label}</p> : null}
-            <p className="text-base font-semibold leading-6 text-ink [overflow-wrap:anywhere] sm:text-lg">{item.value}</p>
+            <dl className="min-w-0">
+              {item.label ? <dt className="mb-1 text-xs font-medium text-label">{item.label}</dt> : null}
+              <dd className="break-words text-base font-semibold leading-6 text-ink [overflow-wrap:anywhere] sm:text-lg">
+                {item.value}
+              </dd>
+            </dl>
             <div className="mt-3 flex flex-wrap gap-2">
               {kind === 'email' ? (
                 <ActionLink href={`mailto:${encodeURIComponent(item.value)}`}>
@@ -148,6 +153,7 @@ function SocialLinks({ items }: { items: GrantContactItem[] }) {
             href={item.url.toString()}
             target="_blank"
             rel="noopener noreferrer nofollow"
+            aria-label={`${item.label || 'Website'}: ${item.url.hostname} (opens in a new tab)`}
             className="group flex min-h-16 min-w-0 items-center gap-3 rounded-xl border border-hairline bg-white p-4 transition-colors hover:border-ink hover:bg-muted/40 focus-visible:outline-offset-2"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-ink">
@@ -170,11 +176,13 @@ function Detail({ label, value }: { label: string; value: string }) {
 
   return (
     <div className="min-w-0 rounded-xl bg-muted/70 p-4">
-      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-label">
-        <Icon className="h-4 w-4" aria-hidden="true" />
-        {label}
-      </p>
-      <p className="mt-2 break-words text-base font-medium leading-6 text-ink">{value}</p>
+      <dl>
+        <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-label">
+          <Icon className="h-4 w-4" aria-hidden="true" />
+          {label}
+        </dt>
+        <dd className="mt-2 break-words text-base font-medium leading-6 text-ink">{value}</dd>
+      </dl>
     </div>
   );
 }
@@ -444,27 +452,25 @@ export function GrantedProfileView({
           </p>
         ) : null}
         <div className={`mx-auto space-y-5 sm:space-y-6 ${compact ? 'max-w-4xl' : 'max-w-6xl'}`}>
-          <section className="surface shadow-card min-w-0 overflow-hidden">
+          <section className="surface shadow-card min-w-0 overflow-hidden rounded-2xl">
             <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6 ${VISITOR_HEADER_THEMES[profile.visitor_theme]}`}>
-              <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/10">
-                  <Contact className="h-3.5 w-3.5" aria-hidden="true" />
-                </span>
-                <span>Private identity</span>
+              <div className="flex min-w-0 items-center gap-2.5 text-sm font-semibold">
+                <BrandMark size={30} className="rounded-lg ring-1 ring-white/15" />
+                <span>Private Identity</span>
               </div>
               <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-xs font-medium">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 Temporary access active
               </span>
             </div>
-            <div className={`flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center sm:gap-6 ${compact ? 'p-4 sm:p-5' : 'p-5 sm:p-7'}`}>
-              <div className={`flex shrink-0 items-center justify-center self-center overflow-hidden rounded-xl border border-hairline bg-muted sm:self-auto ${compact ? 'h-20 w-20' : 'h-24 w-24 sm:h-28 sm:w-28'}`}>
+            <div className={`flex min-w-0 flex-col gap-5 bg-gradient-to-b from-white to-muted/20 sm:flex-row sm:items-center sm:gap-6 ${compact ? 'p-4 sm:p-5' : 'p-5 sm:p-7'}`}>
+              <div className={`flex shrink-0 items-center justify-center self-center overflow-hidden rounded-2xl border border-hairline bg-white shadow-sm ring-4 ring-muted/60 sm:self-auto ${compact ? 'h-20 w-20' : 'h-24 w-24 sm:h-32 sm:w-32'}`}>
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={photoUrl}
-                    alt={`Profile photo of ${profile.full_name}`}
-                    className="h-full w-full object-contain p-1"
+                    alt=""
+                    className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
                   />
                 ) : (

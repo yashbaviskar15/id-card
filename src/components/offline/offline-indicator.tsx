@@ -50,10 +50,15 @@ export function OfflineIndicator() {
     <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3 print:hidden">
       <div className="flex w-full max-w-3xl flex-wrap items-center gap-3 rounded-xl border border-subtle-line bg-white/95 px-4 py-3 text-sm shadow-card backdrop-blur">
         {!online ? (
-          <span className="flex items-center gap-2 font-medium text-ink">
-            <WifiOff className="h-4 w-4" aria-hidden="true" />
-            Offline
-          </span>
+          <div className="flex min-w-0 flex-1 items-start gap-2 text-ink">
+            <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0">
+              <span className="block font-semibold">You are offline</span>
+              <span className="block text-xs leading-5 text-label">
+                Private data and server actions need a connection. Unsynced edits stay on this device.
+              </span>
+            </span>
+          </div>
         ) : null}
 
         {pending > 0 ? (

@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { InteractionGuard } from '@/components/security/interaction-guard';
 import { OfflineProvider } from '@/components/offline/offline-provider';
 import { OfflineIndicator } from '@/components/offline/offline-indicator';
 import { ServiceWorkerRegister } from '@/components/offline/service-worker-register';
+import { OfflineNavigationGuard } from '@/components/offline/dashboard-navigation-guard';
 import './globals.css';
 
 /**
@@ -53,7 +53,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={manrope.variable}>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         <OfflineProvider>
-          <InteractionGuard />
+          <OfflineNavigationGuard />
           <TooltipProvider>{children}</TooltipProvider>
           <OfflineIndicator />
           <ServiceWorkerRegister />

@@ -18,7 +18,7 @@ export function DashboardLiveSync() {
     let lastRefresh = 0;
 
     const refreshIfSafe = () => {
-      if (document.visibilityState !== 'visible' || isEditing()) return;
+      if (!navigator.onLine || document.visibilityState !== 'visible' || isEditing()) return;
       const now = Date.now();
       if (now - lastRefresh < 3_000) return;
       lastRefresh = now;
