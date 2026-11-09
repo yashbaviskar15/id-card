@@ -8,9 +8,9 @@
  * Caches can be wiped on demand via `postMessage('CLEAR_CACHES')`, which the app
  * sends on sign-out so no owner data survives on a shared device.
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const STATIC_CACHE = `identity-static-${VERSION}`;
-const OFFLINE_URL = '/offline';
+const LOGO_SVG = `<svg viewBox="0 0 48 48" width="40" height="40" role="img" aria-label="Private Identity"><rect width="48" height="48" rx="11" fill="#111827"/><rect x="8" y="12" width="32" height="24" rx="5" fill="#FFFFFF"/><rect x="12" y="16.5" width="10" height="11" rx="2" fill="#F3F4F6" stroke="#DDE1E7" stroke-width="0.9"/><circle cx="17" cy="20.4" r="1.7" fill="#DDE1E7"/><path d="M14 25.4h6" stroke="#DDE1E7" stroke-width="1.1" stroke-linecap="round"/><rect x="25" y="16.5" width="11" height="2.6" rx="1.3" fill="#111827"/><rect x="25" y="21" width="9.5" height="2" rx="1" fill="#DDE1E7"/><rect x="25" y="24.6" width="10.5" height="2" rx="1" fill="#DDE1E7"/></svg>`;
 const OFFLINE_HTML = `<!doctype html>
 <html lang="en">
   <head>
@@ -23,18 +23,21 @@ const OFFLINE_HTML = `<!doctype html>
       *{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px}
       main{width:min(100%,420px);padding:32px 24px;border:1px solid #dde1e7;border-radius:18px;background:#fff;text-align:center;box-shadow:0 8px 28px #11182712}
       .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;text-align:left}
-      .mark{display:grid;width:44px;height:44px;place-items:center;border-radius:12px;background:#111827;color:#fff;font-size:24px;font-weight:700}
-      .name{font-size:15px;font-weight:700}.tagline{margin-top:3px;color:#667085;font-size:12px}
+      .brand svg{display:block;border-radius:11px}
+      .name{display:block;font-size:15px;font-weight:700}.tagline{margin-top:3px;color:#667085;font-size:12px}
       h1{margin:0;font-size:21px}.message{margin:10px 0 0;color:#667085;font-size:14px;line-height:1.6}
       .note{margin-top:22px;padding:12px;border-radius:10px;background:#f3f4f6;color:#475467;font-size:12px;line-height:1.55}
+      a.btn{display:inline-block;margin-top:22px;padding:10px 18px;border:1px solid #dde1e7;border-radius:10px;color:#111827;font-size:14px;font-weight:600;text-decoration:none}
+      a.btn:hover{background:#f3f4f6}
     </style>
   </head>
   <body>
     <main>
-      <header class="brand"><span class="mark" aria-hidden="true">P</span><span><span class="name">Private Identity</span><span class="tagline" style="display:block">Secure Contact Sharing</span></span></header>
+      <header class="brand">${LOGO_SVG}<span><span class="name">Private Identity</span><span class="tagline">Secure Contact Sharing</span></span></header>
       <h1>You are offline</h1>
-      <p class="message">The app shell is ready, but private account data and server actions need an internet connection.</p>
+      <p class="message">The app is installed and ready, but your private account data and server actions need an internet connection.</p>
       <p class="note">Reconnect to load your dashboard and safely sync changes. Access codes, sign-in, file sharing, and security settings are not available offline.</p>
+      <a class="btn" href="/dashboard">Try again</a>
     </main>
   </body>
 </html>`;
