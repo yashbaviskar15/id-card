@@ -27,17 +27,32 @@ export async function runOrQueue<T extends { ok: boolean; error?: string }>(
   },
 ): Promise<RunOutcome<T | QueuedResult>> {
   if (isOffline()) {
-    await enqueue(options.kind, options.label, options.payload);
-    return { queued: true, result: { ok: true, queued: true } };
+    const stored = await enqueue(options.kind, options.label, options.payload);
+    return stored
+      ? { queued: true, result: { ok: true, queued: true } }
+      : {
+          queued: false,
+          result: { ok: false, error: 'This change could not be stored on this device. Check browser storage and try again.' } as T,
+        };
   }
 
   try {
     const result = await options.run();
     return { queued: false, result };
   } catch {
-    // The request threw instead of returning a verdict: almost always a dropped
-    // connection. Queue it rather than losing the user's edit.
-    await enqueue(options.kind, options.label, options.payload);
-    return { queued: true, result: { ok: true, queued: true } };
+    // Do not persist a payload for an application/server error while online.
+    if (!isOffline()) {
+      return {
+        queued: false,
+        result: { ok: false, error: 'The save failed. Check your connection and try again.' } as T,
+      };
+    }
+    const stored = await enqueue(options.kind, options.label, options.payload);
+    return stored
+      ? { queued: true, result: { ok: true, queued: true } }
+      : {
+          queued: false,
+          result: { ok: false, error: 'The connection dropped and this change could not be stored on this device.' } as T,
+        };
   }
 }
