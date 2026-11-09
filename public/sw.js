@@ -8,9 +8,8 @@
  * Caches can be wiped on demand via `postMessage('CLEAR_CACHES')`, which the app
  * sends on sign-out so no owner data survives on a shared device.
  */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const STATIC_CACHE = `identity-static-${VERSION}`;
-const LOGO_SVG = `<svg viewBox="0 0 48 48" width="40" height="40" role="img" aria-label="Private Identity"><rect width="48" height="48" rx="9" fill="#000000"/><path d="M15 9.5h10.4c8.3 0 13.1 4.1 13.1 11.4 0 7.2-4.8 11.5-13.1 11.5H22v7.5H15V9.5Zm7 6.8v9.4h3.5c4 0 6.1-1.4 6.1-4.7 0-3.2-2.1-4.7-6.1-4.7H22Z" fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd"/></svg>`;
 const OFFLINE_HTML = `<!doctype html>
 <html lang="en">
   <head>
@@ -23,7 +22,7 @@ const OFFLINE_HTML = `<!doctype html>
       *{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px}
       main{width:min(100%,420px);padding:32px 24px;border:1px solid #dde1e7;border-radius:18px;background:#fff;text-align:center;box-shadow:0 8px 28px #11182712}
       .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;text-align:left}
-      .brand svg{display:block;border-radius:11px}
+      .brand img{display:block;border-radius:11px}
       .name{display:block;font-size:15px;font-weight:700}
       h1{margin:0;font-size:21px}.message{margin:10px 0 0;color:#667085;font-size:14px;line-height:1.6}
       .note{margin-top:22px;padding:12px;border-radius:10px;background:#f3f4f6;color:#475467;font-size:12px;line-height:1.55}
@@ -33,7 +32,7 @@ const OFFLINE_HTML = `<!doctype html>
   </head>
   <body>
     <main>
-      <header class="brand">${LOGO_SVG}<span class="name">Private Identity</span></header>
+      <header class="brand"><img src="/logo.svg" width="40" height="40" alt="Private Identity"><span class="name">Private Identity</span></header>
       <h1>You are offline</h1>
       <p class="message">The app shell is ready, but private dashboard pages are not cached for offline browsing.</p>
       <p class="note">Explicitly queued card or information edits stay in this browser until you reconnect. Sign-in, access codes, file sharing, downloads, and security settings need an internet connection.</p>
@@ -43,7 +42,9 @@ const OFFLINE_HTML = `<!doctype html>
 </html>`;
 
 const SHELL_ASSETS = [
+  '/logo.svg',
   '/manifest.webmanifest',
+  '/icons/icon-32.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
@@ -130,7 +131,7 @@ function offlineResponse() {
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'no-referrer',
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'Content-Security-Policy': "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     },
   });
 }
@@ -163,6 +164,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/') ||
     url.pathname.startsWith('/fonts/') ||
+    url.pathname === '/logo.svg' ||
     url.pathname === '/manifest.webmanifest' ||
     url.pathname === '/favicon.ico'
   ) {

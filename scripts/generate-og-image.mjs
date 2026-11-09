@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Generates the static social preview image from vector artwork and the exact
- * P-mark path used by BrandMark. Run with: node scripts/generate-og-image.mjs
+ * Generates the static social preview using the shared public/logo.svg asset.
+ * Run with: node scripts/generate-og-image.mjs
  */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -11,8 +11,7 @@ import sharp from 'sharp';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'public', 'og');
 const OUTPUT = join(OUT_DIR, 'private-identity.jpg');
-const LOGO_PATH =
-  'M15 9.5h10.4c8.3 0 13.1 4.1 13.1 11.4 0 7.2-4.8 11.5-13.1 11.5H22v7.5H15V9.5Zm7 6.8v9.4h3.5c4 0 6.1-1.4 6.1-4.7 0-3.2-2.1-4.7-6.1-4.7H22Z';
+const LOGO_SVG = await readFile(join(ROOT, 'public', 'logo.svg'));
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#f6f7f9"/>
@@ -20,10 +19,6 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
   <circle cx="1018" cy="315" r="188" fill="#f6f7f9"/>
   <circle cx="1018" cy="315" r="142" fill="none" stroke="#e2e8f0" stroke-width="2"/>
   <circle cx="1018" cy="315" r="96" fill="none" stroke="#e2e8f0" stroke-width="2"/>
-  <g transform="translate(104 100) scale(2)">
-    <rect width="48" height="48" rx="9" fill="#000000"/>
-    <path d="${LOGO_PATH}" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd"/>
-  </g>
   <text x="224" y="145" fill="#111827" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">Private Identity</text>
   <text x="224" y="180" fill="#5b6472" font-family="Arial, Helvetica, sans-serif" font-size="18">PRIVATE BY DESIGN</text>
   <rect x="104" y="222" width="54" height="4" rx="2" fill="#111827"/>
@@ -42,7 +37,9 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
 </svg>`;
 
 await mkdir(OUT_DIR, { recursive: true });
+const logoPng = await sharp(LOGO_SVG).resize(96, 96).png().toBuffer();
 const image = await sharp(Buffer.from(svg))
+  .composite([{ input: logoPng, left: 104, top: 100 }])
   .jpeg({ quality: 84, mozjpeg: true, chromaSubsampling: '4:2:0' })
   .toBuffer();
 
