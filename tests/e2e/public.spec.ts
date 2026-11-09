@@ -71,6 +71,8 @@ test.describe('public unauthenticated surfaces', () => {
     expect(response?.status()).toBe(200);
     const html = await response!.text();
 
+    expect(html).toMatch(/<title>[^<]+<\/title>/i);
+    expect(metaContent(html, 'name', 'description')).toBeTruthy();
     expect(metaContent(html, 'property', 'og:title')).toBe('Secure file sharing');
     expect(metaContent(html, 'property', 'og:description')).toContain('private file');
     expect(metaContent(html, 'property', 'og:type')).toBe('website');
@@ -81,6 +83,7 @@ test.describe('public unauthenticated surfaces', () => {
     expect(metaContent(html, 'property', 'og:image:alt')).toBeTruthy();
     expect(metaContent(html, 'name', 'twitter:card')).toBe('summary_large_image');
     expect(metaContent(html, 'name', 'twitter:title')).toBe('Secure file sharing');
+    expect(metaContent(html, 'name', 'twitter:description')).toContain('private file');
 
     const ogUrl = metaContent(html, 'property', 'og:url');
     const ogImage = metaContent(html, 'property', 'og:image');
@@ -129,11 +132,16 @@ test.describe('public unauthenticated surfaces', () => {
       const ogUrl = metaContent(html, 'property', 'og:url');
       const image = metaContent(html, 'property', 'og:image');
 
+      expect(html).toMatch(/<title>[^<]+<\/title>/i);
+      expect(metaContent(html, 'name', 'description')).toBeTruthy();
       expect(metaContent(html, 'property', 'og:title')).toBeTruthy();
       expect(metaContent(html, 'property', 'og:description')).toBeTruthy();
       expect(new URL(image!).protocol).toBe('https:');
       expect(new URL(image!).pathname).toBe('/og/private-identity.jpg');
       expect(metaContent(html, 'name', 'twitter:card')).toBe('summary_large_image');
+      expect(metaContent(html, 'name', 'twitter:title')).toBeTruthy();
+      expect(metaContent(html, 'name', 'twitter:description')).toBeTruthy();
+      expect(new URL(metaContent(html, 'name', 'twitter:image')!).protocol).toBe('https:');
       expect(new URL(canonical!).protocol).toBe('https:');
       expect(new URL(ogUrl!).protocol).toBe('https:');
       expect(new URL(canonical!).pathname).toBe(path);

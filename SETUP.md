@@ -57,6 +57,33 @@ callback. Set the email OTP/link expiry to **1800 seconds** to match the app's 3
 message. Links are single-use; clicking an older email after requesting a newer one can also
 invalidate the earlier token.
 
+### Verify social previews
+
+After deploying to the HTTPS production domain, test a public URL such as the home page or
+a deliberately invalid `/s/...` link. Do not test a private document-view URL.
+
+- [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/): enter the URL,
+  select **Debug**, then **Scrape Again**.
+- [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/): inspect the URL and
+  confirm the title, description, and image.
+- [opengraph.xyz](https://www.opengraph.xyz/): preview the initial server-rendered metadata.
+- WhatsApp: send the HTTPS URL to a chat you can check, then confirm the generated preview
+  uses the public `Private Identity` image and generic description.
+
+The public-route Playwright test checks the initial HTML (without executing page JavaScript),
+absolute HTTPS metadata URLs, HTTP 200 responses for referenced public assets, and the
+1200x630 JPEG size limit. The production preview image is
+`https://ecard-personal.aravanta.tech/og/private-identity.jpg`.
+
+Protected profile and file-share routes intentionally use generic preview text and imagery:
+social crawlers cannot complete the owner's access-code/password flow, and private names,
+emails, and file names must not be exposed in crawler-readable HTML.
+
+Preview services cache results. Use **Scrape Again** in Facebook and re-inspect with LinkedIn
+after a change. WhatsApp has no public cache-purge tool; if an image changes, publish it at a
+new versioned filename and update the metadata image URL. A new unique share URL may also be
+needed while an old preview expires.
+
 ## 3. Apply Database Migrations
 
 The deployed Supabase project must have **all migrations `0001` through `0008`**. In
