@@ -1,12 +1,75 @@
 -- Owner-controlled visitor presentation. Values are deliberately constrained
 -- so presentation settings can never inject arbitrary CSS or markup.
+-- This migration may be retried against projects where columns were added
+-- manually before the migration history was linked.
 alter table public.profiles
-  add column visitor_theme text not null default 'ink'
-    check (visitor_theme in ('ink', 'ocean', 'forest')),
-  add column visitor_layout text not null default 'standard'
-    check (visitor_layout in ('standard', 'compact')),
-  add column visitor_intro text not null default ''
-    check (length(visitor_intro) <= 180);
+  add column if not exists visitor_theme text,
+  add column if not exists visitor_layout text,
+  add column if not exists visitor_intro text;
+
+alter table public.profiles
+  alter column visitor_theme set default 'ink',
+  alter column visitor_layout set default 'standard',
+  alter column visitor_intro set default '';
+
+update public.profiles
+set visitor_theme = case
+  when visitor_theme in ('ink', 'ocean', 'forest') then visitor_theme
+  else 'ink'
+end,
+    visitor_layout = case
+  when visitor_layout in ('standard', 'compact') then visitor_layout
+  else 'standard'
+end,
+    visitor_intro = left(coalesce(visitor_intro, ''), 180)
+where visitor_theme is null
+   or visitor_theme not in ('ink', 'ocean', 'forest')
+   or visitor_layout is null
+   or visitor_layout not in ('standard', 'compact')
+   or visitor_intro is null
+   or length(visitor_intro) > 180;
+
+alter table public.profiles
+  alter column visitor_theme set not null,
+  alter column visitor_layout set not null,
+  alter column visitor_intro set not null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.profiles'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%visitor_theme%'
+  ) then
+    alter table public.profiles
+      add constraint profiles_visitor_theme_check
+      check (visitor_theme in ('ink', 'ocean', 'forest'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.profiles'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%visitor_layout%'
+  ) then
+    alter table public.profiles
+      add constraint profiles_visitor_layout_check
+      check (visitor_layout in ('standard', 'compact'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.profiles'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%visitor_intro%'
+  ) then
+    alter table public.profiles
+      add constraint profiles_visitor_intro_check
+      check (length(visitor_intro) <= 180);
+  end if;
+end;
+$$;
 
 comment on column public.profiles.visitor_theme is
   'Allow-listed visitor header theme; does not affect authorization or field visibility.';
