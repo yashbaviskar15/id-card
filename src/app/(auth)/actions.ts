@@ -23,6 +23,7 @@ import { alertNewDeviceLogin, alertOwnerLockout, alertPasswordChanged } from '@/
 import { clearReauthenticated, markReauthenticated } from '@/lib/auth/reauth';
 import { getOwnerIdOrNull } from '@/lib/auth/session';
 import { createServiceClient } from '@/lib/db/service';
+import { passwordResetRedirectUrl } from '@/lib/auth/email-links';
 import type { User } from '@supabase/supabase-js';
 import type { FormState } from './form-state';
 
@@ -292,10 +293,19 @@ export async function requestPasswordResetAction(
 
   if (isOwnerEmail(parsed.data)) {
     const supabase = await createUserClient();
-    const site = process.env.NEXT_PUBLIC_SITE_URL ?? '';
-    await supabase.auth.resetPasswordForEmail(parsed.data, {
-      redirectTo: `${site}/auth/callback?next=/reset`,
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+        redirectTo: passwordResetRedirectUrl(clientEnv.NEXT_PUBLIC_SITE_URL),
+      });
+      if (error) {
+        log.warn('auth.password_reset_email_failed', {
+          code: error.code ?? 'unknown',
+          status: error.status,
+        });
+      }
+    } catch {
+      log.warn('auth.password_reset_email_failed', { reason: 'request_failed' });
+    }
   }
   return { ok: true, message: successMessage };
 }

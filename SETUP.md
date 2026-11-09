@@ -38,6 +38,25 @@ Ensure these are also correctly set in your Vercel project:
 - `SUPABASE_DB_URL` (Postgres connection string)
 - `OWNER_EMAIL` (The email address you will use to sign in)
 
+### Configure password-reset email links
+
+In the Supabase project referenced by `NEXT_PUBLIC_SUPABASE_URL`, open
+**Authentication > URL Configuration** and set:
+
+- **Site URL:** `https://ecard-personal.aravanta.tech`
+- **Redirect URL allowlist:** `https://ecard-personal.aravanta.tech/auth/callback**`
+
+The production redirect must be allowlisted. If Supabase rejects the requested callback,
+it falls back to its Site URL; a Site URL of `http://localhost:3000` sends reset links to
+the developer's machine instead of the live app.
+Do not set the production Site URL to localhost.
+
+In **Authentication > Email Templates > Reset Password**, keep the link as
+`{{ .ConfirmationURL }}` so Supabase verifies the one-time token and returns to the allowed
+callback. Set the email OTP/link expiry to **1800 seconds** to match the app's 30-minute
+message. Links are single-use; clicking an older email after requesting a newer one can also
+invalidate the earlier token.
+
 ## 3. Apply Database Migrations
 
 The deployed Supabase project must have **all migrations `0001` through `0008`**. In

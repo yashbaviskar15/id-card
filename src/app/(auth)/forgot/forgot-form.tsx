@@ -28,7 +28,7 @@ export function ForgotForm() {
           className="h-11 border-hairline focus:border-ink focus:ring-ink"
         />
         <p id="reset-link-help" className="text-xs leading-5 text-label">
-          The secure link expires after 30 minutes and can only be used once.
+          The secure link is single-use and expires after 30 minutes. If it expires, request a new one.
         </p>
       </div>
 

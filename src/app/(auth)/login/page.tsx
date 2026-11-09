@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { turnstileEnabled, clientEnv } from '@/lib/env';
 import { isOwnerEmail } from '@/lib/env.server';
 import { createUserClient } from '@/lib/db/user';
@@ -48,7 +49,10 @@ export default async function LoginPage({
       ) : null}
       {params.error === 'link' ? (
         <div className="mt-6 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm font-semibold text-destructive" role="alert">
-          This sign-in link is invalid or has expired.
+          <p>This email link is invalid, expired, or already used.</p>
+          <Link href="/forgot" className="mt-2 inline-block underline underline-offset-4">
+            Request a new password reset link
+          </Link>
         </div>
       ) : null}
       <LoginForm
