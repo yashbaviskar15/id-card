@@ -4,6 +4,7 @@ import { getProfile, loadCardData } from '@/lib/card/load';
 import { qrPayload } from '@/lib/qr/payload';
 import { ResponsiveCard } from '@/components/card/responsive-card';
 import { CardForm } from './card-form';
+import { CopyableLink } from './copyable-link';
 import { Button } from '@/components/ui/button';
 
 export const dynamic = 'force-dynamic';
@@ -32,8 +33,8 @@ export default async function CardPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 lg:space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 basis-72">
           <h1 className="page-title">Card &amp; QR</h1>
           <p className="mt-1 max-w-prose text-sm text-label">
             The card and its QR code are generated from what you save here. The QR encodes only your
@@ -44,7 +45,7 @@ export default async function CardPage() {
           <Button
             render={<Link href="/dashboard/customize" />}
             variant="outline"
-            className="h-10 gap-2"
+            className="h-10 max-w-full shrink-0 gap-2"
           >
             Customize visitor page
           </Button>
@@ -72,9 +73,7 @@ export default async function CardPage() {
             <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0 max-w-md">
                 <h2 className="text-sm font-semibold text-ink">Permanent link</h2>
-                <div className="mt-3 min-w-0 rounded-lg border border-page-border bg-page p-3 font-mono text-xs break-all text-ink sm:text-sm">
-                  {qrPayload(card.slug)}
-                </div>
+                <CopyableLink value={qrPayload(card.slug)} />
                 <p className="mt-3 text-xs leading-5 text-label">
                   Rendered on demand from this exact URL. No QR image is ever stored.
                 </p>

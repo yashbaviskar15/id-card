@@ -221,7 +221,7 @@ export function CardForm({
             <div className="space-y-2">
               <p className="eyebrow">Card photo</p>
               <div className="flex min-h-14 min-w-0 items-center gap-3 rounded-lg border border-hairline bg-white px-3 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
-                <Input
+                <input
                   id="photo"
                   name="photo"
                   type="file"
