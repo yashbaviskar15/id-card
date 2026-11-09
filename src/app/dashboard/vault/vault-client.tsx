@@ -337,7 +337,7 @@ export function VaultClient({
           onSubmit={(event) => {
             if (!online) event.preventDefault();
           }}
-          className="mt-4 grid items-end gap-4 md:grid-cols-[1fr_220px_auto]"
+          className="mt-4 grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto]"
         >
           <div className="space-y-2">
             <Label htmlFor="file" className="font-medium text-ink">File</Label>
@@ -380,7 +380,7 @@ export function VaultClient({
               ))}
             </select>
           </div>
-          <Button type="submit" className="h-11 gap-2 px-5 font-medium" disabled={pending || !online}>
+          <Button type="submit" className="h-11 gap-2 px-5 font-medium md:mt-7" disabled={pending || !online}>
             <Upload className="h-4 w-4" aria-hidden="true" />
             {pending ? 'Processing…' : 'Upload'}
           </Button>
