@@ -4,6 +4,7 @@
  * any external asset. Run with:  node scripts/generate-icons.mjs
  *
  * Output: public/icons/{icon-192,icon-512,maskable-512,apple-touch-icon}.png
+ *         public/favicon.ico
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -55,6 +56,6 @@ favicon.writeUInt16LE(32, 12);
 favicon.writeUInt32LE(faviconPng.length, 14);
 favicon.writeUInt32LE(22, 18);
 faviconPng.copy(favicon, 22);
-await writeFile(join(ROOT, 'src', 'app', 'favicon.ico'), favicon);
-console.log('[icons] wrote src/app/favicon.ico (256x256)');
+await writeFile(join(ROOT, 'public', 'favicon.ico'), favicon);
+console.log('[icons] wrote public/favicon.ico (256x256)');
 console.log('[icons] done');

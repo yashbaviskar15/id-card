@@ -1,4 +1,17 @@
 import { expect, test } from '@playwright/test';
+import sharp from 'sharp';
+
+function metaContent(html: string, attribute: 'name' | 'property', key: string) {
+  const tag = html.match(
+    new RegExp(`<meta\\b(?=[^>]*\\b${attribute}="${key}")[^>]*>`, 'i'),
+  )?.[0];
+  return tag?.match(/\bcontent="([^"]*)"/i)?.[1];
+}
+
+function linkHref(html: string, rel: string) {
+  const tag = html.match(new RegExp(`<link\\b(?=[^>]*\\brel="${rel}")[^>]*>`, 'i'))?.[0];
+  return tag?.match(/\bhref="([^"]*)"/i)?.[1];
+}
 
 /**
  * Real, DB-free smoke tests for the unauthenticated surfaces. Each assertion is
@@ -51,6 +64,100 @@ test.describe('public unauthenticated surfaces', () => {
     await expect(
       page.getByText('It may have expired, been revoked or reached its download limit.'),
     ).toBeVisible();
+  });
+
+  test('share preview metadata is in SSR HTML and its public assets are reachable', async ({ page }) => {
+    const response = await page.goto('/s/bad');
+    expect(response?.status()).toBe(200);
+    const html = await response!.text();
+
+    expect(metaContent(html, 'property', 'og:title')).toBe('Secure file sharing');
+    expect(metaContent(html, 'property', 'og:description')).toContain('private file');
+    expect(metaContent(html, 'property', 'og:type')).toBe('website');
+    expect(metaContent(html, 'property', 'og:site_name')).toBe('Private Identity');
+    expect(metaContent(html, 'property', 'og:locale')).toBe('en_US');
+    expect(metaContent(html, 'property', 'og:image:width')).toBe('1200');
+    expect(metaContent(html, 'property', 'og:image:height')).toBe('630');
+    expect(metaContent(html, 'property', 'og:image:alt')).toBeTruthy();
+    expect(metaContent(html, 'name', 'twitter:card')).toBe('summary_large_image');
+    expect(metaContent(html, 'name', 'twitter:title')).toBe('Secure file sharing');
+
+    const ogUrl = metaContent(html, 'property', 'og:url');
+    const ogImage = metaContent(html, 'property', 'og:image');
+    const twitterImage = metaContent(html, 'name', 'twitter:image');
+    const canonical = linkHref(html, 'canonical');
+    const icon = linkHref(html, 'icon');
+    const appleIcon = linkHref(html, 'apple-touch-icon');
+    const manifest = linkHref(html, 'manifest');
+    const absoluteUrls = [ogUrl, ogImage, twitterImage, canonical, icon, appleIcon, manifest];
+
+    for (const value of absoluteUrls) {
+      expect(value).toBeTruthy();
+      expect(new URL(value!).protocol).toBe('https:');
+    }
+    expect(new URL(ogUrl!).pathname).toBe('/s/bad');
+    expect(new URL(canonical!).pathname).toBe('/s/bad');
+
+    const origin = new URL(page.url()).origin;
+    for (const value of absoluteUrls) {
+      const resourceUrl = new URL(new URL(value!).pathname, origin);
+      const resource = await page.request.get(resourceUrl.toString());
+      expect(resource.status(), `${resourceUrl.pathname} should be public`).toBe(200);
+    }
+
+    const imageResponse = await page.request.get(
+      new URL(new URL(ogImage!).pathname, origin).toString(),
+    );
+    const imageBytes = await imageResponse.body();
+    const imageInfo = await sharp(imageBytes).metadata();
+    expect(imageInfo).toMatchObject({ format: 'jpeg', width: 1200, height: 630 });
+    expect(imageBytes.byteLength).toBeLessThan(300_000);
+
+    const robotsResponse = await page.request.get(new URL('/robots.txt', origin).toString());
+    expect(robotsResponse.status()).toBe(200);
+    expect(await robotsResponse.text()).toContain('Allow: /');
+  });
+
+  test('other public pages emit absolute server-rendered metadata without private slugs', async ({
+    page,
+  }) => {
+    for (const path of ['/', '/login', '/forgot', '/p/private-person-slug']) {
+      const response = await page.goto(path);
+      expect(response?.status(), `${path} should render`).toBe(200);
+      const html = await response!.text();
+      const canonical = linkHref(html, 'canonical');
+      const ogUrl = metaContent(html, 'property', 'og:url');
+      const image = metaContent(html, 'property', 'og:image');
+
+      expect(metaContent(html, 'property', 'og:title')).toBeTruthy();
+      expect(metaContent(html, 'property', 'og:description')).toBeTruthy();
+      expect(new URL(image!).protocol).toBe('https:');
+      expect(new URL(image!).pathname).toBe('/og/private-identity.jpg');
+      expect(metaContent(html, 'name', 'twitter:card')).toBe('summary_large_image');
+      expect(new URL(canonical!).protocol).toBe('https:');
+      expect(new URL(ogUrl!).protocol).toBe('https:');
+      expect(new URL(canonical!).pathname).toBe(path);
+      expect(new URL(ogUrl!).pathname).toBe(path);
+
+      if (path.startsWith('/p/')) {
+        expect(metaContent(html, 'property', 'og:title')).not.toContain('private-person-slug');
+        expect(metaContent(html, 'property', 'og:description')).not.toContain('private-person-slug');
+      }
+    }
+  });
+
+  test('login layout has no horizontal overflow from phone to desktop widths', async ({ page }) => {
+    for (const width of [320, 375, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/login');
+      const dimensions = await page.evaluate(() => ({
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+      }));
+      expect(dimensions.documentWidth, `overflow at ${width}px`).toBeLessThanOrEqual(
+        dimensions.viewportWidth,
+      );
+    }
   });
 
   test('dashboard redirects to login when unauthenticated', async ({ page }) => {

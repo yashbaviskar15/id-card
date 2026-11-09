@@ -6,6 +6,8 @@ import { OfflineProvider } from '@/components/offline/offline-provider';
 import { OfflineIndicator } from '@/components/offline/offline-indicator';
 import { ServiceWorkerRegister } from '@/components/offline/service-worker-register';
 import { OfflineNavigationGuard } from '@/components/offline/dashboard-navigation-guard';
+import { siteUrl } from '@/lib/env';
+import { createShareMetadata } from '@/lib/seo';
 import './globals.css';
 
 /**
@@ -20,6 +22,12 @@ const manrope = localFont({
 });
 
 export const metadata: Metadata = {
+  ...createShareMetadata({
+    title: 'Private Identity Card',
+    description: 'Private identity cards and secure file sharing, protected by owner-issued access.',
+    robots: { index: false, follow: false, nocache: true },
+  }),
+  metadataBase: new URL(siteUrl),
   title: {
     default: 'Private Identity Card',
     template: '%s · Private Identity Card',
@@ -29,10 +37,23 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
   referrer: 'no-referrer',
   formatDetection: { telephone: false, email: false, address: false },
-  manifest: '/manifest.webmanifest',
+  manifest: new URL('/manifest.webmanifest', `${siteUrl}/`).toString(),
   icons: {
-    icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
-    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    icon: [
+      { url: new URL('/favicon.ico', `${siteUrl}/`).toString(), sizes: 'any' },
+      {
+        url: new URL('/icons/icon-192.png', `${siteUrl}/`).toString(),
+        sizes: '192x192',
+        type: 'image/png',
+      },
+    ],
+    apple: [
+      {
+        url: new URL('/icons/apple-touch-icon.png', `${siteUrl}/`).toString(),
+        sizes: '180x180',
+        type: 'image/png',
+      },
+    ],
   },
   appleWebApp: {
     capable: true,

@@ -163,7 +163,12 @@ export function IdCard({
 }) {
   return (
     <Scaled scale={scale}>
-      <div className={cn('shadow-[0_10px_30px_rgba(17,24,39,0.10)] rounded-[32px]', className)}>
+      <div
+        className={cn(
+          'h-full w-full rounded-[32px] shadow-[0_10px_30px_rgba(17,24,39,0.10)]',
+          className,
+        )}
+      >
         {face === 'front' ? <IdCardFront data={data} /> : <IdCardBack data={data} />}
       </div>
     </Scaled>

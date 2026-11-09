@@ -6,6 +6,7 @@ import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip'
 import { slugSchema } from '@/lib/validation';
 import { GrantedProfileView } from '@/components/access/granted-profile-view';
 import { LockScreen } from './lock-screen';
+import { createShareMetadata } from '@/lib/seo';
 
 /**
  * The single public entry point of the whole app. It is dynamic, never cached
@@ -15,10 +16,21 @@ import { LockScreen } from './lock-screen';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: 'Protected profile',
-  robots: { index: false, follow: false, nocache: true },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const parsed = slugSchema.safeParse(slug);
+
+  return createShareMetadata({
+    title: 'Protected identity profile',
+    description: 'A private identity profile protected by an owner-issued access code.',
+    path: `/p/${encodeURIComponent(parsed.success ? parsed.data : slug)}`,
+    robots: { index: false, follow: false, nocache: true },
+  });
+}
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

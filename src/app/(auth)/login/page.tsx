@@ -4,8 +4,15 @@ import { isOwnerEmail } from '@/lib/env.server';
 import { createUserClient } from '@/lib/db/user';
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { LoginForm } from './login-form';
+import { createShareMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = createShareMetadata({
+  title: 'Sign in securely',
+  description: 'Sign in to manage your private identity card and document vault.',
+  path: '/login',
+});
 
 export default async function LoginPage({
   searchParams,

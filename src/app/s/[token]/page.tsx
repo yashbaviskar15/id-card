@@ -5,14 +5,25 @@ import { buttonVariants } from '@/components/ui/button';
 import { resolveShareLink, shareTokenSchema } from '@/lib/share/load';
 import { isShareUnlocked } from '@/lib/share/unlock';
 import { ShareShell, UnlockForm, UnlockHeading } from './unlock-form';
+import { createShareMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: 'Shared file',
-  robots: { index: false, follow: false, nocache: true },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+
+  return createShareMetadata({
+    title: 'Secure file sharing',
+    description: 'A private file has been shared with you through a secure, time-limited link.',
+    path: `/s/${encodeURIComponent(token)}`,
+    robots: { index: false, follow: false, nocache: true },
+  });
+}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

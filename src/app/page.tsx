@@ -1,5 +1,12 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { createShareMetadata } from '@/lib/seo';
+
+export const metadata = createShareMetadata({
+  title: 'Private identity, shared securely',
+  description: 'Create a private identity card and securely share files with owner-issued access.',
+  path: '/',
+});
 
 export default function HomePage() {
   return (

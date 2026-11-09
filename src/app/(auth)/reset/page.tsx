@@ -1,8 +1,15 @@
 import { redirect } from 'next/navigation';
 import { getOwnerOrNull } from '@/lib/auth/session';
 import { ResetForm } from './reset-form';
+import { createShareMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = createShareMetadata({
+  title: 'Reset your password',
+  description: 'Set a new password for your private identity vault.',
+  path: '/reset',
+});
 
 export default async function ResetPage() {
   // Reaching here requires the recovery session created by /auth/callback.
