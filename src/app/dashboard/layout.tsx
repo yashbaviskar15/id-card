@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireOwner } from '@/lib/auth/session';
 import { NavLinks } from './nav-links';
 import { SignOutForm } from '@/components/offline/sign-out-form';
+import { DashboardLiveSync } from '@/components/dashboard/live-sync';
 import { BrandMark } from '@/components/brand/brand-mark';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -12,6 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-dvh bg-page">
+      <DashboardLiveSync />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-page-border bg-white lg:flex">
         <div className="flex h-16 items-center gap-2.5 border-b border-page-border px-5">

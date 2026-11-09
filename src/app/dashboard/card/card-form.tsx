@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,6 +60,7 @@ export function CardForm({
   hasPhoto: boolean;
   photoUrl: string | null;
 }) {
+  const router = useRouter();
   const [saveState, setSaveState] = useState<FormState>(initialFormState);
   const [saving, setSaving] = useState(false);
   const { online } = useOffline();
@@ -92,10 +94,15 @@ export function CardForm({
         return;
       }
       setSaveState(outcome.result as FormState);
+      router.refresh();
     } finally {
       setSaving(false);
     }
   }
+
+  useEffect(() => {
+    if (photoState.ok) router.refresh();
+  }, [photoState, router]);
 
   useEffect(() => {
     if (!selectedPhoto || !/\.(jpe?g|png|webp)$/i.test(selectedPhoto.name)) {

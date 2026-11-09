@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { getOwnerOrNull } from '@/lib/auth/session';
@@ -103,5 +104,6 @@ export async function POST(request: NextRequest) {
     userAgent: truncateUserAgent(headerList.get('user-agent')),
   });
 
+  revalidatePath('/dashboard', 'layout');
   return json({ ok: true, dry_run: false, restored });
 }

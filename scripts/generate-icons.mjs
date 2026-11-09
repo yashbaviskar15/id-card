@@ -5,7 +5,7 @@
  *
  * Output: public/icons/{icon-192,icon-512,maskable-512,apple-touch-icon}.png
  */
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
@@ -13,44 +13,22 @@ import sharp from 'sharp';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'public', 'icons');
 
-const INK = '#111827';
-const LINE = '#DDE1E7';
-const MUTED = '#F3F4F6';
+const LOGO_PATH = 'M15 9.5h10.4c8.3 0 13.1 4.1 13.1 11.4 0 7.2-4.8 11.5-13.1 11.5H22v7.5H15V9.5Zm7 6.8v9.4h3.5c4 0 6.1-1.4 6.1-4.7 0-3.2-2.1-4.7-6.1-4.7H22Z';
 
 /**
- * A rounded identity-card glyph. `maskable` keeps all content inside the safe
- * zone (80% centre) and fills the whole canvas so an OS mask never clips it.
+ * White P on black, matching the supplied brand image. The glyph sits in the
+ * centre safe area so adaptive OS masks do not clip it.
  */
-function iconSvg(size, { maskable = false } = {}) {
-  const bgRadius = maskable ? 0 : Math.round(size * 0.22);
-  const pad = maskable ? size * 0.2 : size * 0.14;
-  const card = size - pad * 2;
-  const cardX = pad;
-  const cardY = pad;
-  const cardR = Math.round(card * 0.14);
-
-  const inner = card * 0.16;
-  const photo = card * 0.34;
-  const lineX = cardX + inner + photo + card * 0.06;
-
+function iconSvg(size) {
+  const radius = Math.round(size * 0.18);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" rx="${bgRadius}" fill="${INK}"/>
-  <rect x="${cardX}" y="${cardY}" width="${card}" height="${card}" rx="${cardR}" fill="#FFFFFF"/>
-  <rect x="${cardX + inner}" y="${cardY + inner}" width="${photo}" height="${photo}" rx="${Math.round(photo * 0.18)}" fill="${MUTED}" stroke="${LINE}" stroke-width="${Math.max(1, card * 0.012)}"/>
-  <circle cx="${cardX + inner + photo / 2}" cy="${cardY + inner + photo * 0.42}" r="${photo * 0.14}" fill="${LINE}"/>
-  <path d="M ${cardX + inner + photo * 0.22} ${cardY + inner + photo * 0.82} h ${photo * 0.56}" stroke="${LINE}" stroke-width="${Math.max(1, card * 0.02)}" stroke-linecap="round"/>
-  <rect x="${lineX}" y="${cardY + inner + card * 0.02}" width="${card * 0.34}" height="${Math.max(2, card * 0.05)}" rx="${card * 0.025}" fill="${INK}"/>
-  <rect x="${lineX}" y="${cardY + inner + card * 0.14}" width="${card * 0.28}" height="${Math.max(2, card * 0.035)}" rx="${card * 0.017}" fill="${LINE}"/>
-  <rect x="${lineX}" y="${cardY + inner + card * 0.24}" width="${card * 0.3}" height="${Math.max(2, card * 0.035)}" rx="${card * 0.017}" fill="${LINE}"/>
-  <g fill="${INK}">
-    <rect x="${cardX + inner}" y="${cardY + card - inner - card * 0.22}" width="${card * 0.22}" height="${card * 0.22}" rx="${card * 0.03}"/>
-  </g>
-  <rect x="${cardX + inner + card * 0.05}" y="${cardY + card - inner - card * 0.17}" width="${card * 0.12}" height="${card * 0.12}" rx="${card * 0.02}" fill="#FFFFFF"/>
+  <rect width="${size}" height="${size}" rx="${radius}" fill="#000000"/>
+  <g transform="scale(${size / 48})"><path d="${LOGO_PATH}" fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd"/></g>
 </svg>`;
 }
 
-async function render(name, size, opts) {
-  const svg = Buffer.from(iconSvg(size, opts));
+async function render(name, size) {
+  const svg = Buffer.from(iconSvg(size));
   const png = await sharp(svg).png().toBuffer();
   const target = join(OUT_DIR, name);
   await sharp(png).toFile(target);
@@ -58,8 +36,25 @@ async function render(name, size, opts) {
 }
 
 await mkdir(OUT_DIR, { recursive: true });
-await render('icon-192.png', 192, {});
-await render('icon-512.png', 512, {});
-await render('maskable-512.png', 512, { maskable: true });
-await render('apple-touch-icon.png', 180, {});
+await render('icon-192.png', 192);
+await render('icon-512.png', 512);
+await render('maskable-512.png', 512);
+await render('apple-touch-icon.png', 180);
+
+const faviconPng = await sharp(Buffer.from(iconSvg(256))).png().toBuffer();
+const favicon = Buffer.alloc(22 + faviconPng.length);
+favicon.writeUInt16LE(0, 0);
+favicon.writeUInt16LE(1, 2);
+favicon.writeUInt16LE(1, 4);
+favicon[6] = 0;
+favicon[7] = 0;
+favicon[8] = 0;
+favicon[9] = 0;
+favicon.writeUInt16LE(1, 10);
+favicon.writeUInt16LE(32, 12);
+favicon.writeUInt32LE(faviconPng.length, 14);
+favicon.writeUInt32LE(22, 18);
+faviconPng.copy(favicon, 22);
+await writeFile(join(ROOT, 'src', 'app', 'favicon.ico'), favicon);
+console.log('[icons] wrote src/app/favicon.ico (256x256)');
 console.log('[icons] done');

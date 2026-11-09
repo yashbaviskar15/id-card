@@ -40,10 +40,10 @@ Ensure these are also correctly set in your Vercel project:
 
 ## 3. Apply Database Migrations
 
-The deployed Supabase project must have **all migrations `0001` through `0007`**. In
+The deployed Supabase project must have **all migrations `0001` through `0008`**. In
 particular, access-code document permissions require `0002`, share-link downloads require
-`0005`, recovery-code writes require `0006`, and atomic recovery-code rotation requires
-`0007`. From a trusted machine with the Supabase CLI installed, link the exact project used
+`0005` and safe storage-path validation requires `0008`, recovery-code writes require `0006`,
+and atomic recovery-code rotation requires `0007`. From a trusted machine with the Supabase CLI installed, link the exact project used
 by `NEXT_PUBLIC_SUPABASE_URL`, then review and apply pending migrations:
 
 ```bash
@@ -56,6 +56,9 @@ The project ref is available in Supabase **Project Settings > General**. Review 
 production data before applying migrations. Do not commit database credentials or expose them
 through client-visible variables; keep the connection string only in server-side
 `SUPABASE_DB_URL`.
+If a database URL has been pasted into a chat or committed, rotate its database password
+before using it again. URL-reserved characters in a new password must be percent-encoded
+(for example, `#` as `%23`).
 
 ## 4. Verify Passkey Configuration
 

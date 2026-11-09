@@ -46,8 +46,9 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isVisitorPath = path === '/p' || path.startsWith('/p/');
+  const isSharePath = path === '/s' || path.startsWith('/s/');
   const isVisitorPreviewFile = /^\/p\/[^/]+\/doc\/[^/]+\/file$/.test(path);
-  const session = isVisitorPath ? null : await updateSession(request);
+  const session = isVisitorPath || isSharePath ? null : await updateSession(request);
   const userId = session?.userId ?? null;
   const needsMfa = session?.needsMfa ?? false;
 
@@ -75,7 +76,7 @@ export async function middleware(request: NextRequest) {
 
   // The public profile and its contact download are never cached and never
   // indexed, at every layer that could otherwise keep a copy.
-  if (path === '/p' || path.startsWith('/p/')) {
+  if (isVisitorPath || isSharePath) {
     next.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     next.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }

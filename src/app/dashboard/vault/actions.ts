@@ -89,6 +89,7 @@ export async function uploadDocumentAction(_prev: VaultState, formData: FormData
   }
 
   revalidatePath('/dashboard/vault');
+  revalidatePath('/dashboard/share');
   return { ok: true, message: `${validation.data.safeName} uploaded.` };
 }
 
@@ -114,6 +115,9 @@ export async function setDocumentSharedAction(documentId: string, shared: boolea
   }
 
   revalidatePath('/dashboard/vault');
+  revalidatePath('/dashboard/access');
+  revalidatePath('/dashboard/customize');
+  revalidatePath('/dashboard/security');
   return { ok: true };
 }
 
@@ -151,5 +155,9 @@ export async function deleteDocumentAction(documentId: string): Promise<VaultSta
   }
 
   revalidatePath('/dashboard/vault');
+  revalidatePath('/dashboard/share');
+  revalidatePath('/dashboard/access');
+  revalidatePath('/dashboard/customize');
+  revalidatePath('/dashboard/security');
   return { ok: true, message: 'Document deleted.' };
 }
