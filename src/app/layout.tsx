@@ -3,6 +3,9 @@ import localFont from 'next/font/local';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { InteractionGuard } from '@/components/security/interaction-guard';
+import { OfflineProvider } from '@/components/offline/offline-provider';
+import { OfflineIndicator } from '@/components/offline/offline-indicator';
+import { ServiceWorkerRegister } from '@/components/offline/service-worker-register';
 import './globals.css';
 
 /**
@@ -26,6 +29,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
   referrer: 'no-referrer',
   formatDetection: { telephone: false, email: false, address: false },
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Identity',
+    statusBarStyle: 'default',
+  },
 };
 
 export const viewport: Viewport = {
@@ -39,8 +52,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={manrope.variable}>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
-        <InteractionGuard />
-        <TooltipProvider>{children}</TooltipProvider>
+        <OfflineProvider>
+          <InteractionGuard />
+          <TooltipProvider>{children}</TooltipProvider>
+          <OfflineIndicator />
+          <ServiceWorkerRegister />
+        </OfflineProvider>
         <Toaster position="top-center" />
       </body>
     </html>

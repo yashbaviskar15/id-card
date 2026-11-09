@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireOwner } from '@/lib/auth/session';
 import { NavLinks } from './nav-links';
+import { SignOutForm } from '@/components/offline/sign-out-form';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { LogOut, Menu } from 'lucide-react';
@@ -39,7 +40,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <span className="block truncate text-xs font-medium text-ink">{owner.email}</span>
             </span>
           </div>
-          <form action="/auth/signout" method="post">
+          <SignOutForm>
             <Button
               type="submit"
               variant="ghost"
@@ -49,7 +50,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <LogOut className="h-4 w-4" aria-hidden="true" />
               Sign out
             </Button>
-          </form>
+          </SignOutForm>
         </div>
       </aside>
 
@@ -87,7 +88,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                       <span className="block truncate text-xs font-medium text-ink">{owner.email}</span>
                     </span>
                   </div>
-                  <form action="/auth/signout" method="post">
+                  <SignOutForm>
                     <Button
                       type="submit"
                       variant="outline"
@@ -96,7 +97,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                       <LogOut className="h-4 w-4" aria-hidden="true" />
                       Sign out
                     </Button>
-                  </form>
+                  </SignOutForm>
                 </div>
               </div>
             </SheetContent>

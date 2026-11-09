@@ -7,8 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Download, Shield, Database, FileArchive, AlertCircle } from 'lucide-react';
 import { cn } from 'cn';
+import { useOffline } from '@/components/offline/offline-provider';
+import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 
-function DownloadLink({ href, children }: { href: string; children: React.ReactNode }) {
+function DownloadLink({ href, children, disabled }: { href: string; children: React.ReactNode; disabled?: boolean }) {
+  if (disabled) {
+    return (
+      <span className={cn(buttonVariants({ variant: 'outline' }), 'w-full gap-2 cursor-not-allowed opacity-50')} aria-disabled="true">
+        <Download className="h-4 w-4" />
+        {children}
+      </span>
+    );
+  }
   return (
     <a href={href} className={cn(buttonVariants({ variant: 'outline' }), 'w-full gap-2')}>
       <Download className="h-4 w-4" />
@@ -21,9 +31,11 @@ export function BackupClient() {
   const [passphrase, setPassphrase] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { online } = useOffline();
 
   async function createEncryptedBackup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!online) return;
     setPending(true);
     setError(null);
     try {
@@ -62,6 +74,10 @@ export function BackupClient() {
 
       {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
+      <OnlineRequiredNotice>
+        Backups and exports are generated on the server. Reconnect to download your data.
+      </OnlineRequiredNotice>
+
       <div className="grid gap-6 sm:grid-cols-2">
         <section className="surface shadow-card space-y-4 p-5 sm:p-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
@@ -74,8 +90,8 @@ export function BackupClient() {
             </p>
           </div>
           <div className="space-y-2">
-            <DownloadLink href="/api/backup?format=json">Export as JSON</DownloadLink>
-            <DownloadLink href="/api/backup?format=csv">Export as CSV</DownloadLink>
+            <DownloadLink href="/api/backup?format=json" disabled={!online}>Export as JSON</DownloadLink>
+            <DownloadLink href="/api/backup?format=csv" disabled={!online}>Export as CSV</DownloadLink>
           </div>
         </section>
 
@@ -87,7 +103,7 @@ export function BackupClient() {
             <h2 className="text-sm font-semibold text-ink">File archive</h2>
             <p className="mt-1 text-sm text-label">Download a ZIP archive containing every document in your vault.</p>
           </div>
-          <DownloadLink href="/api/backup?format=zip">Download ZIP</DownloadLink>
+          <DownloadLink href="/api/backup?format=zip" disabled={!online}>Download ZIP</DownloadLink>
           <p className="text-xs text-label">This archive is not encrypted. Store it in a secure location.</p>
         </section>
 
@@ -115,7 +131,7 @@ export function BackupClient() {
                   />
                   <p className="text-xs text-white/70">Use at least 12 characters and save it separately.</p>
                 </div>
-                <Button type="submit" disabled={pending || passphrase.length < 12} className="bg-white text-ink hover:bg-white/90">
+                <Button type="submit" disabled={pending || passphrase.length < 12 || !online} className="bg-white text-ink hover:bg-white/90">
                   {pending ? 'Creating…' : 'Create Full Backup'}
                 </Button>
               </form>
