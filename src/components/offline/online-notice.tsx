@@ -16,7 +16,7 @@ export function OnlineRequiredNotice({
   className?: string;
 }) {
   const { online } = useOffline();
-  if (online) return null;
+  if (online !== false) return null;
   return (
     <Alert className={className}>
       <AlertDescription>{children}</AlertDescription>

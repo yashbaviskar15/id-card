@@ -12,7 +12,8 @@ test.describe('public unauthenticated surfaces', () => {
     await expect(form).toBeVisible();
     await expect(page.getByLabel('Email address')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+    await expect(page.getByText('You are offline')).toHaveCount(0);
 
     // The form must POST through a Next.js server action rather than a plain
     // client-side handler: the framework either emits an `action` attribute or

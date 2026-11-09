@@ -59,7 +59,7 @@ export async function loadOwnerShareLinks(ownerId: string): Promise<OwnerShareLi
   const { data, error } = await supabase
     .from('share_links')
     .select(
-      'id, created_at, expires_at, download_count, max_downloads, revoked_at, password_hash, documents(name)',
+      'id, created_at, expires_at, download_count, max_downloads, revoked_at, password_hash, documents!share_links_document_owner_fkey(name)',
     )
     .eq('owner_id', ownerId)
     .order('created_at', { ascending: false });
@@ -114,7 +114,7 @@ export async function resolveShareLink(token: string): Promise<ShareLinkTarget |
   const { data, error } = await supabase
     .from('share_links')
     .select(
-      'owner_id, password_hash, expires_at, max_downloads, download_count, revoked_at, documents(owner_id, name, mime, size, storage_path)',
+      'owner_id, password_hash, expires_at, max_downloads, download_count, revoked_at, documents!share_links_document_owner_fkey(owner_id, name, mime, size, storage_path)',
     )
     .eq('token_hash', hashToken(token))
     .maybeSingle();
