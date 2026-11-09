@@ -21,7 +21,7 @@ export function LockScreen({ slug }: { slug: string }) {
     <main className="bg-page flex min-h-dvh items-center justify-center px-4 py-10 sm:px-6">
       <div className="w-full max-w-md">
         <header className="mb-6 flex items-center justify-center gap-3">
-          <BrandMark size={40} />
+          <BrandMark />
           <div className="text-left">
             <p className="text-sm font-semibold text-ink">Private Identity</p>
             <p className="text-xs text-label">Secure contact sharing</p>

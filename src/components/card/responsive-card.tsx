@@ -40,8 +40,10 @@ export function ResponsiveCard({
       aria-label={`${face === 'front' ? 'Front' : 'Back'} of the identity card preview`}
     >
       <div
-        className="absolute left-0 top-0"
+        className="absolute top-0"
         style={{
+          left: '50%',
+          marginLeft: scale === null ? 0 : -(CARD_WIDTH_PX * scale) / 2,
           transform: `scale(${scale ?? 0})`,
           transformOrigin: 'top left',
           width: CARD_WIDTH_PX,

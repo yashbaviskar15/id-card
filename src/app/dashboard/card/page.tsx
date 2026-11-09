@@ -31,7 +31,7 @@ export default async function CardPage() {
   const card = profile ? await loadCardData(owner.id, profile) : null;
 
   return (
-    <div className="w-full min-w-0 space-y-6 lg:space-y-8">
+    <div className="w-full min-w-0 space-y-5 lg:space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="page-title">Card &amp; QR</h1>
@@ -53,16 +53,16 @@ export default async function CardPage() {
 
       {card ? (
         <>
-          <section aria-label="Card previews" className="grid w-full min-w-0 gap-6 xl:grid-cols-2 xl:gap-8">
+          <section aria-label="Card previews" className="grid w-full min-w-0 gap-5 2xl:grid-cols-2 2xl:gap-6">
             <div className="min-w-0 space-y-3">
               <h2 className="eyebrow">Front</h2>
-              <div className="surface shadow-card w-full min-w-0 overflow-hidden p-1">
+              <div className="surface shadow-card mx-auto w-full max-w-[872px] min-w-0 overflow-hidden p-1">
                 <ResponsiveCard face="front" data={card} />
               </div>
             </div>
             <div className="min-w-0 space-y-3">
               <h2 className="eyebrow">Back</h2>
-              <div className="surface shadow-card w-full min-w-0 overflow-hidden p-1">
+              <div className="surface shadow-card mx-auto w-full max-w-[872px] min-w-0 overflow-hidden p-1">
                 <ResponsiveCard face="back" data={card} />
               </div>
             </div>

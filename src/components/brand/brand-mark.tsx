@@ -5,11 +5,9 @@ import { cn } from 'cn';
  * the checked-in PWA/install icons.
  */
 export function BrandMark({
-  size = 32,
   className,
   title = 'Private Identity',
 }: {
-  size?: number;
   className?: string;
   title?: string;
 }) {
@@ -17,8 +15,8 @@ export function BrandMark({
     <svg
       role="img"
       aria-label={title}
-      width={size}
-      height={size}
+      width={40}
+      height={40}
       viewBox="0 0 48 48"
       className={cn('shrink-0', className)}
       xmlns="http://www.w3.org/2000/svg"

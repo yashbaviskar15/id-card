@@ -12,7 +12,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const owner = await requireOwner();
 
   return (
-    <div className="min-h-dvh bg-page">
+    <div className="min-h-dvh overflow-x-clip bg-page">
       <DashboardLiveSync />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-page-border bg-white lg:flex">
@@ -49,7 +49,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
 
-      <div className="lg:pl-64">
+      <div className="min-w-0 lg:pl-64">
         {/* Mobile top bar */}
         <header className="no-print sticky top-0 z-30 flex h-16 items-center justify-between border-b border-page-border bg-white/85 px-4 backdrop-blur lg:hidden">
           <Link href="/dashboard" className="flex items-center gap-2.5">
@@ -99,7 +99,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Sheet>
         </header>
 
-        <main className="mx-auto w-full max-w-[1600px] min-w-0 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+        <main className="mx-auto w-full max-w-[1600px] min-w-0 px-4 py-5 sm:px-5 sm:py-6 lg:px-6 lg:py-6">
           {children}
         </main>
       </div>

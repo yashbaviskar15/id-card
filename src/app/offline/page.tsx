@@ -18,7 +18,7 @@ export default function OfflinePage() {
     <main className="flex min-h-dvh items-center justify-center bg-page px-4 py-8 sm:px-6">
       <section className="surface shadow-card w-full max-w-lg rounded-2xl p-6 sm:p-9">
         <div className="flex items-center gap-3 border-b border-hairline pb-6">
-          <BrandMark size={44} />
+          <BrandMark />
           <div>
             <p className="text-sm font-semibold text-ink">Private Identity</p>
             <p className="text-xs text-label">Secure contact sharing</p>

@@ -455,7 +455,7 @@ export function GrantedProfileView({
           <section className="surface shadow-card min-w-0 overflow-hidden rounded-2xl">
             <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6 ${VISITOR_HEADER_THEMES[profile.visitor_theme]}`}>
               <div className="flex min-w-0 items-center gap-2.5 text-sm font-semibold">
-                <BrandMark size={30} className="rounded-lg ring-1 ring-white/15" />
+                <BrandMark className="rounded-lg ring-1 ring-white/15" />
                 <span>Private Identity</span>
               </div>
               <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-xs font-medium">
