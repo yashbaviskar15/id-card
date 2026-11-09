@@ -95,8 +95,9 @@ export function GiveAccess({
     if (state.ok) {
       setDismissed(false);
       setCopied(false);
+      router.refresh();
     }
-  }, [state]);
+  }, [router, state]);
 
   const showCode = Boolean(state.ok && state.code) && !dismissed;
 

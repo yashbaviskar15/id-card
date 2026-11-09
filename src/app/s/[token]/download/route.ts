@@ -65,6 +65,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const { data, error } = await supabase.rpc('consume_share_download', {
     p_token_hash: hashToken(parsed.data),
+    p_expected_storage_path: link.storagePath,
   });
   if (error) {
     log.warn('share.download consume failed', { code: error.code });
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!data) return notAvailable();
 
   const consumed = data as ConsumedShare;
-  // The link may have changed between resolving it and consuming the quota.
+  // Defend in depth; the RPC also checks this before consuming quota.
   if (consumed.storage_path !== link.storagePath) return notAvailable();
 
   return new NextResponse(file.stream(), {

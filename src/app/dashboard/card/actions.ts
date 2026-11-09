@@ -117,6 +117,9 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
 
   revalidatePath('/dashboard/card');
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/customize');
+  revalidatePath('/dashboard/access');
+  revalidatePath('/dashboard/security');
   return { ok: true, message: 'Card saved.' };
 }
 
@@ -208,6 +211,7 @@ export async function uploadPhotoAction(_prev: FormState, formData: FormData): P
   });
 
   revalidatePath('/dashboard/card');
+  revalidatePath('/dashboard');
   return { ok: true, message: 'Photo updated.' };
 }
 
@@ -231,4 +235,5 @@ export async function removePhotoAction(): Promise<void> {
   });
 
   revalidatePath('/dashboard/card');
+  revalidatePath('/dashboard');
 }

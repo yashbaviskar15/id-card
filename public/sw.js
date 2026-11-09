@@ -8,9 +8,9 @@
  * Caches can be wiped on demand via `postMessage('CLEAR_CACHES')`, which the app
  * sends on sign-out so no owner data survives on a shared device.
  */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC_CACHE = `identity-static-${VERSION}`;
-const LOGO_SVG = `<svg viewBox="0 0 48 48" width="40" height="40" role="img" aria-label="Private Identity"><rect width="48" height="48" rx="11" fill="#111827"/><rect x="8" y="12" width="32" height="24" rx="5" fill="#FFFFFF"/><rect x="12" y="16.5" width="10" height="11" rx="2" fill="#F3F4F6" stroke="#DDE1E7" stroke-width="0.9"/><circle cx="17" cy="20.4" r="1.7" fill="#DDE1E7"/><path d="M14 25.4h6" stroke="#DDE1E7" stroke-width="1.1" stroke-linecap="round"/><rect x="25" y="16.5" width="11" height="2.6" rx="1.3" fill="#111827"/><rect x="25" y="21" width="9.5" height="2" rx="1" fill="#DDE1E7"/><rect x="25" y="24.6" width="10.5" height="2" rx="1" fill="#DDE1E7"/></svg>`;
+const LOGO_SVG = `<svg viewBox="0 0 48 48" width="40" height="40" role="img" aria-label="Private Identity"><rect width="48" height="48" rx="9" fill="#000000"/><path d="M15 9.5h10.4c8.3 0 13.1 4.1 13.1 11.4 0 7.2-4.8 11.5-13.1 11.5H22v7.5H15V9.5Zm7 6.8v9.4h3.5c4 0 6.1-1.4 6.1-4.7 0-3.2-2.1-4.7-6.1-4.7H22Z" fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd"/></svg>`;
 const OFFLINE_HTML = `<!doctype html>
 <html lang="en">
   <head>
@@ -48,6 +48,7 @@ const SHELL_ASSETS = [
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
   '/icons/maskable-512.png',
+  '/favicon.ico',
 ];
 
 self.addEventListener('install', (event) => {

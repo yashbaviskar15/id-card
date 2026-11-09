@@ -80,6 +80,7 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
           ipHash,
           userAgent,
         });
+        revalidatePath('/dashboard/access');
         return {
           ok: true,
           code,
@@ -96,7 +97,7 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
         return {
           ok: false,
           error: missingSchema
-            ? 'Access-code database migrations are missing. Apply migrations 0001–0007 from SETUP.md.'
+            ? 'Access-code database migrations are missing. Apply migrations 0001–0008 from SETUP.md.'
             : 'Could not create the code. Check the connection and try again.',
         };
       }

@@ -53,7 +53,7 @@ export default async function CardPage() {
 
       {card ? (
         <>
-          <section aria-label="Card previews" className="grid w-full min-w-0 gap-6 lg:grid-cols-2 lg:gap-8">
+          <section aria-label="Card previews" className="grid w-full min-w-0 gap-6 xl:grid-cols-2 xl:gap-8">
             <div className="min-w-0 space-y-3">
               <h2 className="eyebrow">Front</h2>
               <div className="surface shadow-card w-full min-w-0 overflow-hidden p-1">
@@ -69,7 +69,7 @@ export default async function CardPage() {
           </section>
 
           <section className="surface shadow-card min-w-0 p-5 sm:p-7">
-            <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0 max-w-md">
                 <h2 className="text-sm font-semibold text-ink">Permanent link</h2>
                 <div className="mt-3 min-w-0 rounded-lg border border-page-border bg-page p-3 font-mono text-xs break-all text-ink sm:text-sm">

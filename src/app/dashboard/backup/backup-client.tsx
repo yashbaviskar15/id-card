@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ function DownloadLink({ href, children, disabled }: { href: string; children: Re
 }
 
 export function BackupClient() {
+  const router = useRouter();
   const [passphrase, setPassphrase] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +105,7 @@ export function BackupClient() {
       if (!payload.restored) throw new Error('The backup could not be restored.');
       setRestoreResult(payload.restored);
       setRestorePhase('done');
+      router.refresh();
     } catch (cause) {
       setRestorePhase('ready');
       setRestoreError(cause instanceof Error ? cause.message : 'The backup could not be restored.');

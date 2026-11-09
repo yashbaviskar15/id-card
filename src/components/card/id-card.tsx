@@ -119,14 +119,14 @@ export function IdCardFront({ data }: { data: CardData }) {
 export function IdCardBack({ data }: { data: CardData }) {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
-      <div className="flex h-full items-center gap-16 px-16 pt-10 pb-12">
+      <div className="flex h-full items-center gap-12 px-12 pt-10 pb-12">
         <div className="shrink-0 group relative">
           <div className="rounded-3xl border-2 border-subtle-line bg-white p-6 shadow-[0_15px_40px_rgba(17,24,39,0.1)] transition-all group-hover:scale-[1.02] group-hover:shadow-[0_20px_50px_rgba(17,24,39,0.15)]">
             <QrSvg slug={data.slug} size={280} />
           </div>
           <div className="absolute -inset-2 rounded-[40px] border border-ink/5 pointer-events-none" />
         </div>
-        <div className="max-w-[340px] space-y-6">
+        <div className="min-w-0 max-w-[340px] flex-1 space-y-6 break-words">
           <div>
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-ink/20 animate-pulse" />

@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { LockKeyhole, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BrandMark } from '@/components/brand/brand-mark';
 import { initialFormState } from '@/app/(auth)/form-state';
 import { unlockShareAction } from './actions';
 
@@ -58,7 +59,7 @@ export function ShareShell({ children }: { children: React.ReactNode }) {
     <main className="bg-page flex min-h-dvh items-center justify-center px-4 py-10 sm:px-6">
       <div className="w-full max-w-md">
         <header className="mb-6 flex items-center justify-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink text-base font-semibold text-white">P</span>
+          <BrandMark size={40} />
           <div className="text-left">
             <p className="text-sm font-semibold text-ink">Private Identity</p>
             <p className="text-xs text-label">Secure file sharing</p>

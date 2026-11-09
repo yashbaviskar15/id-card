@@ -1,9 +1,8 @@
 import { cn } from 'cn';
 
 /**
- * Shared brand logo. Drawn as inline SVG so it renders instantly with no extra
- * network request — which also means it is available on the offline launch
- * screen. The glyph matches the generated PWA/install icons in `public/icons`.
+ * Shared brand logo. Inline SVG keeps the mark available offline and matches
+ * the checked-in PWA/install icons.
  */
 export function BrandMark({
   size = 32,
@@ -24,14 +23,13 @@ export function BrandMark({
       className={cn('shrink-0', className)}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <rect width="48" height="48" rx="11" fill="#111827" />
-      <rect x="8" y="12" width="32" height="24" rx="5" fill="#FFFFFF" />
-      <rect x="12" y="16.5" width="10" height="11" rx="2" fill="#F3F4F6" stroke="#DDE1E7" strokeWidth="0.9" />
-      <circle cx="17" cy="20.4" r="1.7" fill="#DDE1E7" />
-      <path d="M14 25.4h6" stroke="#DDE1E7" strokeWidth="1.1" strokeLinecap="round" />
-      <rect x="25" y="16.5" width="11" height="2.6" rx="1.3" fill="#111827" />
-      <rect x="25" y="21" width="9.5" height="2" rx="1" fill="#DDE1E7" />
-      <rect x="25" y="24.6" width="10.5" height="2" rx="1" fill="#DDE1E7" />
+      <rect width="48" height="48" rx="9" fill="#000000" />
+      <path
+        d="M15 9.5h10.4c8.3 0 13.1 4.1 13.1 11.4 0 7.2-4.8 11.5-13.1 11.5H22v7.5H15V9.5Zm7 6.8v9.4h3.5c4 0 6.1-1.4 6.1-4.7 0-3.2-2.1-4.7-6.1-4.7H22Z"
+        fill="#FFFFFF"
+        fillRule="evenodd"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }
