@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { deleteFieldAction, addFieldAction, reorderFieldsAction, updateFieldAction } from './actions';
+import { runOrQueue } from '@/lib/offline/run';
 import type { FieldKind } from '@/lib/types';
 
 export interface InformationField {
@@ -42,6 +43,15 @@ function canShare(kind: FieldKind) {
   return kind === 'email' || kind === 'phone' || kind === 'social_link';
 }
 
+/** Flattens a form into a serialisable payload for the offline outbox. */
+function formDataToPayload(formData: FormData): Record<string, string> {
+  const payload: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (typeof value === 'string') payload[key] = value;
+  }
+  return payload;
+}
+
 export function InfoManager({ initialFields }: { initialFields: InformationField[] }) {
   const [fields, setFields] = useState(initialFields);
   const [formOpen, setFormOpen] = useState(false);
@@ -52,6 +62,7 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -110,28 +121,60 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
 
   function submitField(formData: FormData) {
     setError(null);
+    setNotice(null);
     if (editing && !String(formData.get('value') ?? '').trim()) formData.delete('value');
+    const payload = formDataToPayload(formData);
     startTransition(async () => {
-      const result = editing
-        ? await updateFieldAction(editing.id, formData)
-        : await addFieldAction(formData);
-      if (!result.ok) {
-        setError(result.error ?? 'Could not save this information.');
+      const outcome = editing
+        ? await runOrQueue({
+            kind: 'field.update',
+            label: editing.label,
+            payload: { id: editing.id, ...payload },
+            run: () => updateFieldAction(editing.id, formData),
+          })
+        : await runOrQueue({
+            kind: 'field.add',
+            label: payload.label ?? 'Information',
+            payload,
+            run: () => addFieldAction(formData),
+          });
+      if (!outcome.result.ok) {
+        setError(outcome.result.error ?? 'Could not save this information.');
         return;
       }
       setFormOpen(false);
       setEditing(null);
+      if (outcome.queued) {
+        setNotice('Saved on this device. It will sync when you are back online.');
+        return;
+      }
       router.refresh();
     });
   }
 
   function updateFlag(field: InformationField, name: 'is_sensitive' | 'is_public', value: boolean) {
+    setNotice(null);
+    const previous = field[name];
+    setFields((current) => current.map((item) => (item.id === field.id ? { ...item, [name]: value } : item)));
     const formData = new FormData();
     formData.set(name, String(value));
     startTransition(async () => {
-      const result = await updateFieldAction(field.id, formData);
-      if (!result.ok) setError(result.error ?? 'Could not update this information.');
-      else router.refresh();
+      const outcome = await runOrQueue({
+        kind: 'field.update',
+        label: field.label,
+        payload: { id: field.id, [name]: String(value) },
+        run: () => updateFieldAction(field.id, formData),
+      });
+      if (!outcome.result.ok) {
+        setFields((current) => current.map((item) => (item.id === field.id ? { ...item, [name]: previous } : item)));
+        setError(outcome.result.error ?? 'Could not update this information.');
+        return;
+      }
+      if (outcome.queued) {
+        setNotice('Saved on this device. It will sync when you are back online.');
+        return;
+      }
+      router.refresh();
     });
   }
 
@@ -143,22 +186,52 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
     const reordered = [...manualOrderedFields];
     [reordered[index], reordered[index + direction]] = [reordered[index + direction], reordered[index]];
     const nextFields = reordered.map((field, sort) => ({ ...field, sort }));
+    const ids = nextFields.map((field) => field.id);
     setFields(nextFields);
     setError(null);
+    setNotice(null);
 
     startTransition(async () => {
-      const result = await reorderFieldsAction(nextFields.map((field) => field.id));
-      if (!result.ok) setError(result.error ?? 'Could not reorder your information.');
+      const outcome = await runOrQueue({
+        kind: 'field.reorder',
+        label: 'Information order',
+        payload: { ids },
+        run: () => reorderFieldsAction(ids),
+      });
+      if (!outcome.result.ok) {
+        setError(outcome.result.error ?? 'Could not reorder your information.');
+        return;
+      }
+      if (outcome.queued) {
+        setNotice('Saved on this device. It will sync when you are back online.');
+        return;
+      }
       router.refresh();
     });
   }
 
   function removeField(field: InformationField) {
     if (!window.confirm(`Delete "${field.label}"? This cannot be undone.`)) return;
+    setNotice(null);
+    const removed = fields;
+    setFields((current) => current.filter((item) => item.id !== field.id));
     startTransition(async () => {
-      const result = await deleteFieldAction(field.id);
-      if (!result.ok) setError(result.error ?? 'Could not delete this information.');
-      else router.refresh();
+      const outcome = await runOrQueue({
+        kind: 'field.delete',
+        label: field.label,
+        payload: { id: field.id },
+        run: () => deleteFieldAction(field.id),
+      });
+      if (!outcome.result.ok) {
+        setFields(removed);
+        setError(outcome.result.error ?? 'Could not delete this information.');
+        return;
+      }
+      if (outcome.queued) {
+        setNotice('Deleted on this device. It will sync when you are back online.');
+        return;
+      }
+      router.refresh();
     });
   }
 
@@ -190,6 +263,12 @@ export function InfoManager({ initialFields }: { initialFields: InformationField
       {error ? (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {notice ? (
+        <Alert role="status">
+          <AlertDescription>{notice}</AlertDescription>
         </Alert>
       ) : null}
 

@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cn } from 'cn';
 import { Download, FileText, Search, Trash2 } from 'lucide-react';
+import { useOffline } from '@/components/offline/offline-provider';
+import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 import { uploadDocumentAction, setDocumentSharedAction, deleteDocumentAction } from './actions';
 import { initialVaultState } from './form-state';
 
@@ -46,6 +48,7 @@ function DocumentRow({ document }: { document: VaultDocument }) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const router = useRouter();
+  const { online } = useOffline();
 
   async function toggleShared(next: boolean) {
     setShared(next);
@@ -119,7 +122,7 @@ function DocumentRow({ document }: { document: VaultDocument }) {
             <input
               type="checkbox"
               checked={shared}
-              disabled={busy}
+              disabled={busy || !online}
               onChange={(event) => toggleShared(event.target.checked)}
               className="peer sr-only"
             />
@@ -132,19 +135,29 @@ function DocumentRow({ document }: { document: VaultDocument }) {
         </label>
 
         <div className="flex items-center gap-1.5">
-          <a
-            href={`/api/documents/${document.id}`}
-            className={cn(buttonVariants({ variant: 'outline' }), 'h-9 gap-2 px-3 font-medium')}
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Get file
-          </a>
+          {online ? (
+            <a
+              href={`/api/documents/${document.id}`}
+              className={cn(buttonVariants({ variant: 'outline' }), 'h-9 gap-2 px-3 font-medium')}
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Get file
+            </a>
+          ) : (
+            <span
+              className={cn(buttonVariants({ variant: 'outline' }), 'h-9 gap-2 px-3 font-medium cursor-not-allowed opacity-50')}
+              aria-disabled="true"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Get file
+            </span>
+          )}
           <Button
             type="button"
             variant="ghost"
             size="icon"
             aria-label={`Delete ${document.name}`}
-            disabled={busy}
+            disabled={busy || !online}
             onClick={remove}
             className="text-label hover:bg-destructive/10 hover:text-destructive"
           >
@@ -186,6 +199,7 @@ export function VaultClient({
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const { online } = useOffline();
   const [query, setQuery] = useState(queryValue);
   const [category, setCategory] = useState(categoryValue);
   const [selectedFileName, setSelectedFileName] = useState('');
@@ -255,7 +269,14 @@ export function VaultClient({
       <section className="surface shadow-card p-5 sm:p-7">
         <h2 className="eyebrow">Upload a document</h2>
 
-        <form ref={formRef} action={submit} className="mt-4 grid items-end gap-4 md:grid-cols-[1fr_220px_auto]">
+        <form
+          ref={formRef}
+          action={submit}
+          onSubmit={(event) => {
+            if (!online) event.preventDefault();
+          }}
+          className="mt-4 grid items-end gap-4 md:grid-cols-[1fr_220px_auto]"
+        >
           <div className="space-y-2">
             <Label htmlFor="file" className="font-medium text-ink">File</Label>
             <div className="flex min-h-11 min-w-0 items-center gap-3 rounded-lg border border-hairline bg-white px-2.5 transition-colors focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
@@ -297,10 +318,14 @@ export function VaultClient({
               ))}
             </select>
           </div>
-          <Button type="submit" className="h-11 px-5 font-medium" disabled={pending}>
+          <Button type="submit" className="h-11 px-5 font-medium" disabled={pending || !online}>
             {pending ? 'Processing…' : 'Upload'}
           </Button>
         </form>
+
+        <OnlineRequiredNotice className="mt-5">
+          Document uploads need an internet connection. Files already in your vault stay available on this device.
+        </OnlineRequiredNotice>
 
         {state.error ? (
           <Alert variant="destructive" className="mt-5">

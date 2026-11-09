@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from 'cn';
 import { Countdown } from '@/components/countdown';
+import { useOffline } from '@/components/offline/offline-provider';
+import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 import { createGrantAction, revokeGrantAction } from './actions';
 import { initialGrantState } from './form-state';
 import type { AccessScope } from '@/lib/types';
@@ -25,13 +27,14 @@ export function RevokeButton({
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const { online } = useOffline();
 
   return (
     <Button
       type="button"
       variant="outline"
       size="sm"
-      disabled={pending}
+      disabled={pending || !online}
       onClick={() =>
         startTransition(async () => {
           const data = new FormData();
@@ -60,6 +63,7 @@ export function GiveAccess({
   const [copied, setCopied] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const router = useRouter();
+  const { online } = useOffline();
 
   // Keep the grants table underneath in sync whenever a new code is issued.
   useEffect(() => {
@@ -78,7 +82,14 @@ export function GiveAccess({
         Create a code and read it out to the person in front of you. It works once.
       </p>
 
-      <form action={submit} className="mt-5 grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end" noValidate>
+      <form
+        action={submit}
+        onSubmit={(event) => {
+          if (!online) event.preventDefault();
+        }}
+        className="mt-5 grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        noValidate
+      >
         <div className="space-y-1.5">
           <Label htmlFor="scope">What it shows</Label>
           <select
@@ -105,7 +116,7 @@ export function GiveAccess({
           />
         </div>
 
-        <Button type="submit" className="h-9" disabled={pending}>
+        <Button type="submit" className="h-9" disabled={pending || !online}>
           {pending ? 'Creating…' : 'Create code'}
         </Button>
 
@@ -149,6 +160,10 @@ export function GiveAccess({
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
+
+      <OnlineRequiredNotice className="mt-4">
+        Access codes are generated on the server. Reconnect to create or revoke a code.
+      </OnlineRequiredNotice>
 
       {showCode ? (
         <div className="mt-5 rounded-xl border border-hairline bg-muted/50 p-5 text-center">

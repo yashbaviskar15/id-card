@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { initialFormState } from '@/app/(auth)/form-state';
+import { initialFormState, type FormState } from '@/app/(auth)/form-state';
+import { runOrQueue } from '@/lib/offline/run';
+import { useOffline } from '@/components/offline/offline-provider';
+import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 import type { ProfileRow } from '@/lib/types';
 import { removePhotoAction, saveProfileAction, uploadPhotoAction } from './actions';
 
@@ -56,10 +59,43 @@ export function CardForm({
   hasPhoto: boolean;
   photoUrl: string | null;
 }) {
-  const [saveState, save, saving] = useActionState(saveProfileAction, initialFormState);
+  const [saveState, setSaveState] = useState<FormState>(initialFormState);
+  const [saving, setSaving] = useState(false);
+  const { online } = useOffline();
   const [photoState, upload, uploading] = useActionState(uploadPhotoAction, initialFormState);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+
+  async function handleSave(formData: FormData) {
+    setSaveState({ ok: false });
+    setSaving(true);
+    const payload: Record<string, string> = {};
+    for (const [key, value] of formData.entries()) {
+      if (typeof value === 'string') payload[key] = value;
+    }
+    try {
+      const outcome = await runOrQueue({
+        kind: 'profile.save',
+        label: 'Card',
+        payload,
+        run: () => saveProfileAction(initialFormState, formData),
+      });
+      if (!outcome.result.ok) {
+        setSaveState({ ok: false, error: outcome.result.error ?? 'Could not save the profile.' });
+        return;
+      }
+      if (outcome.queued) {
+        setSaveState({
+          ok: true,
+          message: 'Saved on this device. The card will sync when you are back online.',
+        });
+        return;
+      }
+      setSaveState(outcome.result as FormState);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     if (!selectedPhoto || !/\.(jpe?g|png|webp)$/i.test(selectedPhoto.name)) {
@@ -73,7 +109,14 @@ export function CardForm({
 
   return (
     <div className="min-w-0 space-y-6 lg:space-y-8">
-      <form action={save} className="surface shadow-card min-w-0 space-y-6 p-5 sm:space-y-7 sm:p-7" noValidate>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSave(new FormData(event.currentTarget));
+        }}
+        className="surface shadow-card min-w-0 space-y-6 p-5 sm:space-y-7 sm:p-7"
+        noValidate
+      >
         <div className="grid min-w-0 gap-5 sm:grid-cols-2 sm:gap-6">
           <div className="min-w-0 space-y-2">
             <Label htmlFor="full_name" className="font-medium text-ink">Full name</Label>
@@ -223,9 +266,12 @@ export function CardForm({
               </Alert>
             ) : null}
 
-            <Button type="submit" variant="outline" className="h-10 w-full font-medium" disabled={uploading}>
+            <Button type="submit" variant="outline" className="h-10 w-full font-medium" disabled={uploading || !online}>
               {uploading ? 'Uploading…' : 'Upload photo'}
             </Button>
+            <OnlineRequiredNotice>
+              Photo upload needs an internet connection. Your other card details still save offline.
+            </OnlineRequiredNotice>
           </form>
 
           {hasPhoto ? (
@@ -247,9 +293,12 @@ export function CardForm({
                   </div>
                 ) : null}
               </div>
-              <Button type="submit" variant="outline" className="h-10 w-full font-medium text-destructive hover:bg-destructive hover:text-white">
+              <Button type="submit" variant="outline" className="h-10 w-full font-medium text-destructive hover:bg-destructive hover:text-white" disabled={!online}>
                 Remove photo
               </Button>
+              <OnlineRequiredNotice>
+                Removing a photo needs an internet connection.
+              </OnlineRequiredNotice>
             </form>
           ) : (
              <div className="flex items-center justify-center rounded-xl border border-dashed border-hairline bg-muted/20 p-6 sm:p-7">
