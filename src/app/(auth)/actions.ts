@@ -2,7 +2,9 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
 import { createUserClient } from '@/lib/db/user';
+import { clientEnv } from '@/lib/env';
 import { isOwnerEmail, serverEnv } from '@/lib/env.server';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
 import { hashEmail } from '@/lib/crypto/proofs';
@@ -26,6 +28,27 @@ import type { FormState } from './form-state';
 
 const GENERIC_ERROR = 'Email or password is incorrect.';
 const SAFE_NEXT = /^\/[A-Za-z0-9\-_/?=&%.]*$/;
+
+/**
+ * Verify a password without replacing the active SSR session. Calling
+ * signInWithPassword on the cookie-backed client would downgrade an aal2 MFA
+ * session to aal1 and make the next dashboard request ask for TOTP again.
+ */
+async function verifyPasswordWithoutChangingSession(email: string, password: string): Promise<boolean> {
+  const verifier = createClient(
+    clientEnv.NEXT_PUBLIC_SUPABASE_URL,
+    clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+      },
+    },
+  );
+  const { error } = await verifier.auth.signInWithPassword({ email, password });
+  return !error;
+}
 
 function safeNext(value: FormDataEntryValue | null): string {
   const raw = typeof value === 'string' ? value : '';
@@ -298,8 +321,9 @@ export async function changePasswordAction(_prev: FormState, formData: FormData)
   if (!email) return { ok: false, error: 'Your session has ended. Sign in again.' };
 
   // Confirm the current password before allowing the change.
-  const check = await supabase.auth.signInWithPassword({ email, password: current });
-  if (check.error) return { ok: false, error: 'Your current password is incorrect.' };
+  if (!(await verifyPasswordWithoutChangingSession(email, current))) {
+    return { ok: false, error: 'Your current password is incorrect.' };
+  }
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data });
   if (error) return { ok: false, error: 'Could not update the password. Try again.' };
@@ -374,8 +398,7 @@ export async function reauthAction(_prev: FormState, formData: FormData): Promis
   const email = (await supabase.auth.getUser()).data.user?.email;
   if (!email) return { ok: false, error: 'Your session has ended. Sign in again.' };
 
-  const check = await supabase.auth.signInWithPassword({ email, password });
-  if (check.error) {
+  if (!(await verifyPasswordWithoutChangingSession(email, password))) {
     const { ipHash, userAgent } = await requestContext();
     await writeAudit({ ownerId, actor: 'owner', action: 'auth.reauth_failed', ipHash, userAgent });
     return { ok: false, error: 'Incorrect password.' };
