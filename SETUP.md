@@ -52,6 +52,12 @@ npx supabase migration list --linked
 npx supabase db push --linked --yes
 ```
 
+If a previous push stopped at `0004_visitor_presentation.sql` with
+`column "visitor_theme" already exists`, update to the latest repository version and rerun
+`npx supabase db push --linked --yes`. Migration `0004` is safe to retry and preserves existing
+presentation values that are valid. Do not reset the project or mark the failed migration as
+applied; later security/share migrations still need to run.
+
 The project ref is available in Supabase **Project Settings > General**. Review and back up
 production data before applying migrations. Do not commit database credentials or expose them
 through client-visible variables; keep the connection string only in server-side
