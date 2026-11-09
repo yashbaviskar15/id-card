@@ -6,13 +6,13 @@ import { flush, pendingCount, subscribeToOutbox } from '@/lib/offline/outbox';
 import { registerOfflineHandlers } from '@/lib/offline/handlers';
 
 interface OfflineContextValue {
-  online: boolean;
+  online: boolean | null;
   pending: number;
   sync: () => void;
 }
 
 const OfflineContext = createContext<OfflineContextValue>({
-  online: false,
+  online: null,
   pending: 0,
   sync: () => undefined,
 });
@@ -23,7 +23,7 @@ export function useOffline(): OfflineContextValue {
 
 export function OfflineProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [online, setOnline] = useState(false);
+  const [online, setOnline] = useState<boolean | null>(null);
   const [pending, setPending] = useState(0);
 
   const refreshPending = useCallback(async () => {

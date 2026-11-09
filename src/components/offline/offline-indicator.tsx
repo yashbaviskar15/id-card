@@ -37,7 +37,7 @@ export function OfflineIndicator() {
   }, []);
 
   const showInstall = Boolean(installEvent) && !installed;
-  if (online && pending === 0 && !showInstall) return null;
+  if (online !== false && pending === 0 && !showInstall) return null;
 
   async function install() {
     if (!installEvent) return;
@@ -49,7 +49,7 @@ export function OfflineIndicator() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3 print:hidden">
       <div className="flex w-full max-w-3xl flex-wrap items-center gap-3 rounded-xl border border-subtle-line bg-white/95 px-4 py-3 text-sm shadow-card backdrop-blur">
-        {!online ? (
+        {online === false ? (
           <div className="flex min-w-0 flex-1 items-start gap-2 text-ink">
             <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="min-w-0">
