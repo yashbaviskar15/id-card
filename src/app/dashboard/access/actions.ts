@@ -92,7 +92,13 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
       // The only expected unique violation is a code collision; retry with a new one.
       if (error?.code !== '23505') {
         log.warn('access.grant create failed', { code: error?.code });
-        return { ok: false, error: 'Could not create the code. Check the connection and try again.' };
+        const missingSchema = ['42P01', '42703', 'PGRST204', 'PGRST205'].includes(error?.code ?? '');
+        return {
+          ok: false,
+          error: missingSchema
+            ? 'Access-code database migrations are missing. Apply migrations 0001–0007 from SETUP.md.'
+            : 'Could not create the code. Check the connection and try again.',
+        };
       }
     }
 

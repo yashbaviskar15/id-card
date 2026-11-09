@@ -44,9 +44,6 @@ export async function middleware(request: NextRequest) {
   const isDev = process.env.NODE_ENV !== 'production';
   const csp = buildCsp(nonce, isDev);
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
-
   const path = request.nextUrl.pathname;
   const isVisitorPath = path === '/p' || path.startsWith('/p/');
   const isVisitorPreviewFile = /^\/p\/[^/]+\/doc\/[^/]+\/file$/.test(path);
@@ -54,13 +51,22 @@ export async function middleware(request: NextRequest) {
   const userId = session?.userId ?? null;
   const needsMfa = session?.needsMfa ?? false;
 
+  // Build forwarded request headers after Supabase has had a chance to refresh
+  // the request cookies in place.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+
+  const copyAuthCookies = (response: NextResponse) => {
+    for (const cookie of session?.response.cookies.getAll() ?? []) {
+      response.cookies.set(cookie);
+    }
+    response.headers.set('Content-Security-Policy', csp);
+    return response;
+  };
+
   // Re-issue the response so the forwarded request headers reach the app.
   const next = NextResponse.next({ request: { headers: requestHeaders } });
-  // Copy any refreshed auth cookies written by updateSession.
-  for (const cookie of session?.response.cookies.getAll() ?? []) {
-    next.cookies.set(cookie);
-  }
-  next.headers.set('Content-Security-Policy', csp);
+  copyAuthCookies(next);
   if (isVisitorPreviewFile) {
     // Permit only the session-checked document response to render in its same-origin watermarked viewer.
     next.headers.set('Content-Security-Policy', csp.replace("frame-ancestors 'none'", "frame-ancestors 'self'"));
@@ -81,13 +87,13 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', path);
-    return NextResponse.redirect(url);
+    return copyAuthCookies(NextResponse.redirect(url));
   }
   if (path.startsWith('/dashboard') && needsMfa) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', path);
-    return NextResponse.redirect(url);
+    return copyAuthCookies(NextResponse.redirect(url));
   }
 
   // Already fully signed in and visiting /login -> go to the dashboard. A
@@ -96,7 +102,7 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     url.search = '';
-    return NextResponse.redirect(url);
+    return copyAuthCookies(NextResponse.redirect(url));
   }
 
   return next;
