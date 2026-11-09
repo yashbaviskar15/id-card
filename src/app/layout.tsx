@@ -6,6 +6,7 @@ import { OfflineProvider } from '@/components/offline/offline-provider';
 import { OfflineIndicator } from '@/components/offline/offline-indicator';
 import { ServiceWorkerRegister } from '@/components/offline/service-worker-register';
 import { OfflineNavigationGuard } from '@/components/offline/dashboard-navigation-guard';
+import { AppLaunchSplash } from '@/components/app-launch-splash';
 import { siteUrl } from '@/lib/env';
 import { createShareMetadata } from '@/lib/seo';
 import './globals.css';
@@ -62,7 +63,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: 'Identity',
+    title: 'Private Identity',
     statusBarStyle: 'default',
   },
 };
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <TooltipProvider>{children}</TooltipProvider>
           <OfflineIndicator />
           <ServiceWorkerRegister />
+          <AppLaunchSplash />
         </OfflineProvider>
         <Toaster position="top-center" />
       </body>

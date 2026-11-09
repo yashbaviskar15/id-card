@@ -8,7 +8,7 @@
  * Caches can be wiped on demand via `postMessage('CLEAR_CACHES')`, which the app
  * sends on sign-out so no owner data survives on a shared device.
  */
-const VERSION = 'v6';
+const VERSION = 'v7';
 const STATIC_CACHE = `identity-static-${VERSION}`;
 const OFFLINE_HTML = `<!doctype html>
 <html lang="en">
