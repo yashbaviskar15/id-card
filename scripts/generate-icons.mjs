@@ -4,6 +4,7 @@
  * Run with: node scripts/generate-icons.mjs
  *
  * Output: public/icons/{icon-32,icon-192,icon-512,maskable-512,apple-touch-icon}.png
+ *         public/icons/pwa-{icon-192,icon-512,maskable-512,apple-touch-icon}.png
  *         public/favicon.ico
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -22,12 +23,35 @@ async function render(name, size) {
   console.log(`[icons] wrote ${name} (${size}x${size})`);
 }
 
+async function renderPwa(name, size) {
+  const markSize = Math.round(size * 0.68);
+  const mark = await sharp(LOGO_SVG).resize(markSize, markSize).png().toBuffer();
+  const inset = Math.round((size - markSize) / 2);
+  const png = await sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    },
+  })
+    .composite([{ input: mark, left: inset, top: inset }])
+    .png()
+    .toBuffer();
+  await writeFile(join(OUT_DIR, name), png);
+  console.log(`[icons] wrote ${name} (${size}x${size}, inset PWA mark)`);
+}
+
 await mkdir(OUT_DIR, { recursive: true });
 await render('icon-32.png', 32);
 await render('icon-192.png', 192);
 await render('icon-512.png', 512);
 await render('maskable-512.png', 512);
 await render('apple-touch-icon.png', 180);
+await renderPwa('pwa-icon-192.png', 192);
+await renderPwa('pwa-icon-512.png', 512);
+await renderPwa('pwa-maskable-512.png', 512);
+await renderPwa('pwa-apple-touch-icon.png', 180);
 
 const faviconPng = await sharp(LOGO_SVG).resize(256, 256).png().toBuffer();
 const favicon = Buffer.alloc(22 + faviconPng.length);

@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     ],
     apple: [
       {
-        url: new URL('/icons/apple-touch-icon.png', `${siteUrl}/`).toString(),
+        url: new URL('/icons/pwa-apple-touch-icon.png', `${siteUrl}/`).toString(),
         sizes: '180x180',
         type: 'image/png',
       },
