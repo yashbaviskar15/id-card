@@ -38,7 +38,33 @@ Ensure these are also correctly set in your Vercel project:
 - `SUPABASE_DB_URL` (Postgres connection string)
 - `OWNER_EMAIL` (The email address you will use to sign in)
 
-## 3. Redeploy
+## 3. Apply Database Migrations
+
+Share-link downloads and recovery-code generation depend on migrations `0005` and `0006`.
+Push the migrations to the Supabase project used by this deployment before testing those
+features. From a trusted machine with the Supabase CLI installed and the correct project
+selected, run:
+
+```bash
+npx supabase link --project-ref <your-project-ref>
+npx supabase db push --linked --yes
+```
+
+The project ref is available in Supabase **Project Settings > General**. Review and back up
+production data before applying migrations. Do not commit database credentials or expose them
+through client-visible variables; keep the connection string only in server-side
+`SUPABASE_DB_URL`.
+
+## 4. Verify Passkey Configuration
+
+Passkeys require both browser WebAuthn support and passkey endpoints on the Supabase Auth
+service. Confirm the Supabase project used by `NEXT_PUBLIC_SUPABASE_URL` supports passkeys,
+and that its WebAuthn relying-party domain is `ecard-personal.aravanta.tech` with the HTTPS
+origin `https://ecard-personal.aravanta.tech`. A `404` or `501` from the Auth `/passkeys`
+endpoint indicates a project-side Auth capability/configuration issue; redeploying the Next.js
+app alone will not enable it.
+
+## 5. Redeploy
 
 After adding the environment variables, you need to redeploy your project for the changes to take effect:
 

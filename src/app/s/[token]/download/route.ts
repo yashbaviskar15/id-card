@@ -33,11 +33,10 @@ interface ConsumedShare {
 /**
  * Streams one document for a share link.
  *
- * The link is re-validated here (never trusting the landing page) and the
- * download is counted atomically inside `consume_share_download`, so a link can
- * never be downloaded past its limit even under concurrent requests. Every
- * failure returns the same generic 404, so the response never reveals whether a
- * link existed, expired, was revoked or was exhausted.
+ * The link is re-validated here (never trusting the landing page). Storage is
+ * read before the atomic consume so an unavailable object does not spend a
+ * download; the consume function re-checks expiry, revocation and limits before
+ * any bytes are returned. Every failure uses the same generic 404.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -56,6 +55,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const supabase = createServiceClient();
+  const { data: file, error: fileError } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .download(link.storagePath);
+  if (fileError || !file) {
+    log.warn('share.download read failed', { code: fileError?.name });
+    return notAvailable();
+  }
+
   const { data, error } = await supabase.rpc('consume_share_download', {
     p_token_hash: hashToken(parsed.data),
   });
@@ -66,13 +73,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!data) return notAvailable();
 
   const consumed = data as ConsumedShare;
-  const { data: file, error: fileError } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .download(consumed.storage_path);
-  if (fileError || !file) {
-    log.warn('share.download read failed', { code: fileError?.name });
-    return notAvailable();
-  }
+  // The link may have changed between resolving it and consuming the quota.
+  if (consumed.storage_path !== link.storagePath) return notAvailable();
 
   return new NextResponse(file.stream(), {
     status: 200,

@@ -21,26 +21,52 @@ function formatDate(value: string): string {
     : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function passkeyErrorMessage(error: unknown, action: 'load' | 'add' | 'remove'): string {
+  const status = typeof error === 'object' && error !== null && 'status' in error
+    && typeof error.status === 'number'
+    ? error.status
+    : null;
+
+  if (status === 404 || status === 501) {
+    return `Supabase Auth does not provide passkeys for this project yet. Check that passkeys are enabled and that ${window.location.hostname} is configured as the WebAuthn relying-party domain.`;
+  }
+  if (status === 401 || status === 403) {
+    return 'Your Supabase Auth session cannot manage passkeys. Sign out and back in, then check the project Auth configuration if this continues.';
+  }
+
+  const messages = {
+    load: 'Could not load your passkeys.',
+    add: 'Could not add the passkey. If you cancelled the device prompt, try again.',
+    remove: 'Could not remove the passkey.',
+  };
+  return `${messages[action]} Check your connection to Supabase Auth and try again${status ? ` (HTTP ${status})` : ''}.`;
+}
+
 export function PasskeysPanel() {
   const [supported, setSupported] = useState<boolean | null>(null);
   const [passkeys, setPasskeys] = useState<PasskeyItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setLoadFailed(false);
+    setError(null);
     try {
       const supabase = createBrowserSupabase();
       const { data, error: listError } = await supabase.auth.passkey.list();
       if (listError) {
-        setError('Could not load your passkeys. Refresh and try again.');
+        setLoadFailed(true);
+        setError(passkeyErrorMessage(listError, 'load'));
         return;
       }
       setPasskeys(data ?? []);
-    } catch {
-      setError('Could not load your passkeys. Refresh and try again.');
+    } catch (cause) {
+      setLoadFailed(true);
+      setError(passkeyErrorMessage(cause, 'load'));
     } finally {
       setLoading(false);
     }
@@ -64,13 +90,13 @@ export function PasskeysPanel() {
       const supabase = createBrowserSupabase();
       const { error: registerError } = await supabase.auth.registerPasskey();
       if (registerError) {
-        setError('Could not add the passkey. If you cancelled the prompt, try again.');
+        setError(passkeyErrorMessage(registerError, 'add'));
         return;
       }
       setMessage('Passkey added. You can now use it to sign in.');
       await refresh();
-    } catch {
-      setError('Could not add the passkey. Try again.');
+    } catch (cause) {
+      setError(passkeyErrorMessage(cause, 'add'));
     } finally {
       setPending(false);
     }
@@ -85,13 +111,13 @@ export function PasskeysPanel() {
       const supabase = createBrowserSupabase();
       const { error: deleteError } = await supabase.auth.passkey.delete({ passkeyId: passkey.id });
       if (deleteError) {
-        setError('Could not remove the passkey. Try again.');
+        setError(passkeyErrorMessage(deleteError, 'remove'));
         return;
       }
       setMessage('Passkey removed.');
       await refresh();
-    } catch {
-      setError('Could not remove the passkey. Try again.');
+    } catch (cause) {
+      setError(passkeyErrorMessage(cause, 'remove'));
     } finally {
       setPending(false);
     }
@@ -123,6 +149,13 @@ export function PasskeysPanel() {
               <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
               Loading passkeys…
             </p>
+          ) : loadFailed ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-label">
+              <span>Passkey status is unavailable; the list below may not be complete.</span>
+              <Button type="button" variant="outline" size="sm" onClick={() => void refresh()}>
+                Retry
+              </Button>
+            </div>
           ) : passkeys.length > 0 ? (
             <ul className="space-y-2" aria-label="Registered passkeys">
               {passkeys.map((passkey) => (
