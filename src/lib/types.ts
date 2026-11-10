@@ -186,6 +186,8 @@ export interface GrantDocument {
   name: string;
   mime: string;
   size: number;
+  /** Opaque row revision used to refresh a live visitor document preview. */
+  updated_at: string;
 }
 
 /** The complete set of data a visitor session can ever receive. */

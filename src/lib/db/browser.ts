@@ -5,7 +5,7 @@ import { clientEnv } from '@/lib/env';
 
 /**
  * Browser client. It only ever sees the public anon key (RLS applies) and is
- * used for interactive auth calls such as sign-in and password recovery.
+ * used for interactive auth and private Realtime invalidation subscriptions.
  * Service-role and encryption keys must never reach this module.
  */
 export function createBrowserSupabase() {

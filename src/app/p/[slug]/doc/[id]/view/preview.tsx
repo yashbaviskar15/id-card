@@ -21,6 +21,11 @@ export function DocumentPreview({
   const [ended, setEnded] = useState(false);
   const [accessConfirmed, setAccessConfirmed] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [activeDocument, setActiveDocument] = useState({
+    name: documentName,
+    mime,
+    revision: 'initial',
+  });
 
   useEffect(() => {
     const source = new EventSource(`/p/${encodeURIComponent(slug)}/stream`);
@@ -31,11 +36,40 @@ export function DocumentPreview({
       },
       Math.max(0, Date.parse(expiresAt) - Date.now()),
     );
-    source.addEventListener('message', () => {
+    source.addEventListener('message', (event) => {
+      try {
+        const frame = JSON.parse((event as MessageEvent<string>).data) as {
+          profile?: {
+            documents?: Array<{
+              id: string;
+              name: string;
+              mime: string;
+              size: number;
+              updated_at?: string;
+            }>;
+          };
+        };
+        const sharedDocument = frame.profile?.documents?.find((item) => item.id === documentId);
+        if (!sharedDocument || !['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(sharedDocument.mime)) {
+          window.clearTimeout(expiryTimer);
+          setEnded(true);
+          source.close();
+          return;
+        }
+        setActiveDocument({
+          name: sharedDocument.name,
+          mime: sharedDocument.mime,
+          revision: sharedDocument.updated_at ?? `${sharedDocument.name}:${sharedDocument.mime}:${sharedDocument.size}`,
+        });
+      } catch {
+        // Ignore malformed frames; the next authorized snapshot will correct it.
+        return;
+      }
       setAccessConfirmed(true);
       setReconnecting(false);
     });
     source.addEventListener('ended', () => {
+      window.clearTimeout(expiryTimer);
       setEnded(true);
       source.close();
     });
@@ -59,9 +93,9 @@ export function DocumentPreview({
       window.clearTimeout(expiryTimer);
       source.close();
     };
-  }, [expiresAt, slug]);
+  }, [documentId, expiresAt, slug]);
 
-  const src = `/p/${encodeURIComponent(slug)}/doc/${encodeURIComponent(documentId)}/file`;
+  const src = `/p/${encodeURIComponent(slug)}/doc/${encodeURIComponent(documentId)}/file?v=${encodeURIComponent(activeDocument.revision)}`;
 
   if (ended) {
     return (
@@ -95,12 +129,13 @@ export function DocumentPreview({
         </p>
       ) : null}
       <div className="relative min-h-[65vh] bg-muted/30 sm:min-h-[75vh]">
-        {mime.startsWith('image/') ? (
+        {activeDocument.mime.startsWith('image/') ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={`Preview of ${documentName}`} className="absolute inset-0 h-full w-full object-contain" referrerPolicy="no-referrer" />
+          <img key={activeDocument.revision} src={src} alt={`Preview of ${activeDocument.name}`} className="absolute inset-0 h-full w-full object-contain" referrerPolicy="no-referrer" />
         ) : (
           <iframe
-            title={`Preview of ${documentName}`}
+            key={activeDocument.revision}
+            title={`Preview of ${activeDocument.name}`}
             src={`${src}#toolbar=0&navpanes=0&scrollbar=0`}
             className="absolute inset-0 h-full w-full border-0"
             referrerPolicy="no-referrer"

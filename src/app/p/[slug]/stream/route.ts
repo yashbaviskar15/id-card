@@ -152,7 +152,7 @@ export async function GET(
       request.signal.addEventListener('abort', finish, { once: true });
 
       // Open the connection promptly so the browser is not left waiting.
-      write('retry: 3000\n\n');
+      write('retry: 1000\n\n');
       void poll();
       scheduleHeartbeat();
     },

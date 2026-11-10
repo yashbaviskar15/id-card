@@ -295,16 +295,23 @@ export function GrantedProfileView({
 
     const startFallbackPolling = () => {
       if (fallbackTimer !== null) return;
-      fallbackTimer = window.setInterval(() => void refreshSnapshot(), 5_000);
+      fallbackTimer = window.setInterval(() => void refreshSnapshot(), 1_000);
+    };
+
+    const stopFallbackPolling = () => {
+      if (fallbackTimer === null) return;
+      window.clearInterval(fallbackTimer);
+      fallbackTimer = null;
     };
 
     const openStream = () => {
-      if (disposed) return;
+      if (disposed || source) return;
       source = new EventSource(`/p/${encodeURIComponent(slug)}/stream`);
 
       source.addEventListener('open', () => {
         failures = 0;
         setReconnecting(false);
+        stopFallbackPolling();
       });
       source.addEventListener('message', (event) => {
         try {
@@ -340,10 +347,17 @@ export function GrantedProfileView({
     openStream();
 
     const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') void refreshSnapshot();
+      if (document.visibilityState !== 'visible') return;
+      void refreshSnapshot();
+      if (fallbackTimer !== null) openStream();
+    };
+    const reconnectWhenOnline = () => {
+      if (document.visibilityState === 'visible' && fallbackTimer !== null) openStream();
+      void refreshSnapshot();
     };
     document.addEventListener('visibilitychange', refreshWhenVisible);
     window.addEventListener('focus', refreshWhenVisible);
+    window.addEventListener('online', reconnectWhenOnline);
 
     return () => {
       disposed = true;
@@ -351,6 +365,7 @@ export function GrantedProfileView({
       if (fallbackTimer !== null) window.clearInterval(fallbackTimer);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
       window.removeEventListener('focus', refreshWhenVisible);
+      window.removeEventListener('online', reconnectWhenOnline);
       controller?.abort();
     };
   }, [sessionEnded, slug]);

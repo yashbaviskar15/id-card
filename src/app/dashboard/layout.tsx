@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="dashboard-shell min-h-dvh bg-page">
-      <DashboardLiveSync />
+      <DashboardLiveSync ownerId={owner.id} />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-page-border bg-white lg:flex">
         <div className="flex h-16 items-center gap-2.5 border-b border-page-border px-5">

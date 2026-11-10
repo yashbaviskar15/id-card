@@ -6,6 +6,7 @@ import { resolveShareLink, shareTokenSchema } from '@/lib/share/load';
 import { isShareUnlocked } from '@/lib/share/unlock';
 import { ShareShell, UnlockForm, UnlockHeading } from './unlock-form';
 import { createShareMetadata } from '@/lib/seo';
+import { ShareLiveSync } from '@/components/share/share-live-sync';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -70,6 +71,7 @@ export default async function ShareLandingPage({ params }: { params: Promise<{ t
 
   return (
     <ShareShell>
+      <ShareLiveSync token={parsed.data} />
       <div className="text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-ink">
           <FileText className="h-5 w-5" aria-hidden="true" />

@@ -354,6 +354,28 @@ html.interaction-locked [contenteditable="true"] {
   user-select: text;
 }
 
+html.security-guard-enabled,
+html.security-guard-enabled body,
+html.security-guard-enabled body * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+html.security-guard-enabled input,
+html.security-guard-enabled textarea,
+html.security-guard-enabled select,
+html.security-guard-enabled [contenteditable="true"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+html.security-guard-enabled body *,
+html.security-guard-enabled body *::before,
+html.security-guard-enabled body *::after {
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
 /*
  * Loading feedback — one shared language so any in-flight process reads as
  * "working", never as a frozen page. The top bar covers in-app navigation
@@ -524,15 +546,15 @@ html.interaction-locked [contenteditable="true"] {
 
 /* Best-effort print deterrent. It cannot block OS screenshots or external capture. */
 @media print {
-  .visitor-page button,
-  .visitor-page .visitor-print-hide {
+  html.security-guard-enabled .visitor-page button,
+  html.security-guard-enabled .visitor-page .visitor-print-hide {
     display: none !important;
   }
 
-  body * {
+  html.security-guard-enabled body * {
     visibility: hidden !important;
   }
-  body::before {
+  html.security-guard-enabled body::before {
     content: "Printing is disabled for this application.";
     position: fixed;
     inset: 20mm;

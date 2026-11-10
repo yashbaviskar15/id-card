@@ -9,6 +9,7 @@ import { ServiceWorkerRegister } from '@/components/offline/service-worker-regis
 import { OfflineNavigationGuard } from '@/components/offline/dashboard-navigation-guard';
 import { AppLaunchSplash } from '@/components/app-launch-splash';
 import { RouteProgress } from '@/components/loading/route-progress';
+import { SecurityGuard } from '@/components/security/security-guard';
 import { siteUrl } from '@/lib/env';
 import { createShareMetadata } from '@/lib/seo';
 import './globals.css';
@@ -104,6 +105,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           storageKey="pis-shell"
         >
           <OfflineProvider>
+            <SecurityGuard />
             <RouteProgress />
             <OfflineNavigationGuard />
             <TooltipProvider>{children}</TooltipProvider>
