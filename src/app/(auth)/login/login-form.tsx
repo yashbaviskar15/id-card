@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
 import { Fingerprint } from 'lucide-react';
@@ -58,6 +58,20 @@ export function LoginForm({
   }
 
   if (mfaRequired || state.mfaRequired) {
+    // As soon as the owner has typed all six digits the code is sent to the
+    // server — no need to press the button. Non-digits are stripped so a paste
+    // with spaces or separators still resolves to a clean 6-digit value.
+    function handleCodeChange(event: ChangeEvent<HTMLInputElement>) {
+      const digits = event.target.value.replace(/\D/g, '').slice(0, 6);
+      event.target.value = digits;
+      if (digits.length === 6 && !mfaPending) {
+        const formData = new FormData();
+        formData.append('code', digits);
+        formData.append('next', next);
+        void mfaAction(formData);
+      }
+    }
+
     return (
       <div className="mt-7 space-y-5">
         <div>
@@ -78,6 +92,7 @@ export function LoginForm({
               maxLength={6}
               required
               autoFocus
+              onChange={handleCodeChange}
               className="h-11 font-mono tracking-widest"
               aria-invalid={Boolean(mfaState.error) || undefined}
             />

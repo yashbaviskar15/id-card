@@ -10,7 +10,28 @@
  * look. The `dark:` variant is re-pointed at the same scope so the shadcn
  * primitives stay consistent.
  */
-@custom-variant dark (&:where(html[data-shell='dark'] .dashboard-shell, html[data-shell='dark'] .dashboard-shell *));
+/*
+ * The `dark:` variant is scoped to the dashboard shell, but sheets, dialogs,
+ * dropdowns, selects and tooltips portal their content to <body> — outside
+ * `.dashboard-shell`. Those slots are added explicitly so primitives rendered
+ * in a portal (buttons, inputs, labels) still pick up their dark overrides.
+ */
+@custom-variant dark (&:where(
+  html[data-shell='dark'] .dashboard-shell,
+  html[data-shell='dark'] .dashboard-shell *,
+  html[data-shell='dark'] [data-slot='sheet-content'],
+  html[data-shell='dark'] [data-slot='sheet-content'] *,
+  html[data-shell='dark'] [data-slot='dialog-content'],
+  html[data-shell='dark'] [data-slot='dialog-content'] *,
+  html[data-shell='dark'] [data-slot='alert-dialog-content'],
+  html[data-shell='dark'] [data-slot='alert-dialog-content'] *,
+  html[data-shell='dark'] [data-slot='dropdown-menu-content'],
+  html[data-shell='dark'] [data-slot='dropdown-menu-content'] *,
+  html[data-shell='dark'] [data-slot='select-content'],
+  html[data-shell='dark'] [data-slot='select-content'] *,
+  html[data-shell='dark'] [data-slot='tooltip-content'],
+  html[data-shell='dark'] [data-slot='tooltip-content'] *
+));
 
 /*
  * Palette — single source of truth.
@@ -99,7 +120,19 @@
  * `--ink` keeps both legible. `.card-face` (below) restores true white for the
  * identity card, which must stay identical to its print artwork.
  */
-html[data-shell='dark'] .dashboard-shell {
+/*
+ * Portaled dashboard UI (sheet, dialog, dropdown, select, tooltip) renders to
+ * <body>, outside `.dashboard-shell`, so it would miss the dark palette. The
+ * same variables are applied to those content slots directly so the mobile
+ * navigation drawer and every menu stay legible in dark and system mode.
+ */
+html[data-shell='dark'] .dashboard-shell,
+html[data-shell='dark'] [data-slot='sheet-content'],
+html[data-shell='dark'] [data-slot='dialog-content'],
+html[data-shell='dark'] [data-slot='alert-dialog-content'],
+html[data-shell='dark'] [data-slot='dropdown-menu-content'],
+html[data-shell='dark'] [data-slot='select-content'],
+html[data-shell='dark'] [data-slot='tooltip-content'] {
   --background: #0b0b0d;
   --foreground: #f4f4f5;
   --card: #151518;
