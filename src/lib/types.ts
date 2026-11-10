@@ -209,6 +209,8 @@ export interface GrantedProfile {
   documents: GrantDocument[];
   can_view_documents: boolean;
   session_expires_at: string;
+  /** Database clock sampled with the visitor projection for an accurate timer. */
+  server_now: string;
 }
 
 export type GrantVerdictReason =

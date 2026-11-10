@@ -413,7 +413,7 @@ export function GrantedProfileView({
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#CBD5E1]">{profile.visitor_intro}</p>
             ) : null}
             <div className="mt-4">
-              <SessionTimer until={profile.session_expires_at} />
+              <SessionTimer until={profile.session_expires_at} serverNow={profile.server_now} />
             </div>
           </div>
         </section>

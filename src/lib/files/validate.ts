@@ -85,7 +85,7 @@ export function isBlockedExtension(originalName: string): boolean {
 export function pendingStoragePath(ownerId: string, declaredName: string): string {
   const stem = safeFileName(declaredName).replace(/\.[^.]+$/, '') || 'file';
   const extension = declaredExtension(declaredName) || 'bin';
-  return `${ownerId}/${generateStorageId()}-${stem}.${extension}`;
+  return `${ownerId}/pending/${generateStorageId()}-${stem}.${extension}`;
 }
 
 /** Display name for a document: the original, minus control characters. */

@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createUserClient } from '@/lib/db/user';
 import { generateSlug } from '@/lib/crypto/random';
 import { log } from '@/lib/log';
@@ -9,7 +10,7 @@ import type { ProfileRow } from '@/lib/types';
 const PROFILE_COLUMNS =
   'id, owner_id, slug, full_name, dob, address, photo_path, show_dob, show_address, show_photo, visitor_theme, visitor_layout, visitor_intro, is_active, created_at, updated_at';
 
-export async function getProfile(ownerId: string): Promise<ProfileRow | null> {
+export const getProfile = cache(async (ownerId: string): Promise<ProfileRow | null> => {
   const supabase = await createUserClient();
   const { data, error } = await supabase
     .from('profiles')
@@ -21,7 +22,7 @@ export async function getProfile(ownerId: string): Promise<ProfileRow | null> {
     return null;
   }
   return data ?? null;
-}
+});
 
 /**
  * First-run profile creation. The slug is generated here, exactly once, from a

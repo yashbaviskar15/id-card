@@ -4,7 +4,14 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireOwner } from '@/lib/auth/session';
 import { createUserClient } from '@/lib/db/user';
-import { validateUpload, storagePathFor, type UploadRejection } from '@/lib/files/validate';
+import {
+  isBlockedExtension,
+  maxUploadBytes,
+  pendingStoragePath,
+  storagePathFor,
+  validateUpload,
+  type UploadRejection,
+} from '@/lib/files/validate';
 import { DOCUMENTS_BUCKET } from '@/lib/storage';
 import { log } from '@/lib/log';
 import type { VaultState } from './form-state';
@@ -18,7 +25,7 @@ const REJECTION_MESSAGE: Record<UploadRejection, string> = {
   content_mismatch: 'The file content does not match its extension.',
 };
 
-async function resolveCategory(ownerId: string, value: FormDataEntryValue | null): Promise<string | null> {
+async function resolveCategory(ownerId: string, value: string | null): Promise<string | null> {
   const parsed = z.uuid().safeParse(value);
   if (!parsed.success) return null;
   const supabase = await createUserClient();
@@ -31,44 +38,98 @@ async function resolveCategory(ownerId: string, value: FormDataEntryValue | null
   return data?.id ?? null;
 }
 
-/**
- * Uploads one file into the private bucket and records it in the vault.
- *
- * The browser's declared name and type are treated as hostile: the real type is
- * sniffed from the bytes server side, anything that is not on the allow-list is
- * refused, and the object is removed again if the metadata row cannot be
- * written.
- */
-export async function uploadDocumentAction(_prev: VaultState, formData: FormData): Promise<VaultState> {
+/** Creates an owner-scoped pending path so large file bytes bypass the app server. */
+export async function prepareDocumentUploadAction(input: {
+  name: string;
+  size: number;
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
   const owner = await requireOwner('/dashboard/vault');
+  const maxBytes = maxUploadBytes();
+  const parsed = z.object({
+    name: z.string().trim().min(1).max(300),
+    size: z.number().int().positive(),
+  }).safeParse(input);
 
-  const file = formData.get('file');
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: 'Choose a file to upload.' };
+  if (!parsed.success) {
+    return { ok: false, error: 'Choose a non-empty file to upload.' };
+  }
+  if (parsed.data.size > maxBytes) {
+    return {
+      ok: false,
+      error: `This file is ${Math.ceil(parsed.data.size / (1024 * 1024))} MB. The current upload limit is ${Math.floor(maxBytes / (1024 * 1024))} MB.`,
+    };
+  }
+  if (isBlockedExtension(parsed.data.name)) {
+    return { ok: false, error: 'That file type is not allowed.' };
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  return { ok: true, path: pendingStoragePath(owner.id, parsed.data.name) };
+}
+
+/**
+ * Validates the owner-uploaded pending object before moving it into the vault.
+ * Storage RLS restricts the direct browser upload to the owner's folder; no
+ * document becomes visible to the app until its bytes pass server validation.
+ */
+export async function finalizeDocumentUploadAction(input: {
+  path: string;
+  name: string;
+  mime: string;
+  size: number;
+  categoryId: string | null;
+}): Promise<VaultState> {
+  const owner = await requireOwner('/dashboard/vault');
+  const parsed = z.object({
+    path: z.string().max(500),
+    name: z.string().min(1).max(300),
+    mime: z.string().max(255),
+    size: z.number().int().positive().max(maxUploadBytes()),
+    categoryId: z.string().max(100).nullable(),
+  }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'The upload details are invalid. Choose the file again.' };
+
+  const segments = parsed.data.path.split('/');
+  if (
+    segments.length !== 3
+    || segments[0] !== owner.id
+    || segments[1] !== 'pending'
+    || !/^[A-Za-z0-9._-]{1,200}$/.test(segments[2])
+    || segments[2].includes('..')
+  ) {
+    return { ok: false, error: 'The upload could not be verified. Choose the file again.' };
+  }
+
+  const supabase = await createUserClient();
+  const storage = supabase.storage.from(DOCUMENTS_BUCKET);
+  const { data: object, error: downloadError } = await storage.download(parsed.data.path);
+  if (downloadError || !object) {
+    log.warn('vault.upload pending read failed', { code: downloadError?.name });
+    return { ok: false, error: 'The uploaded file could not be checked. Check your connection and try again.' };
+  }
+
+  const buffer = Buffer.from(await object.arrayBuffer());
+  if (buffer.byteLength !== parsed.data.size) {
+    await storage.remove([parsed.data.path]);
+    return { ok: false, error: 'The uploaded file was incomplete. Please upload it again.' };
+  }
+
   const validation = await validateUpload({
     buffer,
-    declaredName: file.name,
-    declaredMime: file.type,
+    declaredName: parsed.data.name,
+    declaredMime: parsed.data.mime,
   });
-
   if (!validation.ok) {
+    await storage.remove([parsed.data.path]);
     return { ok: false, error: REJECTION_MESSAGE[validation.reason] };
   }
 
-  const categoryId = await resolveCategory(owner.id, formData.get('category_id'));
+  const categoryId = await resolveCategory(owner.id, parsed.data.categoryId);
   const storagePath = storagePathFor(owner.id, validation.data);
-  const supabase = await createUserClient();
-
-  const { error: uploadError } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .upload(storagePath, buffer, { contentType: validation.data.mime, upsert: false });
-
-  if (uploadError) {
-    log.warn('vault.upload failed', { code: uploadError.name });
-    return { ok: false, error: 'The upload did not complete. Try again.' };
+  const { error: moveError } = await storage.move(parsed.data.path, storagePath);
+  if (moveError) {
+    await storage.remove([parsed.data.path]);
+    log.warn('vault.upload finalize move failed', { code: moveError.name });
+    return { ok: false, error: 'The uploaded file could not be finalized. Please upload it again.' };
   }
 
   const { error: dbError } = await supabase.from('documents').insert({
@@ -82,8 +143,7 @@ export async function uploadDocumentAction(_prev: VaultState, formData: FormData
   });
 
   if (dbError) {
-    // Never leave an orphan object behind when the metadata row is refused.
-    await supabase.storage.from(DOCUMENTS_BUCKET).remove([storagePath]);
+    await storage.remove([storagePath]);
     log.warn('vault.record failed', { code: dbError.code });
     return { ok: false, error: 'The document could not be saved. Try again.' };
   }

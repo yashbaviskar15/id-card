@@ -23,7 +23,6 @@ const serverSchema = z.object({
   SHARE_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(1440),
   OWNER_SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(30),
   OWNER_SESSION_ABSOLUTE_DAYS: z.coerce.number().int().positive().default(7),
-  ACCESS_SESSION_MINUTES: z.coerce.number().int().positive().default(15),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;

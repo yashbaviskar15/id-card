@@ -56,7 +56,6 @@ export function SettingsClient({ initialSettings, settingsLoadFailed, email, rea
   const [privacy, setPrivacy] = useState({
     default_scope: (initialSettings?.default_scope ?? 'contact') as AccessScope,
     default_validity_minutes: initialSettings?.default_validity_minutes ?? 15,
-    visitor_session_minutes: initialSettings?.visitor_session_minutes ?? 15,
   });
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
@@ -108,7 +107,10 @@ export function SettingsClient({ initialSettings, settingsLoadFailed, email, rea
     setPrivacySaving(true);
     startTransition(async () => {
       try {
-        const result = await updatePrivacyDefaultsAction(privacy);
+        const result = await updatePrivacyDefaultsAction({
+          ...privacy,
+          visitor_session_minutes: privacy.default_validity_minutes,
+        });
         if (!result.ok) {
           setError(result.error);
           return;
@@ -276,10 +278,9 @@ export function SettingsClient({ initialSettings, settingsLoadFailed, email, rea
         <div className="border-b border-subtle-line px-6 py-4"><h2 className="text-sm font-semibold text-ink">Access defaults</h2></div>
         <div className="space-y-4 px-6 py-4">
           <p className="text-sm text-label">
-            These pre-fill new access codes you create for visitors. You can still change them for each
-            individual code.
+            These pre-fill new access codes. The duration you choose for each code also sets that visitor session to the exact same number of minutes.
           </p>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="default_scope">Default share scope</Label>
               <select
@@ -294,7 +295,7 @@ export function SettingsClient({ initialSettings, settingsLoadFailed, email, rea
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="default_validity_minutes">Code valid for (minutes)</Label>
+              <Label htmlFor="default_validity_minutes">Access and session duration (minutes)</Label>
               <Input
                 id="default_validity_minutes"
                 type="number"
@@ -305,21 +306,7 @@ export function SettingsClient({ initialSettings, settingsLoadFailed, email, rea
                 onChange={(event) => setPrivacy((current) => ({ ...current, default_validity_minutes: Number(event.target.value) }))}
                 className="h-11"
               />
-              <p className="text-xs text-label">Between 1 and 30 minutes.</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="visitor_session_minutes">Visitor session (minutes)</Label>
-              <Input
-                id="visitor_session_minutes"
-                type="number"
-                min={1}
-                max={60}
-                value={privacy.visitor_session_minutes}
-                disabled={settingsLoadFailed}
-                onChange={(event) => setPrivacy((current) => ({ ...current, visitor_session_minutes: Number(event.target.value) }))}
-                className="h-11"
-              />
-              <p className="text-xs text-label">Between 1 and 60 minutes.</p>
+              <p className="text-xs text-label">Between 1 and 30 minutes; the visitor gets this same duration after entering the code.</p>
             </div>
           </div>
           <Button type="button" className="w-full font-medium sm:w-auto" disabled={privacySaving || settingsLoadFailed} onClick={savePrivacy}>

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const REFRESH_INTERVAL_MS = 15_000;
+const REFRESH_INTERVAL_MS = 60_000;
 
 function isEditing(): boolean {
   const active = document.activeElement;

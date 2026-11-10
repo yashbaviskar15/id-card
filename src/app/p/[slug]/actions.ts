@@ -4,7 +4,6 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/db/service';
 import { setVisitorSession } from '@/lib/access/visitor';
-import { serverEnv } from '@/lib/env.server';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
 import { buildAccessCodeProof } from '@/lib/crypto/proofs';
 import { accessCodeSchema, slugSchema } from '@/lib/validation';
@@ -48,7 +47,6 @@ export async function submitAccessCodeAction(_prev: FormState, formData: FormDat
   const { data, error } = await supabase.rpc('consume_access_code', {
     p_slug: slug,
     p_code_hash: proof,
-    p_session_minutes: serverEnv().ACCESS_SESSION_MINUTES,
     p_ip_hash: ipHash,
     p_user_agent: userAgent,
   });
@@ -96,7 +94,7 @@ export async function submitAccessCodeAction(_prev: FormState, formData: FormDat
     return { ok: false, error: INVALID_CODE };
   }
 
-  const seconds = Math.floor((Date.parse(verdict.session_expires_at) - Date.now()) / 1000);
+  const seconds = (Date.parse(verdict.session_expires_at) - Date.now()) / 1000;
   await setVisitorSession({ grantId: verdict.grant_id, slug }, seconds);
 
   const owner = await ownerIdForSlug(slug);

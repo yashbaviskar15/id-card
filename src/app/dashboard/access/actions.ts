@@ -64,6 +64,7 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
           scope: scopeParsed.data,
           include_documents: withDocuments,
           expires_at: expiresAt,
+          session_duration_minutes: validityParsed.data,
         })
         .select('id, expires_at')
         .single<{ id: string; expires_at: string }>();
@@ -97,7 +98,7 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
         return {
           ok: false,
           error: missingSchema
-            ? 'Access-code database migrations are missing. Apply migrations 0001–0008 from SETUP.md.'
+            ? 'Access-code database migrations are missing. Apply migrations 0001–0009 from SETUP.md.'
             : 'Could not create the code. Check the connection and try again.',
         };
       }

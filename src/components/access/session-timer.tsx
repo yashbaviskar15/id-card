@@ -8,7 +8,7 @@ import { Clock3 } from 'lucide-react';
  * Shows the remaining session time and reloads the page the moment it runs out,
  * which puts the lock screen back without the visitor doing anything.
  */
-export function SessionTimer({ until }: { until: string }) {
+export function SessionTimer({ until, serverNow }: { until: string; serverNow: string }) {
   const router = useRouter();
   return (
     <div
@@ -20,6 +20,7 @@ export function SessionTimer({ until }: { until: string }) {
       <span className="whitespace-nowrap">Session ends in</span>
       <Countdown
         until={until}
+        serverNow={serverNow}
         onExpire={() => router.refresh()}
         className="font-semibold tabular-nums text-[#A7F3D0]"
       />

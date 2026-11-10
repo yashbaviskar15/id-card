@@ -86,10 +86,11 @@ needed while an old preview expires.
 
 ## 3. Apply Database Migrations
 
-The deployed Supabase project must have **all migrations `0001` through `0008`**. In
+The deployed Supabase project must have **all migrations `0001` through `0009`**. In
 particular, access-code document permissions require `0002`, share-link downloads require
 `0005` and safe storage-path validation requires `0008`, recovery-code writes require `0006`,
-and atomic recovery-code rotation requires `0007`. From a trusted machine with the Supabase CLI installed, link the exact project used
+atomic recovery-code rotation requires `0007`, and exact per-code visitor-session duration
+requires `0009`. From a trusted machine with the Supabase CLI installed, link the exact project used
 by `NEXT_PUBLIC_SUPABASE_URL`, then review and apply pending migrations:
 
 ```bash

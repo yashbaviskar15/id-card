@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -12,8 +12,14 @@ import { cn } from 'cn';
 import { ArrowUpRight, Download, FileText, Files, FolderOpen, Search, Share2, Trash2, Upload } from 'lucide-react';
 import { useOffline } from '@/components/offline/offline-provider';
 import { OnlineRequiredNotice } from '@/components/offline/online-notice';
-import { uploadDocumentAction, setDocumentSharedAction, deleteDocumentAction } from './actions';
+import {
+  deleteDocumentAction,
+  finalizeDocumentUploadAction,
+  prepareDocumentUploadAction,
+  setDocumentSharedAction,
+} from './actions';
 import { initialVaultState } from './form-state';
+import { createBrowserSupabase } from '@/lib/db/browser';
 
 export interface VaultDocument {
   id: string;
@@ -202,7 +208,8 @@ export function VaultClient({
   totalDocuments: number | null;
   sharedDocuments: number | null;
 }) {
-  const [state, submit, pending] = useActionState(uploadDocumentAction, initialVaultState);
+  const [state, setState] = useState(initialVaultState);
+  const [uploadPending, setUploadPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -210,6 +217,81 @@ export function VaultClient({
   const [query, setQuery] = useState(queryValue);
   const [category, setCategory] = useState(categoryValue);
   const [selectedFileName, setSelectedFileName] = useState('');
+
+  async function uploadFile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!online) return;
+
+    const input = formRef.current?.elements.namedItem('file');
+    const file = input instanceof HTMLInputElement ? input.files?.[0] : null;
+    if (!file) {
+      setState({ ok: false, error: 'Choose a file to upload.' });
+      return;
+    }
+
+    setUploadPending(true);
+    setState(initialVaultState);
+    let pendingPath: string | null = null;
+
+    try {
+      const prepared = await prepareDocumentUploadAction({ name: file.name, size: file.size });
+      if (!prepared.ok) {
+        setState({ ok: false, error: prepared.error });
+        return;
+      }
+      pendingPath = prepared.path;
+
+      const supabase = createBrowserSupabase();
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .upload(pendingPath, file, {
+          contentType: file.type || 'application/octet-stream',
+          upsert: false,
+        });
+
+      if (storageError) {
+        await supabase.storage.from('documents').remove([pendingPath]);
+        setState({
+          ok: false,
+          error: 'The file could not be transferred to secure storage. Check the connection and storage file-size limit, then retry.',
+        });
+        return;
+      }
+
+      const categoryId = new FormData(formRef.current!).get('category_id')?.toString() || null;
+      const result = await finalizeDocumentUploadAction({
+        path: pendingPath,
+        name: file.name,
+        mime: file.type,
+        size: file.size,
+        categoryId,
+      });
+      if (!result.ok) {
+        await supabase.storage.from('documents').remove([pendingPath]);
+        setState(result);
+        return;
+      }
+
+      setState(result);
+      formRef.current?.reset();
+      setSelectedFileName('');
+      router.refresh();
+    } catch {
+      if (pendingPath) {
+        try {
+          await createBrowserSupabase().storage.from('documents').remove([pendingPath]);
+        } catch {
+          // A retry uses a new random path; a failed cleanup cannot expose the file.
+        }
+      }
+      setState({
+        ok: false,
+        error: 'The upload was interrupted. Check your connection and try again.',
+      });
+    } finally {
+      setUploadPending(false);
+    }
+  }
 
   const navigateTo = useCallback((nextQuery: string, nextCategory: string, nextPage: number) => {
     const params = new URLSearchParams();
@@ -333,10 +415,7 @@ export function VaultClient({
 
         <form
           ref={formRef}
-          action={submit}
-          onSubmit={(event) => {
-            if (!online) event.preventDefault();
-          }}
+          onSubmit={uploadFile}
           className="mt-4 grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto]"
         >
           <div className="space-y-2">
@@ -362,7 +441,9 @@ export function VaultClient({
                 {selectedFileName || 'No file chosen'}
               </span>
             </div>
-            <p id="file-help" className="text-xs text-label">Select a supported document or image to add it to your vault.</p>
+            <p id="file-help" className="text-xs text-label">
+              Select a supported document or image. File bytes upload directly to private storage, avoiding the app request-size limit.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="category_id" className="font-medium text-ink">Category</Label>
@@ -380,9 +461,9 @@ export function VaultClient({
               ))}
             </select>
           </div>
-          <Button type="submit" className="h-11 gap-2 px-5 font-medium md:mt-7" disabled={pending || !online}>
+        <Button type="submit" className="h-11 gap-2 px-5 font-medium md:mt-7" disabled={uploadPending || !online}>
             <Upload className="h-4 w-4" aria-hidden="true" />
-            {pending ? 'Processing…' : 'Upload'}
+          {uploadPending ? 'Uploading…' : 'Upload'}
           </Button>
         </form>
 

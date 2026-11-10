@@ -31,7 +31,9 @@ export function visitorCookiePath(slug: string): string {
 }
 
 export async function setVisitorSession(session: VisitorSession, maxAgeSeconds: number): Promise<void> {
-  const ttl = Math.max(1, Math.min(MAX_VISITOR_SESSION_SECONDS, Math.floor(maxAgeSeconds)));
+  // The database deadline is authoritative; rounding the cookie up avoids it
+  // expiring fractionally before the session timestamp.
+  const ttl = Math.max(1, Math.min(MAX_VISITOR_SESSION_SECONDS, Math.ceil(maxAgeSeconds)));
   const token = signCookie({ g: session.grantId, s: session.slug }, ttl * 1000, ownerCookieSecret());
   const store = await cookies();
   store.set(visitorCookieName(session.slug), token, cookieOptions(ttl, visitorCookiePath(session.slug)));

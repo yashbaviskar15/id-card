@@ -1,26 +1,17 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { requireOwner } from '@/lib/auth/session';
-import { getProfile } from '@/lib/card/load';
 import { NavLinks } from './nav-links';
-import { SignOutForm } from '@/components/offline/sign-out-form';
+import { DashboardUserMenu } from './dashboard-user-menu';
+import { UserMenuSkeleton } from './user-menu';
 import { DashboardLiveSync } from '@/components/dashboard/live-sync';
 import { BrandMark } from '@/components/brand/brand-mark';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { LogOut, Menu } from 'lucide-react';
-
-function firstName(...values: unknown[]) {
-  return values.find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim();
-}
+import { Menu } from 'lucide-react';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const owner = await requireOwner();
-  const profile = await getProfile(owner.id);
-  const ownerName = firstName(
-    owner.user_metadata?.full_name,
-    owner.user_metadata?.name,
-    profile?.full_name,
-  ) ?? owner.email?.split('@')[0] ?? 'Owner';
 
   return (
     <div className="min-h-dvh bg-page">
@@ -37,27 +28,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
 
         <div className="border-t border-page-border p-3">
-          <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-label">
-              {ownerName.slice(0, 1).toUpperCase()}
-            </span>
-            <span className="min-w-0">
-              <span className="eyebrow block">Signed in</span>
-              <span className="block truncate text-xs font-medium text-ink" title={ownerName}>{ownerName}</span>
-              <span className="block truncate text-[11px] leading-4 text-label" title={owner.email ?? ''}>{owner.email}</span>
-            </span>
-          </div>
-          <SignOutForm>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="sm"
-              className="mt-1 w-full justify-start gap-2 text-label hover:text-ink"
-            >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
-              Sign out
-            </Button>
-          </SignOutForm>
+          <Suspense fallback={<UserMenuSkeleton />}>
+            <DashboardUserMenu owner={owner} />
+          </Suspense>
         </div>
       </aside>
 
@@ -86,26 +59,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   <NavLinks layout="sheet" />
                 </div>
                 <div className="border-t border-page-border p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
-                  <div className="mb-3 flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-label">
-                      {ownerName.slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="eyebrow block">Signed in</span>
-                      <span className="block truncate text-xs font-medium text-ink" title={ownerName}>{ownerName}</span>
-                      <span className="block truncate text-[11px] leading-4 text-label" title={owner.email ?? ''}>{owner.email}</span>
-                    </span>
-                  </div>
-                  <SignOutForm>
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      className="w-full justify-center gap-2 font-medium"
-                    >
-                      <LogOut className="h-4 w-4" aria-hidden="true" />
-                      Sign out
-                    </Button>
-                  </SignOutForm>
+                  <Suspense fallback={<UserMenuSkeleton compact />}>
+                    <DashboardUserMenu owner={owner} />
+                  </Suspense>
                 </div>
               </div>
             </SheetContent>

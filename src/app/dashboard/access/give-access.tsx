@@ -130,7 +130,7 @@ export function GiveAccess({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="validity_minutes">Valid for (minutes)</Label>
+          <Label htmlFor="validity_minutes">Code and visitor session (minutes)</Label>
           <Input
             id="validity_minutes"
             name="validity_minutes"
@@ -140,6 +140,9 @@ export function GiveAccess({
             defaultValue={defaultValidity}
             required
           />
+          <p className="text-xs text-label">
+            If unused, the code expires after this time. After use, the visitor session lasts the same duration.
+          </p>
         </div>
 
         <Button type="submit" className="h-9" disabled={pending || !online}>

@@ -14,14 +14,17 @@ function format(totalSeconds: number): string {
  */
 export function Countdown({
   until,
+  serverNow,
   onExpire,
   className,
 }: {
   until: string;
+  serverNow?: string;
   onExpire?: () => void;
   className?: string;
 }) {
   const target = Date.parse(until);
+  const serverTarget = serverNow ? Date.parse(serverNow) : Number.NaN;
   // Start empty so the server and the first client render agree, then fill in.
   const [remaining, setRemaining] = useState<number | null>(null);
   const onExpireRef = useRef(onExpire);
@@ -29,18 +32,31 @@ export function Countdown({
 
   useEffect(() => {
     let expired = false;
+    const startedAt = performance.now();
+    const initialRemaining = target - (Number.isFinite(serverTarget) ? serverTarget : Date.now());
+    const expire = () => {
+      if (expired) return;
+      expired = true;
+      setRemaining(0);
+      onExpireRef.current?.();
+    };
     const tick = () => {
-      const next = Math.max(0, Math.floor((target - Date.now()) / 1000));
-      setRemaining(next);
-      if (next <= 0 && !expired) {
-        expired = true;
-        onExpireRef.current?.();
+      const remainingMs = initialRemaining - (performance.now() - startedAt);
+      if (remainingMs <= 0) {
+        expire();
+        return;
       }
+      const next = Math.max(0, Math.ceil(remainingMs / 1000));
+      setRemaining(next);
     };
     tick();
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [target]);
+    const expiryId = setTimeout(expire, Math.max(0, initialRemaining));
+    return () => {
+      clearInterval(id);
+      clearTimeout(expiryId);
+    };
+  }, [serverTarget, target]);
 
   return (
     <span className={className} suppressHydrationWarning>

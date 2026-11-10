@@ -120,7 +120,7 @@ export async function createShareLinkAction(_prev: ShareState, formData: FormDat
       return {
         ok: false,
         error: missingSchema
-          ? 'Share-link database migrations are missing. Apply migrations 0001–0008 from SETUP.md.'
+          ? 'Share-link database migrations are missing. Apply migrations 0001–0009 from SETUP.md.'
           : 'Could not create the link. Check the connection and try again.',
       };
     }
