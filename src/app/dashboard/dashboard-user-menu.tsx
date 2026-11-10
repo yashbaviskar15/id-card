@@ -6,7 +6,13 @@ function firstName(...values: unknown[]) {
   return values.find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim();
 }
 
-export async function DashboardUserMenu({ owner }: { owner: User }) {
+export async function DashboardUserMenu({
+  owner,
+  compact = false,
+}: {
+  owner: User;
+  compact?: boolean;
+}) {
   const profile = await getProfile(owner.id);
   const name = firstName(
     owner.user_metadata?.full_name,
@@ -14,5 +20,5 @@ export async function DashboardUserMenu({ owner }: { owner: User }) {
     profile?.full_name,
   ) ?? owner.email?.split('@')[0] ?? 'Owner';
 
-  return <UserMenu name={name} email={owner.email ?? null} />;
+  return <UserMenu name={name} email={owner.email ?? null} compact={compact} />;
 }
