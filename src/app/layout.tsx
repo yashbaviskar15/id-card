@@ -47,21 +47,21 @@ export const metadata: Metadata = {
   manifest: new URL('/manifest.webmanifest', `${siteUrl}/`).toString(),
   icons: {
     icon: [
-      { url: new URL('/favicon.ico', `${siteUrl}/`).toString(), sizes: 'any' },
+      { url: new URL('/favicon.ico?v=3', `${siteUrl}/`).toString(), sizes: 'any' },
       {
-        url: new URL('/icons/icon-32.png', `${siteUrl}/`).toString(),
+        url: new URL('/icons/icon-32.png?v=3', `${siteUrl}/`).toString(),
         sizes: '32x32',
         type: 'image/png',
       },
       {
-        url: new URL('/icons/icon-192.png', `${siteUrl}/`).toString(),
+        url: new URL('/icons/icon-192.png?v=3', `${siteUrl}/`).toString(),
         sizes: '192x192',
         type: 'image/png',
       },
     ],
     apple: [
       {
-        url: new URL('/icons/pwa-apple-touch-icon.png?v=2', `${siteUrl}/`).toString(),
+        url: new URL('/icons/pwa-apple-touch-icon.png?v=3', `${siteUrl}/`).toString(),
         sizes: '180x180',
         type: 'image/png',
       },

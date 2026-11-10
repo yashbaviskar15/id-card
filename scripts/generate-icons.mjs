@@ -15,43 +15,53 @@ import sharp from 'sharp';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'public', 'icons');
 const LOGO_PNG = await readFile(join(ROOT, 'public', 'logo.png'));
+const P_GLYPH = { left: 171, top: 139, width: 183, height: 237 };
 
-async function render(name, size) {
-  const png = await sharp(LOGO_PNG).resize(size, size).png().toBuffer();
+async function renderIcon(size, { maskable = false } = {}) {
+  const radius = maskable ? 0 : Math.round(size * 0.22);
+  const glyphWidth = Math.round(size * (maskable ? 0.46 : 0.54));
+  const glyphHeight = Math.round(glyphWidth * P_GLYPH.height / P_GLYPH.width);
+  const background = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${radius}" fill="#000"/></svg>`,
+  );
+  const glyph = await sharp(LOGO_PNG)
+    .extract(P_GLYPH)
+    .resize(glyphWidth, glyphHeight)
+    .png()
+    .toBuffer();
+  return sharp(background)
+    .composite([{
+      input: glyph,
+      left: Math.round((size - glyphWidth) / 2),
+      top: Math.round((size - glyphHeight) / 2),
+    }])
+    .png()
+    .toBuffer();
+}
+
+async function render(name, size, options) {
+  const png = await renderIcon(size, options);
   const target = join(OUT_DIR, name);
   await writeFile(target, png);
   console.log(`[icons] wrote ${name} (${size}x${size})`);
 }
 
-async function renderPwa(name, size) {
-  const mark = await sharp(LOGO_PNG).resize(size, size).png().toBuffer();
-  const png = await sharp({
-    create: {
-      width: size,
-      height: size,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 1 },
-    },
-  })
-    .composite([{ input: mark, left: 0, top: 0 }])
-    .png()
-    .toBuffer();
-  await writeFile(join(OUT_DIR, name), png);
-  console.log(`[icons] wrote ${name} (${size}x${size}, full-bleed logo)`);
+async function renderPwa(name, size, options) {
+  await render(name, size, options);
 }
 
 await mkdir(OUT_DIR, { recursive: true });
 await render('icon-32.png', 32);
 await render('icon-192.png', 192);
 await render('icon-512.png', 512);
-await render('maskable-512.png', 512);
+await render('maskable-512.png', 512, { maskable: true });
 await render('apple-touch-icon.png', 180);
 await renderPwa('pwa-icon-192.png', 192);
 await renderPwa('pwa-icon-512.png', 512);
-await renderPwa('pwa-maskable-512.png', 512);
+await renderPwa('pwa-maskable-512.png', 512, { maskable: true });
 await renderPwa('pwa-apple-touch-icon.png', 180);
 
-const faviconPng = await sharp(LOGO_PNG).resize(256, 256).png().toBuffer();
+const faviconPng = await renderIcon(256);
 const favicon = Buffer.alloc(22 + faviconPng.length);
 favicon.writeUInt16LE(0, 0);
 favicon.writeUInt16LE(1, 2);
