@@ -7,12 +7,13 @@ import { MobileDashboardNav } from './mobile-dashboard-nav';
 import { DashboardLiveSync } from '@/components/dashboard/live-sync';
 import { PageTransition } from './page-transition';
 import { BrandMark } from '@/components/brand/brand-mark';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const owner = await requireOwner();
 
   return (
-    <div className="min-h-dvh bg-page">
+    <div className="dashboard-shell min-h-dvh bg-page">
       <DashboardLiveSync />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-page-border bg-white lg:flex">
@@ -25,7 +26,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <NavLinks layout="sidebar" />
         </div>
 
-        <div className="border-t border-page-border p-3">
+        <div className="space-y-3 border-t border-page-border p-3">
+          <div className="space-y-2 px-1">
+            <p className="eyebrow px-2">Appearance</p>
+            <ThemeToggle />
+          </div>
+          <div className="border-t border-page-border" />
           <Suspense fallback={<UserMenuSkeleton />}>
             <DashboardUserMenu owner={owner} />
           </Suspense>
@@ -34,6 +40,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       <div className="min-w-0 lg:pl-64">
         <MobileDashboardNav
+          themeToggle={<ThemeToggle />}
           accountMenu={
             <Suspense fallback={<UserMenuSkeleton compact />}>
               <DashboardUserMenu owner={owner} compact />

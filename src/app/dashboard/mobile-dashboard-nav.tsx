@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { NavLinks } from './nav-links';
 
-export function MobileDashboardNav({ accountMenu }: { accountMenu: React.ReactNode }) {
+export function MobileDashboardNav({
+  accountMenu,
+  themeToggle,
+}: {
+  accountMenu: React.ReactNode;
+  themeToggle: React.ReactNode;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -38,7 +44,12 @@ export function MobileDashboardNav({ accountMenu }: { accountMenu: React.ReactNo
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
               <NavLinks layout="sheet" />
             </div>
-            <div className="border-t border-page-border p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
+            <div className="space-y-3 border-t border-page-border p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
+              <div className="space-y-2">
+                <p className="eyebrow px-1">Appearance</p>
+                {themeToggle}
+              </div>
+              <div className="border-t border-page-border" />
               {accountMenu}
             </div>
           </div>

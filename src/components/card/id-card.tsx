@@ -65,7 +65,7 @@ function Scaled({ scale, children }: { scale: number; children: React.ReactNode 
 
 export function IdCardFront({ data }: { data: CardData }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+    <div className="pin-light relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
       <div className="absolute inset-x-0 top-0 h-2.5 bg-ink" />
       <div className="flex h-full items-start gap-10 px-12 pt-14 pb-10">
         <div className="relative group shrink-0">
@@ -118,7 +118,7 @@ export function IdCardFront({ data }: { data: CardData }) {
 
 export function IdCardBack({ data }: { data: CardData }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+    <div className="pin-light relative h-full w-full overflow-hidden rounded-[32px] border border-hairline bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
       <div className="flex h-full items-center gap-12 px-12 pt-10 pb-12">
         <div className="shrink-0 group relative">
           <div className="rounded-3xl border-2 border-subtle-line bg-white p-6 shadow-[0_15px_40px_rgba(17,24,39,0.1)] transition-all group-hover:scale-[1.02] group-hover:shadow-[0_20px_50px_rgba(17,24,39,0.15)]">

@@ -212,7 +212,7 @@ export function VisitorStudio({
           ))}
         </div>
 
-        <div className={`surface shadow-card mx-auto w-full overflow-hidden transition-all ${compact ? 'max-w-xl' : 'max-w-3xl'}`}>
+        <div className={`pin-light surface shadow-card mx-auto w-full overflow-hidden transition-all ${compact ? 'max-w-xl' : 'max-w-3xl'}`}>
           <div className={`flex items-center justify-between gap-2 px-4 py-3 text-white sm:px-5 ${selectedTheme.header}`}>
             <span className="text-sm font-medium">Private identity</span>
             <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[11px]">Temporary access</span>

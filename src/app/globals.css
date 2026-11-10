@@ -2,7 +2,15 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/*
+ * The dark palette is scoped to the dashboard shell. `next-themes` writes
+ * `data-shell="dark"` on <html> in a pre-paint script (so there is no flash),
+ * but the styles only ever land on `.dashboard-shell`: the auth screens, every
+ * visitor/share page and the printed identity card keep their designed light
+ * look. The `dark:` variant is re-pointed at the same scope so the shadcn
+ * primitives stay consistent.
+ */
+@custom-variant dark (&:where(html[data-shell='dark'] .dashboard-shell, html[data-shell='dark'] .dashboard-shell *));
 
 /*
  * Palette — single source of truth.
@@ -79,6 +87,88 @@
   --hairline: #dde1e7;
   --subtle-line: #e5e7eb;
   --photo-placeholder: #f3f4f6;
+}
+
+/*
+ * Dark theme for the dashboard shell. Achromatic greys only — the palette scan
+ * rejects warm/metallic hues, and the same neutral language is what keeps this
+ * looking like the same product with the lights off.
+ *
+ * `--color-white` is intentionally re-pointed: it is what `bg-white` panels and
+ * the `bg-ink text-white` inverted chips consume, so flipping it together with
+ * `--ink` keeps both legible. `.card-face` (below) restores true white for the
+ * identity card, which must stay identical to its print artwork.
+ */
+html[data-shell='dark'] .dashboard-shell {
+  --background: #0b0b0d;
+  --foreground: #f4f4f5;
+  --card: #151518;
+  --card-foreground: #f4f4f5;
+  --popover: #151518;
+  --popover-foreground: #f4f4f5;
+  --primary: #f4f4f5;
+  --primary-foreground: #0b0b0d;
+  --secondary: #232327;
+  --secondary-foreground: #f4f4f5;
+  --muted: #232327;
+  --muted-foreground: #a1a1aa;
+  --accent: #232327;
+  --accent-foreground: #f4f4f5;
+  --destructive: #f87171;
+  --destructive-foreground: #0b0b0d;
+  --border: #2a2a2f;
+  --input: #3f3f46;
+  --ring: #f4f4f5;
+
+  --page: #0b0b0d;
+  --page-border: #2a2a2f;
+
+  /* In the dashboard these tokens carry body text and panel borders, so they
+     follow the theme like the rest of the shell. */
+  --ink: #f4f4f5;
+  --label: #a1a1aa;
+  --hairline: #2a2a2f;
+  --subtle-line: #3f3f46;
+  --photo-placeholder: #232327;
+
+  --color-white: #151518;
+}
+
+/* Some dashboard surfaces are documents in disguise and must keep their light
+   identity even inside the dark shell: the identity card (a printed document)
+   and the visitor-page preview (the visitor page is always light, so a dark
+   preview would be a lie). `.pin-light` restores the whole light palette for
+   that subtree; it is a no-op outside the dark dashboard. */
+html[data-shell='dark'] .dashboard-shell .pin-light {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --secondary: #f1f3f5;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f3f5;
+  --muted-foreground: #64748b;
+  --accent: #f1f3f5;
+  --accent-foreground: #0f172a;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --page: #f6f7f9;
+  --page-border: #e6e9ee;
+  --ink: #111827;
+  --label: #5b6472;
+  --hairline: #dde1e7;
+  --subtle-line: #e5e7eb;
+  --photo-placeholder: #f3f4f6;
+  --color-white: #ffffff;
+}
+
+/* Match the browser chrome and the overscroll gutter to the shell, so the part
+   of the page the dashboard does not paint is not a white flash. */
+html[data-shell='dark']:has(.dashboard-shell) {
+  background-color: #0b0b0d;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -289,9 +379,10 @@ html.interaction-locked [contenteditable="true"] {
     color: var(--label);
   }
   /* The one card surface used across the dashboard: hairline border, quiet
-     shadow. Replaces ad-hoc rounded-3xl + heavy blur shadows. */
+     shadow. Replaces ad-hoc rounded-3xl + heavy blur shadows. Reads from the
+     theme token so it dims with the shell instead of staying hard white. */
   .surface {
-    background-color: #ffffff;
+    background-color: var(--card);
     border: 1px solid var(--hairline);
     border-radius: var(--radius-xl);
   }

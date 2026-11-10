@@ -133,8 +133,8 @@ function DocumentRow({ document }: { document: VaultDocument }) {
               onChange={(event) => toggleShared(event.target.checked)}
               className="peer sr-only"
             />
-            <div className="h-5 w-9 rounded-full bg-muted ring-1 ring-hairline transition-colors peer-checked:bg-ink peer-checked:ring-ink" />
-            <div className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all peer-checked:left-[1.125rem]" />
+            <div className="h-5 w-9 rounded-full bg-muted ring-1 ring-hairline transition-colors peer-checked:bg-ink peer-checked:ring-ink dark:bg-input" />
+            <div className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-background shadow-sm transition-all peer-checked:left-[1.125rem]" />
           </div>
           <span className="text-xs font-medium text-label">
             {shared ? 'Shared' : 'Private'}

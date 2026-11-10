@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { OfflineProvider } from '@/components/offline/offline-provider';
@@ -84,17 +85,34 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${manrope.variable} ${inter.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
-        <OfflineProvider>
-          <RouteProgress />
-          <OfflineNavigationGuard />
-          <TooltipProvider>{children}</TooltipProvider>
-          <OfflineIndicator />
-          <ServiceWorkerRegister />
-          <AppLaunchSplash />
-        </OfflineProvider>
-        <Toaster position="top-center" />
+        {/*
+         * `data-shell` is written on <html> before paint so the dark dashboard
+         * never flashes light; the palette itself is scoped to `.dashboard-shell`
+         * in globals.css, so auth, visitor and share pages stay light. Colour
+         * scheme is left to our own CSS (enableColorScheme={false}) for the same
+         * reason, and the storage key keeps this choice separate from anything
+         * else on the domain.
+         */}
+        <ThemeProvider
+          attribute="data-shell"
+          defaultTheme="system"
+          enableSystem
+          enableColorScheme={false}
+          disableTransitionOnChange
+          storageKey="pis-shell"
+        >
+          <OfflineProvider>
+            <RouteProgress />
+            <OfflineNavigationGuard />
+            <TooltipProvider>{children}</TooltipProvider>
+            <OfflineIndicator />
+            <ServiceWorkerRegister />
+            <AppLaunchSplash />
+          </OfflineProvider>
+          <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );
