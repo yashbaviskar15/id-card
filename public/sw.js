@@ -8,7 +8,7 @@
  * Caches can be wiped on demand via `postMessage('CLEAR_CACHES')`, which the app
  * sends on sign-out so no owner data survives on a shared device.
  */
-const VERSION = 'v8';
+const VERSION = 'v9';
 const STATIC_CACHE = `identity-static-${VERSION}`;
 const OFFLINE_HTML = `<!doctype html>
 <html lang="en">
@@ -32,7 +32,7 @@ const OFFLINE_HTML = `<!doctype html>
   </head>
   <body>
     <main>
-      <header class="brand"><img src="/logo.svg" width="40" height="40" alt="Private Identity"><span class="name">Private Identity</span></header>
+      <header class="brand"><img src="/logo.png" width="40" height="40" alt="Private Identity"><span class="name">Private Identity</span></header>
       <h1>You are offline</h1>
       <p class="message">The app shell is ready, but private dashboard pages are not cached for offline browsing.</p>
       <p class="note">Explicitly queued card or information edits stay in this browser until you reconnect. Sign-in, access codes, file sharing, downloads, and security settings need an internet connection.</p>
@@ -42,7 +42,7 @@ const OFFLINE_HTML = `<!doctype html>
 </html>`;
 
 const SHELL_ASSETS = [
-  '/logo.svg',
+  '/logo.png',
   '/manifest.webmanifest',
   '/icons/icon-32.png',
   '/icons/icon-192.png',
@@ -168,7 +168,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/') ||
     url.pathname.startsWith('/fonts/') ||
-    url.pathname === '/logo.svg' ||
+    url.pathname === '/logo.png' ||
     url.pathname === '/manifest.webmanifest' ||
     url.pathname === '/favicon.ico'
   ) {

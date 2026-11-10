@@ -1,10 +1,7 @@
 import Image from 'next/image';
 import { cn } from 'cn';
 
-/**
- * Shared SVG logo. Explicit dimensions preserve layout, while the service
- * worker caches the same asset for the offline screen.
- */
+/** Shared raster logo with explicit dimensions to preserve layout. */
 export function BrandMark({
   className,
   title = 'Private Identity',
@@ -14,7 +11,7 @@ export function BrandMark({
 }) {
   return (
     <Image
-      src="/logo.svg"
+      src="/logo.png"
       alt={title}
       width={40}
       height={40}

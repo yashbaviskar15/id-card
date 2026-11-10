@@ -12,16 +12,16 @@ export function SessionTimer({ until }: { until: string }) {
   const router = useRouter();
   return (
     <div
-      className="inline-flex max-w-full items-center gap-2 rounded-full border border-hairline bg-muted/70 px-3 py-2 text-xs text-label sm:text-sm"
+      className="inline-flex max-w-full items-center gap-2 rounded-full bg-[#064E46] px-3 py-2 text-xs font-medium text-[#A7F3D0] sm:text-sm"
       role="timer"
       aria-label="Time remaining in this access session"
     >
-      <Clock3 className="h-4 w-4 shrink-0 text-label" aria-hidden="true" />
+      <Clock3 className="h-5 w-5 shrink-0 text-[#A7F3D0]" strokeWidth={1.8} aria-hidden="true" />
       <span className="whitespace-nowrap">Session ends in</span>
       <Countdown
         until={until}
         onExpire={() => router.refresh()}
-        className="font-semibold tabular-nums text-ink"
+        className="font-semibold tabular-nums text-[#A7F3D0]"
       />
     </div>
   );

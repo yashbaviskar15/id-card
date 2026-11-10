@@ -137,7 +137,9 @@ test.describe('public unauthenticated surfaces', () => {
       expect(metaContent(html, 'property', 'og:title')).toBeTruthy();
       expect(metaContent(html, 'property', 'og:description')).toBeTruthy();
       expect(new URL(image!).protocol).toBe('https:');
-      expect(new URL(image!).pathname).toBe('/og/private-identity.jpg');
+      expect(new URL(image!).pathname).toBe(
+        path.startsWith('/p/') ? '/logo.png' : '/og/private-identity.jpg',
+      );
       expect(metaContent(html, 'name', 'twitter:card')).toBe('summary_large_image');
       expect(metaContent(html, 'name', 'twitter:title')).toBeTruthy();
       expect(metaContent(html, 'name', 'twitter:description')).toBeTruthy();
@@ -148,6 +150,11 @@ test.describe('public unauthenticated surfaces', () => {
       expect(new URL(ogUrl!).pathname).toBe(path);
 
       if (path.startsWith('/p/')) {
+        expect(metaContent(html, 'name', 'description')).toBe('Securely shared contact');
+        expect(metaContent(html, 'property', 'og:title')).toBe('Private Identity');
+        expect(metaContent(html, 'property', 'og:description')).toBe('Securely shared contact');
+        expect(new URL(image!).pathname).toBe('/logo.png');
+        expect(new URL(metaContent(html, 'name', 'twitter:image')!).pathname).toBe('/logo.png');
         expect(metaContent(html, 'property', 'og:title')).not.toContain('private-person-slug');
         expect(metaContent(html, 'property', 'og:description')).not.toContain('private-person-slug');
       }
@@ -165,6 +172,18 @@ test.describe('public unauthenticated surfaces', () => {
       expect(dimensions.documentWidth, `overflow at ${width}px`).toBeLessThanOrEqual(
         dimensions.viewportWidth,
       );
+    }
+  });
+
+  test('public profile route has no horizontal overflow at requested widths', async ({ page }) => {
+    for (const width of [320, 390, 768, 1280, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/p/not-a-real-slug');
+      const dimensions = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      expect(dimensions.scrollWidth, `document scrollWidth at ${width}px`).toBe(dimensions.clientWidth);
     }
   });
 

@@ -104,6 +104,10 @@
   height: 32px;
 }
 
+.font-inter {
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
 @media (display-mode: standalone) {
   .brand-mark:not(.app-launch-splash__logo) {
     width: 40px;
@@ -261,6 +265,11 @@ html.interaction-locked [contenteditable="true"] {
 
 /* Best-effort print deterrent. It cannot block OS screenshots or external capture. */
 @media print {
+  .visitor-page button,
+  .visitor-page .visitor-print-hide {
+    display: none !important;
+  }
+
   body * {
     visibility: hidden !important;
   }

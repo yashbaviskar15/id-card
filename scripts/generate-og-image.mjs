@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates the static social preview using the shared public/logo.svg asset.
+ * Generates the static social preview using the shared public/logo.png asset.
  * Run with: node scripts/generate-og-image.mjs
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -11,7 +11,7 @@ import sharp from 'sharp';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'public', 'og');
 const OUTPUT = join(OUT_DIR, 'private-identity.jpg');
-const LOGO_SVG = await readFile(join(ROOT, 'public', 'logo.svg'));
+const LOGO_PNG = await readFile(join(ROOT, 'public', 'logo.png'));
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#f6f7f9"/>
@@ -37,7 +37,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
 </svg>`;
 
 await mkdir(OUT_DIR, { recursive: true });
-const logoPng = await sharp(LOGO_SVG).resize(96, 96).png().toBuffer();
+const logoPng = await sharp(LOGO_PNG).resize(96, 96).png().toBuffer();
 const image = await sharp(Buffer.from(svg))
   .composite([{ input: logoPng, left: 104, top: 100 }])
   .jpeg({ quality: 84, mozjpeg: true, chromaSubsampling: '4:2:0' })

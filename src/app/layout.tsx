@@ -21,6 +21,12 @@ const manrope = localFont({
   display: 'swap',
   fallback: ['system-ui', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
 });
+const inter = localFont({
+  src: [{ path: '../../public/fonts/inter-latin-variable.woff2', weight: '400 700', style: 'normal' }],
+  variable: '--font-inter',
+  display: 'swap',
+  fallback: ['system-ui', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
+});
 
 export const metadata: Metadata = {
   ...createShareMetadata({
@@ -77,7 +83,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={manrope.variable}>
+    <html lang="en" className={`${manrope.variable} ${inter.variable}`}>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         <OfflineProvider>
           <OfflineNavigationGuard />

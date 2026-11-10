@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates PWA raster icons from the shared public/logo.svg artwork.
+ * Generates PWA raster icons from the shared public/logo.png artwork.
  * Run with: node scripts/generate-icons.mjs
  *
  * Output: public/icons/{icon-32,icon-192,icon-512,maskable-512,apple-touch-icon}.png
@@ -14,10 +14,10 @@ import sharp from 'sharp';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'public', 'icons');
-const LOGO_SVG = await readFile(join(ROOT, 'public', 'logo.svg'));
+const LOGO_PNG = await readFile(join(ROOT, 'public', 'logo.png'));
 
 async function render(name, size) {
-  const png = await sharp(LOGO_SVG).resize(size, size).png().toBuffer();
+  const png = await sharp(LOGO_PNG).resize(size, size).png().toBuffer();
   const target = join(OUT_DIR, name);
   await writeFile(target, png);
   console.log(`[icons] wrote ${name} (${size}x${size})`);
@@ -25,7 +25,7 @@ async function render(name, size) {
 
 async function renderPwa(name, size) {
   const markSize = Math.round(size * 0.68);
-  const mark = await sharp(LOGO_SVG).resize(markSize, markSize).png().toBuffer();
+  const mark = await sharp(LOGO_PNG).resize(markSize, markSize).png().toBuffer();
   const inset = Math.round((size - markSize) / 2);
   const png = await sharp({
     create: {
@@ -53,7 +53,7 @@ await renderPwa('pwa-icon-512.png', 512);
 await renderPwa('pwa-maskable-512.png', 512);
 await renderPwa('pwa-apple-touch-icon.png', 180);
 
-const faviconPng = await sharp(LOGO_SVG).resize(256, 256).png().toBuffer();
+const faviconPng = await sharp(LOGO_PNG).resize(256, 256).png().toBuffer();
 const favicon = Buffer.alloc(22 + faviconPng.length);
 favicon.writeUInt16LE(0, 0);
 favicon.writeUInt16LE(1, 2);
