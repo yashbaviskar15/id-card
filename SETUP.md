@@ -85,11 +85,12 @@ needed while an old preview expires.
 
 ## 3. Apply Database Migrations
 
-The deployed Supabase project must have **all migrations `0001` through `0010`**. In
+The deployed Supabase project must have **all migrations `0001` through `0011`**. In
 particular, access-code document permissions require `0002`, share-link downloads require
 `0005` and safe storage-path validation requires `0008`, recovery-code writes require `0006`,
 atomic recovery-code rotation requires `0007`, exact per-code visitor-session duration
-requires `0009`, and per-owner action throttling requires `0010`. From a trusted machine with the Supabase CLI installed, link the exact project used
+requires `0009`, per-owner action throttling requires `0010`, and live dashboard updates
+require `0011`. From a trusted machine with the Supabase CLI installed, link the exact project used
 by `NEXT_PUBLIC_SUPABASE_URL`, then review and apply pending migrations:
 
 ```bash
@@ -97,6 +98,31 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase migration list --linked
 npx supabase db push --linked --yes
 ```
+
+### Live dashboard updates (`0011`)
+
+`0011_owner_realtime_invalidations.sql` is what makes an owner edit appear on the dashboard
+within a second without a reload. It adds database triggers that publish a **private**
+Realtime broadcast, plus the `realtime.messages` policy that lets a signed-in owner receive
+only their own `owner:<owner-id>` topic. Only the table name and operation are broadcast —
+row values, hashes, and private fields never leave Postgres.
+
+Until it is applied, the dashboard falls back to a throttled safety poll (1 s, backing off to
+5 s), so changes still appear but not within a second. Push it, then confirm it landed:
+
+```bash
+npx supabase migration list --linked          # 0011 should show under "Local" and "Remote"
+```
+
+Then verify delivery against the deployed app: sign in, open the dashboard and a visitor page
+side by side in two windows, change something under **Dashboard > Card** or **Information**,
+and confirm the other window updates within a second with no reload. If it does not, check
+that **Authentication > Users** shows you as signed in, and that the browser console has no
+`CHANNEL_ERROR` for the `owner:` topic — a `CHANNEL_ERROR` means the policy in this migration
+is missing or the session cookie was not sent.
+
+The consolidated `supabase/schema.sql` already contains `0011`, so a fresh project can also be
+provisioned in one file as described in `WALKTHROUGH.md`.
 
 If a previous push stopped at `0004_visitor_presentation.sql` with
 `column "visitor_theme" already exists`, update to the latest repository version and rerun
