@@ -19,7 +19,7 @@ export const runtime = 'nodejs';
  * expired grant and the owner's kill switch all end the stream immediately —
  * and nothing is ever cached: every frame is `no-store`.
  */
-const POLL_MS = 1_200;
+const POLL_MS = 500;
 const HEARTBEAT_MS = 15_000;
 /** Long-lived connections are recycled so a stalled proxy can never pin one. */
 const MAX_STREAM_MS = 10 * 60_000;

@@ -48,7 +48,8 @@ export async function middleware(request: NextRequest) {
   const isVisitorPath = path === '/p' || path.startsWith('/p/');
   const isSharePath = path === '/s' || path.startsWith('/s/');
   const isVisitorPreviewFile = /^\/p\/[^/]+\/doc\/[^/]+\/file$/.test(path);
-  const session = isVisitorPath || isSharePath ? null : await updateSession(request);
+  const isAuthCallback = path === '/auth/callback';
+  const session = isVisitorPath || isSharePath || isAuthCallback ? null : await updateSession(request);
   const userId = session?.userId ?? null;
   const needsMfa = session?.needsMfa ?? false;
 
@@ -94,15 +95,6 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', path);
-    return copyAuthCookies(NextResponse.redirect(url));
-  }
-
-  // Already fully signed in and visiting /login -> go to the dashboard. A
-  // session that still owes a second factor is allowed to stay on /login.
-  if (path === '/login' && userId && !needsMfa) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    url.search = '';
     return copyAuthCookies(NextResponse.redirect(url));
   }
 
