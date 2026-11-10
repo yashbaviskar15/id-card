@@ -7,6 +7,7 @@ import { OfflineIndicator } from '@/components/offline/offline-indicator';
 import { ServiceWorkerRegister } from '@/components/offline/service-worker-register';
 import { OfflineNavigationGuard } from '@/components/offline/dashboard-navigation-guard';
 import { AppLaunchSplash } from '@/components/app-launch-splash';
+import { RouteProgress } from '@/components/loading/route-progress';
 import { siteUrl } from '@/lib/env';
 import { createShareMetadata } from '@/lib/seo';
 import './globals.css';
@@ -86,6 +87,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${manrope.variable} ${inter.variable}`}>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         <OfflineProvider>
+          <RouteProgress />
           <OfflineNavigationGuard />
           <TooltipProvider>{children}</TooltipProvider>
           <OfflineIndicator />
