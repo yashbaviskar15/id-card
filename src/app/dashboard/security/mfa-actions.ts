@@ -13,6 +13,7 @@ import { hashPassword } from '@/lib/crypto/password';
 import { writeAudit } from '@/lib/audit';
 import { alertRecoveryCodesRegenerated } from '@/lib/mail';
 import { totpCodeSchema } from '@/lib/validation';
+import { RATE_LIMITS, isAttemptLocked, noteAttempt } from '@/lib/rate-limit';
 import { log } from '@/lib/log';
 
 /**
@@ -90,6 +91,12 @@ export async function verifyTotpAction(
     return { ok: false, error: 'Enter the 6-digit code from your authenticator app.' };
   }
 
+  // Throttle code entry so the enrollment confirmation cannot be brute-forced.
+  const enrollKey = `totp-enroll:${owner.id}`;
+  if (await isAttemptLocked('action', enrollKey)) {
+    return { ok: false, error: 'Too many attempts. Wait a few minutes and try again.' };
+  }
+
   const supabase = await createUserClient();
   const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
     factorId: parsedFactor.data,
@@ -106,6 +113,11 @@ export async function verifyTotpAction(
   });
   if (verifyError) {
     const { ipHash, userAgent } = await requestContext();
+    await noteAttempt('action', enrollKey, {
+      maxAttempts: RATE_LIMITS.mfaVerifyFailuresPerOwner,
+      windowMinutes: RATE_LIMITS.mfaVerifyWindowMinutes,
+      lockoutMinutes: RATE_LIMITS.mfaVerifyLockoutMinutes,
+    });
     await writeAudit({ ownerId: owner.id, actor: 'owner', action: 'auth.2fa_verify_failed', ipHash, userAgent });
     return { ok: false, error: 'That code is not valid. Check your authenticator app and try again.' };
   }

@@ -92,6 +92,17 @@ export const RATE_LIMITS = {
   ownerActionPerWindow: 20,
   ownerActionWindowMinutes: 5,
   ownerActionLockoutMinutes: 5,
+  // Step-up / secondary forms that are not the password sign-in: the
+  // reset-email request, re-authentication before a sensitive action, and the
+  // second factor. A caller that fails these is throttled per IP or per owner.
+  passwordResetPerIp: 3,
+  passwordResetWindowMinutes: 30,
+  reauthFailuresPerOwner: 5,
+  reauthWindowMinutes: 15,
+  reauthLockoutMinutes: 15,
+  mfaVerifyFailuresPerOwner: 5,
+  mfaVerifyWindowMinutes: 15,
+  mfaVerifyLockoutMinutes: 15,
 } as const;
 
 export type OwnerActionVerdict =
@@ -143,5 +154,36 @@ export async function guardOwnerAction(
       message: cause instanceof Error ? cause.message : 'unknown',
     });
     return { allowed: true };
+  }
+}
+
+export interface AttemptLimits {
+  maxAttempts: number;
+  windowMinutes: number;
+  lockoutMinutes: number;
+}
+
+/**
+ * Sliding-window guard for the step-up forms that are not the password sign-in
+ * (reset-email request, re-authentication, second-factor verify). Reuses the
+ * same `auth_attempts` / `lockouts` bookkeeping as the login limiter, so there
+ * is one mechanism and no schema change. Call `isAttemptLocked` before the
+ * expensive work and `noteAttempt` after a request/failed check; crossing the
+ * limit sets a lockout. The `key` is namespaced by the caller (e.g. `reauth:*`)
+ * so these counters never mix with the real login failure counters.
+ */
+export async function isAttemptLocked(scope: LockScope, key: string): Promise<boolean> {
+  return isLocked(scope, key);
+}
+
+export async function noteAttempt(
+  scope: LockScope,
+  key: string,
+  limits: AttemptLimits,
+): Promise<void> {
+  await recordAuthAttempt({ emailHash: key, ipHash: null, success: false });
+  const failures = await countAuthFailures({ emailHash: key, windowMinutes: limits.windowMinutes });
+  if (failures >= limits.maxAttempts) {
+    await lockFor(scope, key, limits.lockoutMinutes);
   }
 }

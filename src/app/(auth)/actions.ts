@@ -13,8 +13,10 @@ import { emailSchema, passwordSchema, totpCodeSchema } from '@/lib/validation';
 import {
   RATE_LIMITS,
   countAuthFailures,
+  isAttemptLocked,
   isLocked,
   lockFor,
+  noteAttempt,
   recordAuthAttempt,
 } from '@/lib/rate-limit';
 import { writeAudit } from '@/lib/audit';
@@ -237,6 +239,13 @@ export async function verifyMfaLoginAction(_prev: FormState, formData: FormData)
     return { ok: false, error: 'Your sign-in session has ended. Sign in again.' };
   }
 
+  // Rate-limit the second factor: without this, a caller who already holds the
+  // password could grind the 6-digit code space.
+  const mfaKey = `mfa:${user.id}`;
+  if (await isAttemptLocked('action', mfaKey)) {
+    return { ok: false, mfaRequired: true, error: 'Too many attempts. Wait a few minutes and try again.' };
+  }
+
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aal?.currentLevel === 'aal2') {
     redirect(next);
@@ -262,6 +271,11 @@ export async function verifyMfaLoginAction(_prev: FormState, formData: FormData)
   });
   if (verifyError) {
     const { ipHash, userAgent } = await requestContext();
+    await noteAttempt('action', mfaKey, {
+      maxAttempts: RATE_LIMITS.mfaVerifyFailuresPerOwner,
+      windowMinutes: RATE_LIMITS.mfaVerifyWindowMinutes,
+      lockoutMinutes: RATE_LIMITS.mfaVerifyLockoutMinutes,
+    });
     await writeAudit({ ownerId: user.id, actor: 'owner', action: 'auth.mfa_verify_failed', ipHash, userAgent });
     return { ok: false, mfaRequired: true, error: 'That code is not valid. Check your authenticator app and try again.' };
   }
@@ -287,9 +301,18 @@ export async function requestPasswordResetAction(
   formData: FormData,
 ): Promise<FormState> {
   const parsed = emailSchema.safeParse(formData.get('email'));
-  // Same response whether or not the address is the owner's (no enumeration).
+  // Same response whether or not the address is the owner's (no enumeration),
+  // and the same response when the IP is throttled, so a lockout stays invisible.
   const successMessage = 'If that address belongs to the account, a reset link is on its way.';
   if (!parsed.success) return { ok: true, message: successMessage };
+
+  // Throttle per IP so the endpoint cannot be used to bomb the owner's inbox or
+  // exhaust the mail provider's quota.
+  const { ipHash } = await requestContext();
+  const resetKey = `forgot:${ipHash ?? 'no-ip'}`;
+  if (await isAttemptLocked('ip', resetKey)) {
+    return { ok: true, message: successMessage };
+  }
 
   if (isOwnerEmail(parsed.data)) {
     const supabase = await createUserClient();
@@ -307,6 +330,12 @@ export async function requestPasswordResetAction(
       log.warn('auth.password_reset_email_failed', { reason: 'request_failed' });
     }
   }
+
+  await noteAttempt('ip', resetKey, {
+    maxAttempts: RATE_LIMITS.passwordResetPerIp,
+    windowMinutes: RATE_LIMITS.passwordResetWindowMinutes,
+    lockoutMinutes: RATE_LIMITS.passwordResetWindowMinutes,
+  });
   return { ok: true, message: successMessage };
 }
 
@@ -404,12 +433,24 @@ export async function reauthAction(_prev: FormState, formData: FormData): Promis
   const password = String(formData.get('password') ?? '');
   if (!password) return { ok: false, error: 'Enter your password.' };
 
+  // Throttle the step-up prompt: a hijacked session must not be able to grind
+  // the password here to unlock exports, reveals and two-factor changes.
+  const reauthKey = `reauth:${ownerId}`;
+  if (await isAttemptLocked('action', reauthKey)) {
+    return { ok: false, error: 'Too many attempts. Wait a few minutes and try again.' };
+  }
+
   const supabase = await createUserClient();
   const email = (await supabase.auth.getUser()).data.user?.email;
   if (!email) return { ok: false, error: 'Your session has ended. Sign in again.' };
 
   if (!(await verifyPasswordWithoutChangingSession(email, password))) {
     const { ipHash, userAgent } = await requestContext();
+    await noteAttempt('action', reauthKey, {
+      maxAttempts: RATE_LIMITS.reauthFailuresPerOwner,
+      windowMinutes: RATE_LIMITS.reauthWindowMinutes,
+      lockoutMinutes: RATE_LIMITS.reauthLockoutMinutes,
+    });
     await writeAudit({ ownerId, actor: 'owner', action: 'auth.reauth_failed', ipHash, userAgent });
     return { ok: false, error: 'Incorrect password.' };
   }
