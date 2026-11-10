@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState, type ChangeEvent } from 'react';
+import { startTransition, useActionState, useEffect, useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
 import { Fingerprint } from 'lucide-react';
@@ -68,7 +68,7 @@ export function LoginForm({
         const formData = new FormData();
         formData.append('code', digits);
         formData.append('next', next);
-        void mfaAction(formData);
+        startTransition(() => mfaAction(formData));
       }
     }
 

@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createUserClient } from '@/lib/db/user';
 import { clientEnv } from '@/lib/env';
@@ -95,7 +96,6 @@ async function finalizeLogin(
 ): Promise<void> {
   const { emailHash, ipHash, userAgent } = context;
   await recordAuthAttempt({ emailHash, ipHash, success: true });
-  await clearReauthenticated();
 
   const deviceHash = hmacHex(emailHash, `device:${userAgent ?? 'unknown'}`);
   const service = createServiceClient();
@@ -123,6 +123,19 @@ async function finalizeLogin(
     detail: { device_hash: deviceHash },
     ipHash,
     userAgent,
+  });
+}
+
+function scheduleLoginFinalization(
+  user: User,
+  context: { emailHash: string; ipHash: string | null; userAgent: string | null },
+): void {
+  after(async () => {
+    try {
+      await finalizeLogin(user, context);
+    } catch {
+      log.warn('auth.login.finalization_failed', { reason: 'background_task_failed' });
+    }
   });
 }
 
@@ -214,7 +227,8 @@ export async function signInAction(_prev: FormState, formData: FormData): Promis
     }
   }
 
-  await finalizeLogin(data.user, { emailHash, ipHash, userAgent });
+  await clearReauthenticated();
+  scheduleLoginFinalization(data.user, { emailHash, ipHash, userAgent });
   redirect(safeNext(formData.get('next')));
 }
 
@@ -282,7 +296,8 @@ export async function verifyMfaLoginAction(_prev: FormState, formData: FormData)
 
   const { ipHash, userAgent } = await requestContext();
   const emailHash = hashEmail(user.email ?? 'unknown@example.invalid');
-  await finalizeLogin(user, { emailHash, ipHash, userAgent });
+  await clearReauthenticated();
+  scheduleLoginFinalization(user, { emailHash, ipHash, userAgent });
   redirect(next);
 }
 
