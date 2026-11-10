@@ -4,8 +4,22 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabase } from '@/lib/db/browser';
 
-const REFRESH_FALLBACK_MS = 1_000;
-const INVALIDATION_COALESCE_MS = 120;
+/**
+ * One save usually touches several tables, so bursts of invalidations are
+ * coalesced into a single refresh.
+ */
+const EVENT_COALESCE_MS = 120;
+/** First delay of the safety poll that covers a Realtime outage. */
+const FALLBACK_BASE_MS = 1_000;
+/**
+ * Ceiling for the safety poll. Realtime is the primary path and delivers within
+ * a second; the poll only exists for the case where the channel cannot
+ * subscribe. It must back off, because a full `router.refresh()` re-runs
+ * middleware auth, the dashboard layout, and the page queries — polling that
+ * every second turns into a request storm that competes with normal navigation
+ * and makes every link feel slow.
+ */
+const FALLBACK_MAX_MS = 5_000;
 const OWNER_TABLES = new Set([
   'profiles',
   'fields',
@@ -26,13 +40,14 @@ export function DashboardLiveSync({ ownerId }: { ownerId: string }) {
     let connected = false;
     let refreshTimer: number | null = null;
     let fallbackTimer: number | null = null;
+    let fallbackDelay = FALLBACK_BASE_MS;
     let lastRefreshAt = 0;
     const supabase = createBrowserSupabase();
 
     const refresh = () => {
       if (disposed || !navigator.onLine || document.visibilityState !== 'visible') return;
       const now = Date.now();
-      if (now - lastRefreshAt < INVALIDATION_COALESCE_MS) return;
+      if (now - lastRefreshAt < EVENT_COALESCE_MS) return;
       lastRefreshAt = now;
       router.refresh();
     };
@@ -42,20 +57,34 @@ export function DashboardLiveSync({ ownerId }: { ownerId: string }) {
       refreshTimer = window.setTimeout(() => {
         refreshTimer = null;
         refresh();
-      }, INVALIDATION_COALESCE_MS);
-    };
-
-    const startFallback = () => {
-      if (fallbackTimer !== null) return;
-      fallbackTimer = window.setInterval(() => {
-        if (!connected) refresh();
-      }, REFRESH_FALLBACK_MS);
+      }, EVENT_COALESCE_MS);
     };
 
     const stopFallback = () => {
       if (fallbackTimer === null) return;
-      window.clearInterval(fallbackTimer);
+      window.clearTimeout(fallbackTimer);
       fallbackTimer = null;
+    };
+
+    // Self-scheduling so the gap can grow while the channel stays down.
+    const armFallback = () => {
+      if (disposed || fallbackTimer !== null) return;
+      fallbackTimer = window.setTimeout(() => {
+        fallbackTimer = null;
+        if (disposed || connected) return;
+        refresh();
+        fallbackDelay = Math.min(FALLBACK_MAX_MS, fallbackDelay * 2);
+        armFallback();
+      }, fallbackDelay);
+    };
+
+    const startFallback = (reset = false) => {
+      if (disposed) return;
+      if (reset) {
+        fallbackDelay = FALLBACK_BASE_MS;
+        stopFallback();
+      }
+      armFallback();
     };
 
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -75,6 +104,8 @@ export function DashboardLiveSync({ ownerId }: { ownerId: string }) {
             stopFallback();
             scheduleRefresh();
           } else {
+            // Back off across the client's own reconnect attempts instead of
+            // restarting a one-second poll each time one fails.
             startFallback();
           }
         });
@@ -83,20 +114,27 @@ export function DashboardLiveSync({ ownerId }: { ownerId: string }) {
       startFallback();
     }
 
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') scheduleRefresh();
+    // Whenever the owner comes back to the tab or regains the network, read
+    // fresh data straight away (and let the poll resume from its base delay).
+    const refreshWhenActive = () => {
+      if (document.visibilityState !== 'visible') return;
+      startFallback(true);
+      scheduleRefresh();
     };
-    const refreshWhenOnline = () => scheduleRefresh();
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    window.addEventListener('focus', refreshWhenVisible);
+    const refreshWhenOnline = () => {
+      startFallback(true);
+      scheduleRefresh();
+    };
+    document.addEventListener('visibilitychange', refreshWhenActive);
+    window.addEventListener('focus', refreshWhenActive);
     window.addEventListener('online', refreshWhenOnline);
 
     return () => {
       disposed = true;
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       stopFallback();
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenActive);
+      window.removeEventListener('focus', refreshWhenActive);
       window.removeEventListener('online', refreshWhenOnline);
       if (channel) void supabase.removeChannel(channel);
     };

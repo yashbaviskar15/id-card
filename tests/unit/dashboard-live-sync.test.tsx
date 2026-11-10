@@ -77,7 +77,7 @@ describe('dashboard realtime invalidations', () => {
     expect(mocks.refresh).toHaveBeenCalledOnce();
   });
 
-  it('falls back at one second while disconnected and stops polling after reconnect', async () => {
+  it('backs off while disconnected instead of refreshing on a one-second loop', async () => {
     render(<DashboardLiveSync ownerId="owner-123" />);
     subscribe('CHANNEL_ERROR');
 
@@ -86,10 +86,34 @@ describe('dashboard realtime invalidations', () => {
     await advance(1);
     expect(mocks.refresh).toHaveBeenCalledOnce();
 
+    // The gap doubles: the next attempt is two seconds away, not one.
+    await advance(1_999);
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+    await advance(1);
+    expect(mocks.refresh).toHaveBeenCalledTimes(2);
+
+    await advance(3_999);
+    expect(mocks.refresh).toHaveBeenCalledTimes(2);
+    await advance(1);
+    expect(mocks.refresh).toHaveBeenCalledTimes(3);
+
+    // Growing further never exceeds the five-second ceiling.
+    await advance(5_000);
+    expect(mocks.refresh).toHaveBeenCalledTimes(4);
+    await advance(5_000);
+    expect(mocks.refresh).toHaveBeenCalledTimes(5);
+  });
+
+  it('stops the safety poll once the channel subscribes', async () => {
+    render(<DashboardLiveSync ownerId="owner-123" />);
+    subscribe('CHANNEL_ERROR');
+    await advance(1_000);
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+
     subscribe('SUBSCRIBED');
     await advance(120);
     mocks.refresh.mockClear();
-    await advance(2_000);
+    await advance(10_000);
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
