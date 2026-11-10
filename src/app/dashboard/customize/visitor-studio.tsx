@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Check, Eye, ExternalLink, FileText, LayoutTemplate, Mail, Palette, Phone, Type } from 'lucide-react';
+import { ArrowUpRight, Check, Eye, ExternalLink, LayoutTemplate, Mail, Palette, Phone, Type } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -15,12 +15,12 @@ const THEMES: {
   id: VisitorTheme;
   label: string;
   note: string;
-  header: string;
+  stripe: string;
   swatch: string;
 }[] = [
-  { id: 'ink', label: 'Ink', note: 'Quiet and classic', header: 'bg-ink', swatch: 'bg-ink' },
-  { id: 'ocean', label: 'Ocean', note: 'Calm blue', header: 'bg-sky-800', swatch: 'bg-sky-700' },
-  { id: 'forest', label: 'Forest', note: 'Muted green', header: 'bg-emerald-800', swatch: 'bg-emerald-700' },
+  { id: 'ink', label: 'Ink', note: 'Quiet and classic', stripe: 'bg-ink', swatch: 'bg-ink' },
+  { id: 'ocean', label: 'Ocean', note: 'Calm blue', stripe: 'bg-sky-800', swatch: 'bg-sky-700' },
+  { id: 'forest', label: 'Forest', note: 'Muted green', stripe: 'bg-emerald-800', swatch: 'bg-emerald-700' },
 ];
 
 const LAYOUTS: { id: VisitorLayout; label: string; note: string }[] = [
@@ -212,38 +212,40 @@ export function VisitorStudio({
           ))}
         </div>
 
-        <div className={`pin-light surface shadow-card mx-auto w-full overflow-hidden transition-all ${compact ? 'max-w-xl' : 'max-w-3xl'}`}>
-          <div className={`flex items-center justify-between gap-2 px-4 py-3 text-white sm:px-5 ${selectedTheme.header}`}>
-            <span className="text-sm font-medium">Private identity</span>
-            <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[11px]">Temporary access</span>
-          </div>
-          <div className={`flex items-center gap-4 ${compact ? 'p-4' : 'p-6 sm:p-8'}`}>
-            <div className={`flex shrink-0 items-center justify-center rounded-xl border border-hairline bg-muted text-xl font-semibold text-label ${compact ? 'h-14 w-14' : 'h-20 w-20'}`}>
+        <div className={`pin-light mx-auto w-full overflow-hidden rounded-2xl border border-hairline bg-white shadow-card transition-all ${compact ? 'max-w-xl' : 'max-w-3xl'}`}>
+          <div className={`h-1 ${selectedTheme.stripe}`} aria-hidden="true" />
+          <div className="grid gap-4 p-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center sm:p-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-hairline bg-muted text-xl font-semibold text-label">
               {initial.fullName.trim().slice(0, 1).toUpperCase() || 'Y'}
             </div>
             <div className="min-w-0">
-              <p className="eyebrow">Shared with you</p>
-              <h3 className="mt-1 truncate text-xl font-semibold tracking-tight text-ink">{initial.fullName}</h3>
-              <p className="mt-1 text-xs text-label">Session ends in 9:54</p>
+              <p className="eyebrow">Shared contact</p>
+              <h3 className="mt-1 break-words text-xl font-semibold tracking-tight text-ink [overflow-wrap:anywhere]">{initial.fullName}</h3>
+              {intro.trim() ? <p className="mt-1 break-words text-xs leading-5 text-label">{intro}</p> : null}
+              <span className="mt-3 inline-flex rounded-full border border-hairline bg-muted/40 px-3 py-1 text-[11px] font-medium text-label">
+                Session ends in 9:54
+              </span>
             </div>
           </div>
-          {intro.trim() ? (
-            <p className={`mx-4 mb-4 rounded-lg border border-hairline bg-muted/30 text-sm leading-6 text-label ${compact ? 'p-3' : 'mx-6 mb-6 p-4 sm:mx-8'}`}>
-              {intro}
-            </p>
-          ) : null}
-          <div className={`grid gap-3 border-t border-subtle-line bg-page ${compact ? 'grid-cols-1 p-4' : 'sm:grid-cols-2 p-4 sm:p-6'}`}>
-            <div className="min-w-0 rounded-xl border border-hairline bg-white p-4">
+          <div className="visitor-print-hide flex flex-wrap gap-2 border-t border-subtle-line px-4 py-3 sm:px-6">
+            {['Save contact', ...(initial.contacts.some((item) => item.kind === 'phone') ? ['Call'] : []), ...(initial.contacts.some((item) => item.kind === 'email') ? ['Email'] : [])].map((label, index) => (
+              <span key={label} className={`inline-flex min-h-9 items-center justify-center rounded-full px-3 text-xs font-semibold ${index === 0 ? `text-white ${selectedTheme.stripe}` : 'border border-hairline bg-white text-label'}`}>
+                {label}
+              </span>
+            ))}
+          </div>
+          <div className={`grid gap-4 border-t border-subtle-line bg-page/60 p-4 ${compact ? 'grid-cols-1' : 'md:grid-cols-[minmax(0,1fr)_200px] sm:p-5'}`}>
+            <div className="min-w-0 rounded-xl border border-hairline bg-white px-4 py-3">
               <p className="text-sm font-semibold text-ink">Contact information</p>
               {initial.contacts.length > 0 ? (
-                <ul className="mt-3 space-y-3">
+                <ul className="mt-2 divide-y divide-subtle-line">
                   {initial.contacts.map((contact, index) => {
                     const Icon = contact.kind === 'email' ? Mail : contact.kind === 'phone' ? Phone : ExternalLink;
                     return (
-                      <li key={`${contact.kind}-${index}`} className="flex min-w-0 items-start gap-2">
-                        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-label" aria-hidden="true" />
+                      <li key={`${contact.kind}-${index}`} className="flex min-w-0 items-start gap-2 py-2 first:pt-1">
+                        <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-label" aria-hidden="true" />
                         <span className="min-w-0">
-                          <span className="block text-[11px] text-label">{contact.label || contact.kind}</span>
+                          <span className="block text-[10px] text-label">{contact.label || contact.kind}</span>
                           <span className="block break-all text-xs font-medium text-ink">{contact.value}</span>
                         </span>
                       </li>
@@ -254,8 +256,20 @@ export function VisitorStudio({
                 <p className="mt-2 text-xs leading-5 text-label">No contact or social items are marked to share.</p>
               )}
             </div>
+            <div className="rounded-xl border border-hairline bg-white px-4 py-3">
+              <p className="text-sm font-semibold text-ink">Access</p>
+              <p className="mt-2 flex items-center gap-2 text-xs text-label">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-700" aria-hidden="true" />
+                Temporary share active
+              </p>
+              {initial.sharedDocuments > 0 ? (
+                <p className="mt-3 border-t border-subtle-line pt-3 text-xs leading-5 text-label">
+                  {initial.sharedDocuments} {initial.sharedDocuments === 1 ? 'document' : 'documents'} may be included for eligible codes.
+                </p>
+              ) : null}
+            </div>
             {showFullDetails ? (
-              <div className="rounded-xl border border-hairline bg-white p-4">
+              <div className="rounded-xl border border-hairline bg-white p-4 md:col-span-2">
                 <p className="text-sm font-semibold text-ink">Additional information</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {initial.fullDetails.photo ? <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-label">Photo</span> : null}
@@ -263,17 +277,6 @@ export function VisitorStudio({
                   {initial.fullDetails.address ? <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-label">Address</span> : null}
                 </div>
                 <p className="mt-3 text-xs text-label">Only shown for a full-profile code when each switch is enabled.</p>
-              </div>
-            ) : null}
-            {initial.sharedDocuments > 0 ? (
-              <div className="rounded-xl border border-hairline bg-white p-4">
-                <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-                  <FileText className="h-4 w-4" aria-hidden="true" />
-                  Shared documents
-                </p>
-                <p className="mt-2 text-xs text-label">
-                  {initial.sharedDocuments} {initial.sharedDocuments === 1 ? 'file' : 'files'} marked shared; each code must also opt in.
-                </p>
               </div>
             ) : null}
           </div>
