@@ -1,18 +1,25 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { cn } from 'cn';
+import { buttonVariants } from '@/components/ui/button';
+import { ErrorBackButton } from '@/components/errors/error-back-button';
+import { ErrorScreen } from '@/components/errors/error-screen';
+import { ERROR_CATALOG } from '@/lib/errors/catalog';
 
+/** Unmatched routes land here; Next answers with a real 404 status. */
 export default function NotFound() {
+  const entry = ERROR_CATALOG[404];
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm text-center">
-        <h1 className="text-xl font-bold tracking-tight">Page not found</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This link does not point at anything here.
-        </p>
-        <Button className="mt-8 h-11 w-full" render={<Link href="/" />}>
-          Go to the home page
-        </Button>
-      </div>
-    </main>
+    <ErrorScreen
+      code={entry.code}
+      kind={entry.kind}
+      title={entry.title}
+      description={entry.description}
+      hint={entry.hint}
+    >
+      <Link href="/" className={cn(buttonVariants(), 'min-h-11')}>
+        Go to the home page
+      </Link>
+      <ErrorBackButton />
+    </ErrorScreen>
   );
 }

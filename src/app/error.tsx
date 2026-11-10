@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { cn } from 'cn';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { ErrorScreen } from '@/components/errors/error-screen';
+import { ERROR_CATALOG } from '@/lib/errors/catalog';
 
 /**
  * Route-level error boundary.
@@ -24,20 +28,23 @@ export default function RouteError({
     console.error(JSON.stringify({ level: 'error', msg: 'route error', digest: error.digest ?? null }));
   }, [error]);
 
+  const entry = ERROR_CATALOG[500];
+
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm text-center">
-        <h1 className="text-xl font-bold tracking-tight">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This page could not be loaded. If this is a fresh deployment, check that every required
-          environment variable is set — see SETUP.md.
-        </p>       {error.digest ? (
-          <p className="mt-4 font-mono text-xs text-label">Reference: {error.digest}</p>
-        ) : null}
-        <Button className="mt-8 h-11 w-full" onClick={reset}>
-          Try again
-        </Button>
-      </div>
-    </main>
+    <ErrorScreen
+      code={entry.code}
+      kind={entry.kind}
+      title={entry.title}
+      description={entry.description}
+      hint={entry.hint}
+      reference={error.digest}
+    >
+      <Button className="min-h-11" onClick={reset}>
+        Try again
+      </Button>
+      <Link href="/" className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11')}>
+        Go to the home page
+      </Link>
+    </ErrorScreen>
   );
 }
