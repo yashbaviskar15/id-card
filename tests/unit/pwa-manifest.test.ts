@@ -12,7 +12,7 @@ const manifest = JSON.parse(
 };
 
 describe('installed app branding', () => {
-  it('uses compact dedicated app icons without changing browser favicon assets', () => {
+  it('uses versioned full-bleed app icons without changing browser favicon assets', () => {
     expect(manifest).toMatchObject({
       name: 'Private Identity',
       short_name: 'Private Identity',
@@ -21,9 +21,9 @@ describe('installed app branding', () => {
     });
     expect(manifest.icons.map((icon) => icon.src)).toEqual([
       '/icons/icon-32.png',
-      '/icons/pwa-icon-192.png',
-      '/icons/pwa-icon-512.png',
-      '/icons/pwa-maskable-512.png',
+      '/icons/pwa-icon-192.png?v=2',
+      '/icons/pwa-icon-512.png?v=2',
+      '/icons/pwa-maskable-512.png?v=2',
     ]);
     expect(manifest.icons[0]?.purpose).toBe('any');
     expect(manifest.icons[3]?.purpose).toBe('maskable');

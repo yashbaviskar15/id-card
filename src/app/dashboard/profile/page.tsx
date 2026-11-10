@@ -16,6 +16,7 @@ import { createUserClient } from '@/lib/db/user';
 import { getProfile } from '@/lib/card/load';
 import { signedUrlFor } from '@/lib/storage';
 import { qrPayload } from '@/lib/qr/payload';
+import { log } from '@/lib/log';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Profile' };
@@ -36,6 +37,24 @@ function displayDate(value: string | null | undefined): string {
   return Number.isNaN(date.getTime())
     ? 'Not available'
     : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+async function readSafely<T>(
+  source: string,
+  read: () => PromiseLike<T>,
+  fallback: T,
+  onFailure: () => void,
+): Promise<T> {
+  try {
+    return await read();
+  } catch (cause) {
+    onFailure();
+    log.warn('dashboard.profile.read failed', {
+      source,
+      error: cause instanceof Error ? cause.name : 'unknown',
+    });
+    return fallback;
+  }
 }
 
 function Metric({
@@ -62,74 +81,128 @@ function Metric({
 
 export default async function ProfilePage() {
   const owner = await requireOwner('/dashboard/profile');
-  const [profile, supabase] = await Promise.all([
-    getProfile(owner.id),
+  let hasPartialData = false;
+  const safeRead = <T,>(source: string, read: () => PromiseLike<T>, fallback: T) =>
+    readSafely(source, read, fallback, () => {
+      hasPartialData = true;
+    });
+  const [supabase, profile] = await Promise.all([
     createUserClient(),
+    safeRead('profile', () => getProfile(owner.id), null),
   ]);
   const now = new Date().toISOString();
 
   const [
     photoUrl,
     fieldsResult,
-    documentsResult,
-    sharedDocumentsResult,
-    activeCodesResult,
-    activeSessionsResult,
-    shareLinksResult,
-    securitySettingsResult,
-    recoveryCodesResult,
-    factorsResult,
-    latestEventResult,
+    documentsCount,
+    sharedDocumentsCount,
+    activeCodesCount,
+    activeSessionsCount,
+    shareLinksCount,
+    totpEnabled,
+    recoveryCodesCount,
+    factorEnabled,
+    latestEvent,
   ] = await Promise.all([
-    signedUrlFor(profile?.photo_path ?? null),
-    supabase
-      .from('fields')
-      .select('id, kind, label, value, is_public, is_sensitive, sort', { count: 'exact' })
-      .eq('owner_id', owner.id)
-      .eq('is_sensitive', false)
-      .in('kind', ['email', 'phone', 'social_link', 'address'])
-      .order('sort', { ascending: true })
-      .limit(30)
-      .returns<ProfileField[]>(),
-    supabase.from('documents').select('id', { count: 'exact', head: true }).eq('owner_id', owner.id),
-    supabase.from('documents').select('id', { count: 'exact', head: true }).eq('owner_id', owner.id).eq('is_shared', true),
-    supabase
-      .from('access_grants')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_id', owner.id)
-      .is('used_at', null)
-      .is('revoked_at', null)
-      .gt('expires_at', now),
-    supabase
-      .from('access_grants')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_id', owner.id)
-      .is('revoked_at', null)
-      .gt('session_expires_at', now),
-    supabase
-      .from('share_links')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_id', owner.id)
-      .is('revoked_at', null)
-      .gt('expires_at', now),
-    supabase
-      .from('owner_settings')
-      .select('totp_enabled')
-      .eq('owner_id', owner.id)
-      .maybeSingle<{ totp_enabled: boolean }>(),
-    supabase
-      .from('backup_recovery_codes')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_id', owner.id)
-      .is('used_at', null),
-    supabase.auth.mfa.listFactors(),
-    supabase
-      .from('access_log')
-      .select('outcome, created_at')
-      .eq('owner_id', owner.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle<{ outcome: string; created_at: string }>(),
+    safeRead('photo', () => signedUrlFor(profile?.photo_path ?? null), null),
+    safeRead(
+      'fields',
+      () => supabase
+        .from('fields')
+        .select('id, kind, label, value, is_public, is_sensitive, sort', { count: 'exact' })
+        .eq('owner_id', owner.id)
+        .eq('is_sensitive', false)
+        .in('kind', ['email', 'phone', 'social_link', 'address'])
+        .order('sort', { ascending: true })
+        .limit(30)
+        .returns<ProfileField[]>()
+        .then(({ data, count }) => ({ data, count })),
+      { data: null, count: null },
+    ),
+    safeRead(
+      'documents',
+      () => supabase.from('documents').select('id', { count: 'exact', head: true }).eq('owner_id', owner.id).then(({ count }) => count),
+      null,
+    ),
+    safeRead(
+      'shared documents',
+      () => supabase.from('documents').select('id', { count: 'exact', head: true }).eq('owner_id', owner.id).eq('is_shared', true).then(({ count }) => count),
+      null,
+    ),
+    safeRead(
+      'access codes',
+      () => supabase
+        .from('access_grants')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', owner.id)
+        .is('used_at', null)
+        .is('revoked_at', null)
+        .gt('expires_at', now)
+        .then(({ count }) => count),
+      null,
+    ),
+    safeRead(
+      'active sessions',
+      () => supabase
+        .from('access_grants')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', owner.id)
+        .is('revoked_at', null)
+        .gt('session_expires_at', now)
+        .then(({ count }) => count),
+      null,
+    ),
+    safeRead(
+      'share links',
+      () => supabase
+        .from('share_links')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', owner.id)
+        .is('revoked_at', null)
+        .gt('expires_at', now)
+        .then(({ count }) => count),
+      null,
+    ),
+    safeRead(
+      'security settings',
+      () => supabase
+        .from('owner_settings')
+        .select('totp_enabled')
+        .eq('owner_id', owner.id)
+        .maybeSingle<{ totp_enabled: boolean }>()
+        .then(({ data }) => data?.totp_enabled ?? false),
+      false,
+    ),
+    safeRead(
+      'recovery codes',
+      () => supabase
+        .from('backup_recovery_codes')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', owner.id)
+        .is('used_at', null)
+        .then(({ count }) => count),
+      null,
+    ),
+    safeRead(
+      'multi-factor status',
+      () => supabase.auth.mfa.listFactors().then(({ data }) =>
+        (data?.all ?? []).some((factor) => factor.status === 'verified'),
+      ),
+      false,
+    ),
+    safeRead(
+      'latest security event',
+      () => supabase
+        .from('access_log')
+        .select('outcome, created_at')
+        .eq('owner_id', owner.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle<{ outcome: string; created_at: string }>()
+        .then(({ data }) => data),
+      null,
+    ),
   ]);
 
   const name = profile?.full_name
@@ -137,9 +210,8 @@ export default async function ProfilePage() {
     || (typeof owner.user_metadata?.name === 'string' ? owner.user_metadata.name : null)
     || owner.email?.split('@')[0]
     || 'Your profile';
-  const factorEnabled = (factorsResult.data?.all ?? []).some((factor) => factor.status === 'verified');
-  const mfaEnabled = Boolean(securitySettingsResult.data?.totp_enabled) || factorEnabled;
-  const activeAccess = (activeCodesResult.count ?? 0) + (activeSessionsResult.count ?? 0);
+  const mfaEnabled = totpEnabled || factorEnabled;
+  const activeAccess = (activeCodesCount ?? 0) + (activeSessionsCount ?? 0);
   const fields = fieldsResult.data ?? [];
   const emailFields = fields.filter((field) => field.kind === 'email');
   const phoneFields = fields.filter((field) => field.kind === 'phone');
@@ -165,6 +237,12 @@ export default async function ProfilePage() {
           <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </header>
+
+      {hasPartialData ? (
+        <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Some dashboard information could not be loaded. Refresh this page to try again.
+        </p>
+      ) : null}
 
       <section className="surface shadow-card flex min-w-0 flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-7">
         <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-hairline bg-muted text-ink">
@@ -210,8 +288,8 @@ export default async function ProfilePage() {
 
       <section aria-label="Dashboard summary" className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Profile details" value={fieldsResult.count ?? fields.length} icon={UserRound} />
-        <Metric label="Vault documents" value={documentsResult.count ?? 0} icon={FileText} />
-        <Metric label="Shared links" value={shareLinksResult.count ?? 0} icon={ArrowUpRight} />
+        <Metric label="Vault documents" value={documentsCount ?? 0} icon={FileText} />
+        <Metric label="Shared links" value={shareLinksCount ?? 0} icon={ArrowUpRight} />
         <Metric label="Active access" value={activeAccess} icon={KeyRound} />
       </section>
 
@@ -279,7 +357,7 @@ export default async function ProfilePage() {
             </div>
             <div className="grid gap-2 p-4 sm:grid-cols-2 sm:p-5">
               <Shortcut href="/dashboard/card" icon={UserRound} title="Card & QR" detail="Photo and profile card" />
-              <Shortcut href="/dashboard/vault" icon={FileText} title="Document vault" detail={`${sharedDocumentsResult.count ?? 0} shared of ${documentsResult.count ?? 0} files`} />
+              <Shortcut href="/dashboard/vault" icon={FileText} title="Document vault" detail={`${sharedDocumentsCount ?? 0} shared of ${documentsCount ?? 0} files`} />
               <Shortcut href="/dashboard/access" icon={KeyRound} title="Access control" detail="Codes and session history" />
               <Shortcut href="/dashboard/settings" icon={ShieldCheck} title="Account settings" detail="Preferences and sign-in" />
             </div>
@@ -300,20 +378,20 @@ export default async function ProfilePage() {
               />
               <SecurityRow
                 label="Recovery codes remaining"
-                value={String(recoveryCodesResult.count ?? 0)}
-                positive={(recoveryCodesResult.count ?? 0) > 0}
+                value={String(recoveryCodesCount ?? 0)}
+                positive={(recoveryCodesCount ?? 0) > 0}
               />
               <SecurityRow
                 label="Shared documents"
-                value={String(sharedDocumentsResult.count ?? 0)}
+                value={String(sharedDocumentsCount ?? 0)}
                 positive
               />
               <SecurityRow
                 label="Latest security event"
-                value={latestEventResult.data
-                  ? `${latestEventResult.data.outcome.replaceAll('_', ' ')} · ${displayDate(latestEventResult.data.created_at)}`
+                value={latestEvent
+                  ? `${latestEvent.outcome.replaceAll('_', ' ')} · ${displayDate(latestEvent.created_at)}`
                   : 'No access events'}
-                positive={!latestEventResult.data}
+                positive={!latestEvent}
               />
             </dl>
             <div className="p-4 sm:p-5">

@@ -24,22 +24,20 @@ async function render(name, size) {
 }
 
 async function renderPwa(name, size) {
-  const markSize = Math.round(size * 0.68);
-  const mark = await sharp(LOGO_PNG).resize(markSize, markSize).png().toBuffer();
-  const inset = Math.round((size - markSize) / 2);
+  const mark = await sharp(LOGO_PNG).resize(size, size).png().toBuffer();
   const png = await sharp({
     create: {
       width: size,
       height: size,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
     },
   })
-    .composite([{ input: mark, left: inset, top: inset }])
+    .composite([{ input: mark, left: 0, top: 0 }])
     .png()
     .toBuffer();
   await writeFile(join(OUT_DIR, name), png);
-  console.log(`[icons] wrote ${name} (${size}x${size}, inset PWA mark)`);
+  console.log(`[icons] wrote ${name} (${size}x${size}, full-bleed logo)`);
 }
 
 await mkdir(OUT_DIR, { recursive: true });
