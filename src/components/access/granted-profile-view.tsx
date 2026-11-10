@@ -26,6 +26,17 @@ const cardClass = 'min-w-0 rounded-2xl border border-[#E5E7EB] bg-white shadow-[
 const iconTileClass = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3F4F6] text-[#334155]';
 const actionButtonClass = 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#D1D5DB] bg-white text-[#0F172A] transition-colors hover:bg-[#F3F4F6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F172A]';
 
+/**
+ * The owner picks one of these themes on the Customize page. The hero band and
+ * the primary quick-action button follow the chosen colour so the live visitor
+ * page matches what the preview promised.
+ */
+const VISITOR_THEMES = {
+  ink: { hero: 'bg-[#0B1220]', accent: 'bg-[#0F172A]', accentHover: 'hover:bg-[#1E293B]' },
+  ocean: { hero: 'bg-sky-800', accent: 'bg-sky-700', accentHover: 'hover:bg-sky-800' },
+  forest: { hero: 'bg-emerald-800', accent: 'bg-emerald-700', accentHover: 'hover:bg-emerald-800' },
+} as const;
+
 /** wa.me and tel: both want digits and a leading plus, not punctuation. */
 function whatsAppNumber(value: string): string {
   return value.replace(/[^\d]/g, '');
@@ -371,6 +382,9 @@ export function GrantedProfileView({
     );
   }
 
+  const theme = VISITOR_THEMES[profile.visitor_theme] ?? VISITOR_THEMES.ink;
+  const compact = profile.visitor_layout === 'compact';
+
   return (
     <div className="visitor-page min-h-dvh bg-[#F3F4F6] font-inter text-[#0F172A]">
       <header className="border-b border-[#E5E7EB] bg-white">
@@ -391,26 +405,26 @@ export function GrantedProfileView({
           <p role="status" className="text-sm text-[#5B6472]">Connection interrupted. Retrying securely…</p>
         ) : null}
 
-        <section className="flex min-w-0 flex-wrap items-center gap-7 rounded-[20px] bg-[#0B1220] p-5 text-white sm:p-9">
-          <div className="relative flex h-[120px] w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-[28px] border border-[#334155] bg-[#1E293B]">
+        <section className={`flex min-w-0 flex-wrap items-center gap-7 rounded-[20px] p-5 text-white sm:p-9 ${theme.hero}`}>
+          <div className="relative flex h-[120px] w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-[28px] border border-white/20 bg-white/10">
             {photoUrl ? (
               <>
-                {photoLoading ? <span className="absolute inset-0 animate-pulse bg-[#334155]" aria-hidden="true" /> : null}
+                {photoLoading ? <span className="absolute inset-0 animate-pulse bg-white/15" aria-hidden="true" /> : null}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photoUrl} alt="" className={`relative h-full w-full object-cover ${photoLoading ? 'opacity-0' : 'opacity-100'}`}
                   referrerPolicy="no-referrer" onLoad={() => setPhotoLoading(false)} onError={() => { setPhotoLoading(false); setPhotoUrl(null); }} />
               </>
             ) : (
-              <UserRound size={48} strokeWidth={1.8} className="text-[#94A3B8]" aria-hidden="true" />
+              <UserRound size={48} strokeWidth={1.8} className="text-white/60" aria-hidden="true" />
             )}
           </div>
           <div className="min-w-0 flex-[1_1_350px]">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#94A3B8]">Shared with you</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/70">Shared with you</p>
             <h1 className="mt-1 min-h-[1.2em] break-words text-[clamp(28px,5vw,44px)] font-semibold leading-tight tracking-tight text-white [overflow-wrap:anywhere]">
               {profile.full_name || <span className="block h-[1.05em] w-64 max-w-full animate-pulse rounded bg-white/15" aria-label="Loading name" />}
             </h1>
             {profile.visitor_intro ? (
-              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#CBD5E1]">{profile.visitor_intro}</p>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-white/80">{profile.visitor_intro}</p>
             ) : null}
             <div className="mt-4">
               <SessionTimer until={profile.session_expires_at} serverNow={profile.server_now} />
@@ -426,10 +440,11 @@ export function GrantedProfileView({
             ...(profile.emails[0] ? [{ label: 'Email', href: `mailto:${encodeURIComponent(profile.emails[0].value)}`, icon: Mail }] : []),
           ].map((action) => {
             const Icon = action.icon;
+            const isPrimary = 'primary' in action && action.primary;
             return (
               <a key={action.label} href={action.href} {...('download' in action && action.download ? { download: true } : {})}
                 {...('external' in action && action.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                className={`visitor-print-hide flex min-h-[88px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F172A] ${'primary' in action && action.primary ? 'border-[#0F172A] bg-[#0F172A] text-white hover:bg-[#1E293B]' : 'border-[#E5E7EB] bg-white text-[#0F172A] hover:bg-[#F8FAFC]'}`}>
+                className={`visitor-print-hide flex min-h-[88px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F172A] ${isPrimary ? `border-transparent text-white ${theme.accent} ${theme.accentHover}` : 'border-[#E5E7EB] bg-white text-[#0F172A] hover:bg-[#F8FAFC]'}`}>
                 <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
                 <span className="break-words text-center">{action.label}</span>
               </a>
@@ -437,13 +452,13 @@ export function GrantedProfileView({
           })}
         </nav>
 
-        <div className="flex min-w-0 flex-wrap items-start gap-5">
-          <div className="min-w-0 flex-[2_1_420px] space-y-5">
+        <div className={`flex min-w-0 items-start gap-5 ${compact ? 'flex-col' : 'flex-wrap'}`}>
+          <div className={`min-w-0 space-y-5 ${compact ? 'w-full' : 'flex-[2_1_420px]'}`}>
             <ContactSection emails={profile.emails} phones={profile.phones} dob={profile.dob} address={profile.address} />
             <SocialLinks items={profile.social_links ?? []} />
           </div>
 
-          <aside className={`${cardClass} min-w-0 flex-[1_1_300px] overflow-hidden`}>
+          <aside className={`${cardClass} min-w-0 overflow-hidden ${compact ? 'w-full' : 'flex-[1_1_300px]'}`}>
             <h2 className="px-5 py-4 text-lg font-semibold text-[#0F172A]">About this access</h2>
             <AboutRow icon={Clock3} title="Temporary session">
               Access closes automatically when the timer ends.

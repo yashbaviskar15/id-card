@@ -164,7 +164,13 @@ html[data-shell='dark'] [data-slot='tooltip-content'] {
   --subtle-line: #3f3f46;
   --photo-placeholder: #232327;
 
-  --color-white: #151518;
+  /*
+   * `bg-white` is used for input fields, secondary buttons, the sidebar and
+   * other raised surfaces inside cards. It must sit *above* the card, not on it,
+   * so it is a touch lighter than `--card` (#151518) — enough contrast to read
+   * without breaking the monochrome palette.
+   */
+  --color-white: #1c1c20;
 }
 
 /* Some dashboard surfaces are documents in disguise and must keep their light
