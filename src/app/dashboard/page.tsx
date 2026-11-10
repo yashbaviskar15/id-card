@@ -83,7 +83,7 @@ export default async function DashboardOverviewPage() {
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Link
                 href="/dashboard/vault"
-                className="surface shadow-card group flex flex-col p-5 transition-colors hover:border-ink/25"
+                className="surface shadow-card transition-surface hover-lift group flex flex-col p-5 hover:border-ink/25"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-ink">
                   <ShieldCheck className="h-4.5 w-4.5" aria-hidden="true" />
@@ -100,7 +100,7 @@ export default async function DashboardOverviewPage() {
 
               <Link
                 href="/dashboard/access"
-                className="surface shadow-card group flex flex-col p-5 transition-colors hover:border-ink/25"
+                className="surface shadow-card transition-surface hover-lift group flex flex-col p-5 hover:border-ink/25"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-ink">
                   <QrCode className="h-4.5 w-4.5" aria-hidden="true" />

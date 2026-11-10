@@ -5,6 +5,7 @@ import { DashboardUserMenu } from './dashboard-user-menu';
 import { UserMenuSkeleton } from './user-menu';
 import { MobileDashboardNav } from './mobile-dashboard-nav';
 import { DashboardLiveSync } from '@/components/dashboard/live-sync';
+import { PageTransition } from './page-transition';
 import { BrandMark } from '@/components/brand/brand-mark';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -41,7 +42,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         />
 
         <main className="mx-auto w-full max-w-[1600px] min-w-0 overflow-x-clip px-4 py-5 sm:px-5 sm:py-6 lg:px-6 lg:py-6">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
     </div>

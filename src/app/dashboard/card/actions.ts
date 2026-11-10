@@ -11,6 +11,7 @@ import { zodFieldErrors } from '@/lib/result';
 import { writeAudit } from '@/lib/audit';
 import { log } from '@/lib/log';
 import { requireOwner } from '@/lib/auth/session';
+import { guardOwnerAction } from '@/lib/rate-limit';
 import { storagePathFor, validateUpload } from '@/lib/files/validate';
 import { normalizeProfilePhoto } from '@/lib/files/normalize-photo';
 import type { FormState } from '@/app/(auth)/form-state';
@@ -33,6 +34,10 @@ function readBoolean(formData: FormData, key: string): boolean {
  */
 export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const owner = await requireOwner('/dashboard/card');
+  const throttle = await guardOwnerAction(owner.id, 'profile.save');
+  if (!throttle.allowed) {
+    return { ok: false, error: `You have saved many changes just now. Try again in ${throttle.retryAfterMinutes} minutes.` };
+  }
 
   const parsed = profileUpdateSchema.safeParse({
     full_name: formData.get('full_name'),
@@ -125,6 +130,10 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
 
 export async function uploadPhotoAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const owner = await requireOwner('/dashboard/card');
+  const throttle = await guardOwnerAction(owner.id, 'profile.photo_write');
+  if (!throttle.allowed) {
+    return { ok: false, error: `You have changed your photo many times just now. Try again in ${throttle.retryAfterMinutes} minutes.` };
+  }
 
   const file = formData.get('photo');
   if (!(file instanceof File) || file.size === 0) {

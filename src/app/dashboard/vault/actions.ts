@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireOwner } from '@/lib/auth/session';
+import { guardOwnerAction } from '@/lib/rate-limit';
 import { createUserClient } from '@/lib/db/user';
 import {
   isBlockedExtension,
@@ -79,6 +80,15 @@ export async function finalizeDocumentUploadAction(input: {
   categoryId: string | null;
 }): Promise<VaultState> {
   const owner = await requireOwner('/dashboard/vault');
+
+  const throttle = await guardOwnerAction(owner.id, 'vault.upload');
+  if (!throttle.allowed) {
+    return {
+      ok: false,
+      error: `You have uploaded many files just now. Try again in ${throttle.retryAfterMinutes} minutes.`,
+    };
+  }
+
   const parsed = z.object({
     path: z.string().max(500),
     name: z.string().min(1).max(300),

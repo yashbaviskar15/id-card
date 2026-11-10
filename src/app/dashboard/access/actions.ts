@@ -10,6 +10,7 @@ import { buildAccessCodeProof } from '@/lib/crypto/proofs';
 import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip';
 import { scopeSchema, validityMinutesSchema, includeDocumentsSchema } from '@/lib/validation';
 import { isReauthenticated } from '@/lib/auth/reauth';
+import { guardOwnerAction } from '@/lib/rate-limit';
 import { requireOwner } from '@/lib/auth/session';
 import { writeAudit } from '@/lib/audit';
 import { log } from '@/lib/log';
@@ -27,6 +28,14 @@ async function requestContext() {
  */
 export async function createGrantAction(_prev: GrantFormState, formData: FormData): Promise<GrantFormState> {
   const owner = await requireOwner('/dashboard/access');
+
+  const throttle = await guardOwnerAction(owner.id, 'access.grant_create');
+  if (!throttle.allowed) {
+    return {
+      ok: false,
+      error: `You have created many codes just now. Try again in ${throttle.retryAfterMinutes} minutes.`,
+    };
+  }
 
   try {
     if (!(await isReauthenticated())) {
@@ -98,7 +107,7 @@ export async function createGrantAction(_prev: GrantFormState, formData: FormDat
         return {
           ok: false,
           error: missingSchema
-            ? 'Access-code database migrations are missing. Apply migrations 0001–0009 from SETUP.md.'
+            ? 'Access-code database migrations are missing. Apply migrations 0001–0010 from SETUP.md.'
             : 'Could not create the code. Check the connection and try again.',
         };
       }

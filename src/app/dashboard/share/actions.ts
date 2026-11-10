@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 import { requireOwner } from '@/lib/auth/session';
 import { isReauthenticated } from '@/lib/auth/reauth';
+import { guardOwnerAction } from '@/lib/rate-limit';
 import { createUserClient } from '@/lib/db/user';
 import { generateShareToken } from '@/lib/crypto/random';
 import { hashToken } from '@/lib/crypto/proofs';
@@ -30,6 +31,14 @@ async function requestContext() {
  */
 export async function createShareLinkAction(_prev: ShareState, formData: FormData): Promise<ShareState> {
   const owner = await requireOwner('/dashboard/share');
+
+  const throttle = await guardOwnerAction(owner.id, 'share.link_create');
+  if (!throttle.allowed) {
+    return {
+      ok: false,
+      error: `You have created many links just now. Try again in ${throttle.retryAfterMinutes} minutes.`,
+    };
+  }
 
   try {
   if (!(await isReauthenticated(owner.id))) {
@@ -120,7 +129,7 @@ export async function createShareLinkAction(_prev: ShareState, formData: FormDat
       return {
         ok: false,
         error: missingSchema
-          ? 'Share-link database migrations are missing. Apply migrations 0001–0009 from SETUP.md.'
+          ? 'Share-link database migrations are missing. Apply migrations 0001–0010 from SETUP.md.'
           : 'Could not create the link. Check the connection and try again.',
       };
     }

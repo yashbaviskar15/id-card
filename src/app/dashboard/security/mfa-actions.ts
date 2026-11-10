@@ -180,7 +180,7 @@ export async function generateRecoveryCodesAction(): Promise<
     return {
       ok: false,
       error: error.code === '42883' || error.code === 'PGRST202'
-        ? 'Recovery-code setup is missing a database migration. Apply migrations 0001–0009 from SETUP.md.'
+        ? 'Recovery-code setup is missing a database migration. Apply migrations 0001–0010 from SETUP.md.'
         : 'Could not save your recovery codes. Check the connection and try again.',
     };
   }

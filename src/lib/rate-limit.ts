@@ -7,7 +7,7 @@ import { log } from '@/lib/log';
  * counters to race on, and it survives a cold start).
  */
 
-export type LockScope = 'slug' | 'email' | 'ip' | 'share';
+export type LockScope = 'slug' | 'email' | 'ip' | 'share' | 'action';
 
 export async function isLocked(scope: LockScope, keyHash: string): Promise<boolean> {
   const supabase = createServiceClient();
@@ -86,4 +86,62 @@ export const RATE_LIMITS = {
   codeSlugLockoutMinutes: 15,
   sharePasswordFailures: 5,
   shareWindowMinutes: 15,
+  // Throttle for authenticated mutation actions (issue a code, create a share
+  // link, upload, edit information). Generous enough for normal use, tight
+  // enough that a scripted or runaway client cannot hammer the database.
+  ownerActionPerWindow: 20,
+  ownerActionWindowMinutes: 5,
+  ownerActionLockoutMinutes: 5,
 } as const;
+
+export type OwnerActionVerdict =
+  | { allowed: true }
+  | { allowed: false; retryAfterMinutes: number };
+
+/**
+ * Per-owner throttle for authenticated write actions. Counts recent events for
+ * the same owner and action inside a sliding window; crossing the limit sets a
+ * short lockout. Fails open: if the bookkeeping tables are unreachable (for
+ * example a pending migration) the action is allowed rather than blocked, so
+ * this can never take the dashboard down on its own.
+ */
+export async function guardOwnerAction(
+  ownerId: string,
+  action: string,
+): Promise<OwnerActionVerdict> {
+  const key = `owner-action:${ownerId}:${action}`;
+  const { ownerActionPerWindow, ownerActionWindowMinutes, ownerActionLockoutMinutes } = RATE_LIMITS;
+  try {
+    if (await isLocked('action', key)) {
+      return { allowed: false, retryAfterMinutes: ownerActionLockoutMinutes };
+    }
+
+    const supabase = createServiceClient();
+    const since = new Date(Date.now() - ownerActionWindowMinutes * 60_000).toISOString();
+    const { count, error: countError } = await supabase
+      .from('owner_action_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', ownerId)
+      .eq('action', action)
+      .gt('created_at', since);
+    if (countError) {
+      log.warn('rate-limit.guardOwnerAction count failed', { code: countError.code });
+      return { allowed: true };
+    }
+    if ((count ?? 0) >= ownerActionPerWindow) {
+      await lockFor('action', key, ownerActionLockoutMinutes);
+      return { allowed: false, retryAfterMinutes: ownerActionLockoutMinutes };
+    }
+
+    const { error: insertError } = await supabase
+      .from('owner_action_events')
+      .insert({ owner_id: ownerId, action });
+    if (insertError) log.warn('rate-limit.guardOwnerAction insert failed', { code: insertError.code });
+    return { allowed: true };
+  } catch (cause) {
+    log.warn('rate-limit.guardOwnerAction threw', {
+      message: cause instanceof Error ? cause.message : 'unknown',
+    });
+    return { allowed: true };
+  }
+}

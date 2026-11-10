@@ -12,7 +12,7 @@ export function AuthScreen({
 }) {
   return (
     <main className="bg-page flex min-h-dvh items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
-      <div className="w-full max-w-md">
+      <div className="animate-enter w-full max-w-md">
         <header className="mb-6 flex flex-col items-center text-center">
           <BrandMark />
           <p className="eyebrow mt-3">Private Identity</p>

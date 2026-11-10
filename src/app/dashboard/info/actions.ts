@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { requireOwner } from '@/lib/auth/session';
+import { guardOwnerAction } from '@/lib/rate-limit';
 import { createUserClient } from '@/lib/db/user';
 import { revalidatePath } from 'next/cache';
 import {
@@ -58,6 +59,10 @@ export async function addFieldAction(formData: FormData): Promise<InfoActionResu
   }
 
   const owner = await requireOwner('/dashboard/info');
+  const throttle = await guardOwnerAction(owner.id, 'info.field_write');
+  if (!throttle.allowed) {
+    return { ok: false, error: `You have made many changes just now. Try again in ${throttle.retryAfterMinutes} minutes.` };
+  }
   const supabase = await createUserClient();
   const data = parsed.data;
 
@@ -104,6 +109,10 @@ export async function updateFieldAction(id: string, formData: FormData): Promise
   if (!parsedId.success) return { ok: false, error: 'This information could not be found.' };
 
   const owner = await requireOwner('/dashboard/info');
+  const throttle = await guardOwnerAction(owner.id, 'info.field_write');
+  if (!throttle.allowed) {
+    return { ok: false, error: `You have made many changes just now. Try again in ${throttle.retryAfterMinutes} minutes.` };
+  }
   const supabase = await createUserClient();
   const { data: current, error: loadError } = await supabase
     .from('fields')

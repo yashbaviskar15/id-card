@@ -64,9 +64,8 @@ a deliberately invalid `/s/...` link. Do not test a private document-view URL.
 
 - [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/): enter the URL,
   select **Debug**, then **Scrape Again**.
-- [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/): inspect the URL and
-  confirm the title, description, and image.
-- [opengraph.xyz](https://www.opengraph.xyz/): preview the initial server-rendered metadata.
+- [opengraph.xyz](https://www.opengraph.xyz/): preview the initial server-rendered metadata
+  and confirm the title, description, and image.
 - WhatsApp: send the HTTPS URL to a chat you can check, then confirm the generated preview
   uses the public `Private Identity` image and generic description.
 
@@ -79,18 +78,18 @@ Protected profile and file-share routes intentionally use generic preview text a
 social crawlers cannot complete the owner's access-code/password flow, and private names,
 emails, and file names must not be exposed in crawler-readable HTML.
 
-Preview services cache results. Use **Scrape Again** in Facebook and re-inspect with LinkedIn
+Preview services cache results. Use **Scrape Again** in Facebook and re-run the preview tool
 after a change. WhatsApp has no public cache-purge tool; if an image changes, publish it at a
 new versioned filename and update the metadata image URL. A new unique share URL may also be
 needed while an old preview expires.
 
 ## 3. Apply Database Migrations
 
-The deployed Supabase project must have **all migrations `0001` through `0009`**. In
+The deployed Supabase project must have **all migrations `0001` through `0010`**. In
 particular, access-code document permissions require `0002`, share-link downloads require
 `0005` and safe storage-path validation requires `0008`, recovery-code writes require `0006`,
-atomic recovery-code rotation requires `0007`, and exact per-code visitor-session duration
-requires `0009`. From a trusted machine with the Supabase CLI installed, link the exact project used
+atomic recovery-code rotation requires `0007`, exact per-code visitor-session duration
+requires `0009`, and per-owner action throttling requires `0010`. From a trusted machine with the Supabase CLI installed, link the exact project used
 by `NEXT_PUBLIC_SUPABASE_URL`, then review and apply pending migrations:
 
 ```bash

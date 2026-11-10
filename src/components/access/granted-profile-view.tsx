@@ -386,7 +386,7 @@ export function GrantedProfileView({
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1120px] min-w-0 flex-col gap-5 px-[clamp(12px,3vw,32px)] pt-3 pb-8 sm:py-8">
+      <main className="animate-enter mx-auto flex w-full max-w-[1120px] min-w-0 flex-col gap-5 px-[clamp(12px,3vw,32px)] pt-3 pb-8 sm:py-8">
         {reconnecting ? (
           <p role="status" className="text-sm text-[#5B6472]">Connection interrupted. Retrying securely…</p>
         ) : null}

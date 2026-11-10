@@ -252,6 +252,72 @@ html.interaction-locked [contenteditable="true"] {
   }
 }
 
+/*
+ * Motion — one quiet, shared language for the whole app: a short rise on
+ * entrance, a gentle lift on interactive surfaces. Durations stay under
+ * 400ms so navigation feels instant rather than animated. The global
+ * prefers-reduced-motion rule below disables all of it for anyone who asks,
+ * and the `@media (hover: hover)` guard keeps lift effects off touch screens
+ * where a stuck hover state would look broken.
+ */
+@keyframes ui-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .animate-enter {
+    animation: ui-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-fade-in {
+    animation: ui-fade-in 240ms ease-out both;
+  }
+  /* Direct children rise in sequence. Capped at eight so long lists stay calm. */
+  .stagger-children > * {
+    animation: ui-enter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger-children > :nth-child(2) { animation-delay: 40ms; }
+  .stagger-children > :nth-child(3) { animation-delay: 80ms; }
+  .stagger-children > :nth-child(4) { animation-delay: 120ms; }
+  .stagger-children > :nth-child(5) { animation-delay: 160ms; }
+  .stagger-children > :nth-child(6) { animation-delay: 200ms; }
+  .stagger-children > :nth-child(7) { animation-delay: 240ms; }
+  .stagger-children > :nth-child(8) { animation-delay: 280ms; }
+
+  .transition-surface {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 180ms ease-out,
+      background-color 180ms ease-out;
+  }
+}
+
+@media (hover: hover) {
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px -12px rgba(15, 23, 42, 0.18);
+  }
+  .hover-lift:active {
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
