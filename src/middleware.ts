@@ -98,6 +98,15 @@ export async function middleware(request: NextRequest) {
     return copyAuthCookies(NextResponse.redirect(url));
   }
 
+  // A fully authenticated owner should not remain on the sign-in page after
+  // following an email verification link. Password-only MFA sessions stay here.
+  if (path === '/login' && userId && !needsMfa) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    url.search = '';
+    return copyAuthCookies(NextResponse.redirect(url));
+  }
+
   return next;
 }
 
