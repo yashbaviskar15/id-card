@@ -1,18 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, CircleUserRound, LogOut, Settings, ShieldCheck, UserRound } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { SignOutForm } from '@/components/offline/sign-out-form';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 export function UserMenu({
   name,
@@ -26,72 +18,23 @@ export function UserMenu({
   const initial = name.trim().charAt(0).toUpperCase() || 'U';
   const pathname = usePathname();
   const [accountOpen, setAccountOpen] = useState(false);
+  const accountLinksId = useId();
 
   useEffect(() => {
     setAccountOpen(false);
   }, [pathname]);
 
-  if (compact) {
-    return (
-      <div className="min-w-0">
-        <button
-          type="button"
-          aria-label="Open signed-in account menu"
-          aria-expanded={accountOpen}
-          aria-controls="dashboard-mobile-account-links"
-          onClick={() => setAccountOpen((open) => !open)}
-          className="flex min-h-16 w-full min-w-0 items-center gap-3 rounded-xl bg-muted px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ink"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">
-            {initial}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-label">Signed in</span>
-            <span className="block truncate text-sm font-semibold text-ink">{name}</span>
-            <span className="block truncate text-xs text-label">{email ?? 'Account'}</span>
-          </span>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-label transition-transform ${accountOpen ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
-        </button>
-        <nav
-          id="dashboard-mobile-account-links"
-          aria-label="Account"
-          hidden={!accountOpen}
-          className="mt-2 grid gap-1 rounded-xl border border-page-border bg-white p-2"
-        >
-          <Link href="/dashboard/profile" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-ink hover:bg-muted">
-            <UserRound className="h-4 w-4" aria-hidden="true" />
-            Profile
-          </Link>
-          <Link href="/dashboard/settings" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-ink hover:bg-muted">
-            <Settings className="h-4 w-4" aria-hidden="true" />
-            Account settings
-          </Link>
-          <Link href="/dashboard/security" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-ink hover:bg-muted">
-            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-            Security
-          </Link>
-          <SignOutForm>
-            <button
-              type="submit"
-              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
-              Sign out
-            </button>
-          </SignOutForm>
-        </nav>
-      </div>
-    );
-  }
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
+    <div className="min-w-0">
+      <button
+        type="button"
         aria-label="Open signed-in account menu"
-        className="flex min-h-12 w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ink"
+        aria-expanded={accountOpen}
+        aria-controls={accountLinksId}
+        onClick={() => setAccountOpen((open) => !open)}
+        className={`flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ink ${
+          compact ? 'min-h-16 bg-muted' : 'min-h-12 hover:bg-muted'
+        }`}
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">
           {initial}
@@ -101,39 +44,40 @@ export function UserMenu({
           <span className="block truncate text-sm font-semibold text-ink">{name}</span>
           <span className="block truncate text-xs text-label">{email ?? 'Account'}</span>
         </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-label" aria-hidden="true" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[min(18rem,calc(100vw-1.5rem))] p-2">
-        <DropdownMenuLabel className="px-3 py-2">
-          <span className="block truncate text-sm font-semibold text-ink">{name}</span>
-          <span className="mt-0.5 block truncate text-xs font-normal text-label">{email}</span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/dashboard/profile" />} className="min-h-10 px-3">
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-label transition-transform ${accountOpen ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        />
+      </button>
+      <nav
+        id={accountLinksId}
+        aria-label="Account"
+        hidden={!accountOpen}
+        className="mt-2 grid gap-1 rounded-xl border border-page-border bg-white p-2"
+      >
+        <Link href="/dashboard/profile" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-ink hover:bg-muted">
           <UserRound className="h-4 w-4" aria-hidden="true" />
           Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/dashboard/settings" />} className="min-h-10 px-3">
+        </Link>
+        <Link href="/dashboard/settings" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-ink hover:bg-muted">
           <Settings className="h-4 w-4" aria-hidden="true" />
           Account settings
-        </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/dashboard/security" />} className="min-h-10 px-3">
+        </Link>
+        <Link href="/dashboard/security" className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-ink hover:bg-muted">
           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           Security
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
+        </Link>
         <SignOutForm>
-          <DropdownMenuItem
-            variant="destructive"
-            render={<button type="submit" />}
-            className="min-h-10 px-3"
+          <button
+            type="submit"
+            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-destructive hover:bg-destructive/10"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Sign out
-          </DropdownMenuItem>
+          </button>
         </SignOutForm>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </nav>
+    </div>
   );
 }
 

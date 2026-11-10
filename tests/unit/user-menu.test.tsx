@@ -14,7 +14,7 @@ vi.mock('@/components/offline/sign-out-form', () => ({
 
 import { UserMenu } from '@/app/dashboard/user-menu';
 
-describe('mobile account menu', () => {
+describe('dashboard account menu', () => {
   it('opens account links inline without a nested popup', () => {
     render(<UserMenu name="Owner" email="owner@example.com" compact />);
 
@@ -23,5 +23,15 @@ describe('mobile account menu', () => {
 
     expect(screen.getByRole('navigation', { name: 'Account' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/dashboard/profile');
+  });
+
+  it('opens the desktop account links inline without a popup component', () => {
+    render(<UserMenu name="Owner" email="owner@example.com" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open signed-in account menu' }));
+
+    expect(screen.getByRole('navigation', { name: 'Account' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/dashboard/profile');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });
