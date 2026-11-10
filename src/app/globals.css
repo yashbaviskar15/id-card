@@ -97,6 +97,20 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
+
+  /* Scrollbars are hidden application-wide (web, desktop and installed app) so
+     every surface stays clean and no width shift appears the moment a panel
+     starts to scroll. Scrolling itself is untouched — wheel, trackpad, touch,
+     keyboard and drag still work; only the visible track and thumb are removed. */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* legacy Edge / IE */
+  }
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none; /* Chrome, Safari, Edge, Opera */
+  }
 }
 
 .brand-mark {
