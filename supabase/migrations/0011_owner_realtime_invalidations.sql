@@ -3,10 +3,21 @@
 
 -- Add an opaque content revision to permitted document metadata. A visitor
 -- preview can then reload an already-open file when the owner replaces it.
-alter function public.get_granted_profile(uuid, text)
-  rename to get_granted_profile_without_document_revision;
+--
+-- Idempotent: the rename only runs if the target does not already exist, so a
+-- partially-applied migration can be safely re-run.
+do $$
+begin
+  if not exists (
+    select 1 from pg_proc where proname = 'get_granted_profile_without_document_revision'
+  ) then
+    alter function public.get_granted_profile(uuid, text)
+      rename to get_granted_profile_without_document_revision;
+  end if;
+end;
+$$;
 
-create function public.get_granted_profile(
+create or replace function public.get_granted_profile(
   p_grant_id uuid,
   p_slug text
 )
