@@ -8,11 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from 'cn';
-import { ChevronLeft, ChevronRight, Copy, Link2, Search } from 'lucide-react';
+import { CheckSquare, ChevronLeft, ChevronRight, Copy, Link2, Search, Square } from 'lucide-react';
 import { useOffline } from '@/components/offline/offline-provider';
 import { OnlineRequiredNotice } from '@/components/offline/online-notice';
 import { createShareLinkAction, revokeShareLinkAction } from './actions';
-import { initialShareState } from './form-state';
+import { initialShareState, type CreatedShareLink } from './form-state';
 import {
   filterAndSortShareLinks,
   paginateShareLinks,
@@ -96,26 +96,78 @@ function RevokeShareButton({ shareId, onRevoked }: { shareId: string; onRevoked?
   );
 }
 
-export function ShareCreator({ documents }: { documents: ShareDocumentOption[] }) {
-  const [state, submit, pending] = useActionState(createShareLinkAction, initialShareState);
+function CreatedLinkRow({ link }: { link: CreatedShareLink }) {
   const [copied, setCopied] = useState(false);
+
+  return (
+    <li className="rounded-lg border border-hairline bg-white p-3">
+      <p className="text-sm font-semibold text-ink">{link.documentName}</p>
+      <p className="mt-1 break-all text-sm text-ink [overflow-wrap:anywhere]">{link.url}</p>
+      <p className="mt-1 text-xs text-label">expires {when(link.expiresAt)}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(link.url);
+              setCopied(true);
+            } catch {
+              setCopied(false);
+            }
+          }}
+        >
+          <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+          {copied ? 'Copied' : 'Copy link'}
+        </Button>
+        <RevokeShareButton shareId={link.shareId} />
+      </div>
+    </li>
+  );
+}
+
+export function ShareCreator({
+  documents,
+  defaultExpiryMinutes,
+  defaultMaxDownloads,
+  maxDocuments,
+}: {
+  documents: ShareDocumentOption[];
+  defaultExpiryMinutes: number;
+  defaultMaxDownloads: number | null;
+  maxDocuments: number;
+}) {
+  const [state, submit, pending] = useActionState(createShareLinkAction, initialShareState);
+  const [selected, setSelected] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const { online } = useOffline();
 
   useEffect(() => {
     if (state.ok) {
-      setCopied(false);
+      setSelected([]);
       formRef.current?.reset();
       router.refresh();
     }
   }, [state, router]);
 
+  const allSelected = documents.length > 0 && selected.length === documents.length;
+  const overLimit = selected.length > maxDocuments;
+  const blocked = selected.length === 0 || overLimit;
+
+  function toggle(id: string) {
+    setSelected((previous) =>
+      previous.includes(id) ? previous.filter((value) => value !== id) : [...previous, id],
+    );
+  }
+
   return (
     <section className="surface shadow-card p-5 sm:p-6">
-      <h2 className="text-sm font-semibold text-ink">Create a share link</h2>
+      <h2 className="text-sm font-semibold text-ink">Create share links</h2>
       <p className="mt-1 text-sm text-label">
-        Hand out one document with a private link. It expires on its own and you can revoke it at any time.
+        Pick one or more documents — each gets its own private link with the same expiry and password. Links expire
+        on their own and you can revoke any of them at any time.
       </p>
 
       {documents.length === 0 ? (
@@ -131,29 +183,65 @@ export function ShareCreator({ documents }: { documents: ShareDocumentOption[] }
           ref={formRef}
           action={submit}
           onSubmit={(event) => {
-            if (!online) event.preventDefault();
+            if (!online || blocked) event.preventDefault();
           }}
           className="mt-5 grid gap-4 sm:grid-cols-2"
           noValidate
         >
           <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="document_id">Document</Label>
-            <select
-              id="document_id"
-              name="document_id"
-              required
-              defaultValue=""
-              className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-hairline bg-white px-3 text-sm text-ink focus:border-ink focus:outline-none"
-            >
-              <option value="" disabled>
-                Choose a document…
-              </option>
-              {documents.map((document) => (
-                <option key={document.id} value={document.id}>
-                  {document.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label>Documents</Label>
+              <div className="flex items-center gap-2">
+                <span className={cn('text-xs tabular-nums', overLimit ? 'text-destructive' : 'text-label')}>
+                  {selected.length} selected · max {maxDocuments}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setSelected(allSelected ? [] : documents.map((document) => document.id))
+                  }
+                >
+                  {allSelected ? (
+                    <Square className="h-3.5 w-3.5" aria-hidden="true" />
+                  ) : (
+                    <CheckSquare className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                  {allSelected ? 'Clear' : 'Select all'}
+                </Button>
+              </div>
+            </div>
+            <ul className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-hairline bg-white p-1">
+              {documents.map((document) => {
+                const checked = selected.includes(document.id);
+                return (
+                  <li key={document.id}>
+                    <label
+                      className={cn(
+                        'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
+                        checked ? 'bg-muted/60 text-ink' : 'text-label hover:bg-muted/30',
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        name="document_ids"
+                        value={document.id}
+                        checked={checked}
+                        onChange={() => toggle(document.id)}
+                        className="h-4 w-4 accent-ink"
+                      />
+                      <span className="min-w-0 truncate">{document.name}</span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+            {overLimit ? (
+              <p className="text-xs text-destructive" role="alert">
+                Choose at most {maxDocuments} documents at a time.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-1.5">
@@ -164,7 +252,7 @@ export function ShareCreator({ documents }: { documents: ShareDocumentOption[] }
               type="number"
               min={5}
               max={60 * 24 * 30}
-              defaultValue={1440}
+              defaultValue={defaultExpiryMinutes}
               required
             />
           </div>
@@ -177,6 +265,7 @@ export function ShareCreator({ documents }: { documents: ShareDocumentOption[] }
               type="number"
               min={1}
               max={1000}
+              defaultValue={defaultMaxDownloads ?? undefined}
               placeholder="No limit"
             />
           </div>
@@ -199,8 +288,12 @@ export function ShareCreator({ documents }: { documents: ShareDocumentOption[] }
           </div>
 
           <div className="sm:col-span-2">
-            <Button type="submit" className="h-9" disabled={pending || !online}>
-              {pending ? 'Creating…' : 'Create link'}
+            <Button type="submit" className="h-9" disabled={pending || !online || blocked}>
+              {pending
+                ? 'Creating…'
+                : selected.length > 1
+                  ? `Create ${selected.length} links`
+                  : 'Create link'}
             </Button>
           </div>
         </form>
@@ -216,35 +309,23 @@ export function ShareCreator({ documents }: { documents: ShareDocumentOption[] }
         </Alert>
       ) : null}
 
-      {state.ok && state.url ? (
+      {state.ok && state.links && state.links.length > 0 ? (
         <div className="mt-5 rounded-xl border border-hairline bg-muted/50 p-5">
-          <p className="eyebrow">Shareable link</p>
-          <p className="mt-2 break-all text-sm font-medium text-ink [overflow-wrap:anywhere]">{state.url}</p>
-          <p className="mt-2 text-xs text-label">
-            {state.documentName ? `${state.documentName} · ` : ''}
-            {state.expiresAt ? `expires ${when(state.expiresAt)}. ` : ''}
-            Copy it now — for security this link cannot be shown again after you leave this page.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                if (!state.url) return;
-                try {
-                  await navigator.clipboard.writeText(state.url);
-                  setCopied(true);
-                } catch {
-                  setCopied(false);
-                }
-              }}
-            >
-              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-              {copied ? 'Copied' : 'Copy link'}
-            </Button>
-            {state.shareId ? <RevokeShareButton shareId={state.shareId} /> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="eyebrow">Shareable links</p>
+            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-label">
+              {state.links.length} created
+            </span>
           </div>
+          {state.message ? <p className="mt-2 text-xs text-label">{state.message}</p> : null}
+          <ul className="mt-3 space-y-2">
+            {state.links.map((link) => (
+              <CreatedLinkRow key={link.shareId} link={link} />
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-label">
+            Copy them now — for security these links cannot be shown again after you leave this page.
+          </p>
         </div>
       ) : null}
     </section>

@@ -19,6 +19,8 @@ const serverSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   ALERT_FROM_EMAIL: z.email().optional(),
   ALERT_TO_EMAIL: z.email().optional(),
+  CRON_SECRET: z.string().min(16).optional(),
+  BACKUP_PASSPHRASE: z.string().min(12).optional(),
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
   SHARE_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(1440),
   OWNER_SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(30),

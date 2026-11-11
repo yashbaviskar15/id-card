@@ -85,12 +85,12 @@ needed while an old preview expires.
 
 ## 3. Apply Database Migrations
 
-The deployed Supabase project must have **all migrations `0001` through `0011`**. In
+The deployed Supabase project must have **all migrations `0001` through `0012`**. In
 particular, access-code document permissions require `0002`, share-link downloads require
 `0005` and safe storage-path validation requires `0008`, recovery-code writes require `0006`,
 atomic recovery-code rotation requires `0007`, exact per-code visitor-session duration
-requires `0009`, per-owner action throttling requires `0010`, and live dashboard updates
-require `0011`. From a trusted machine with the Supabase CLI installed, link the exact project used
+requires `0009`, per-owner action throttling requires `0010`, live dashboard updates
+require `0011`, and the owner-automation cron jobs require `0012`. From a trusted machine with the Supabase CLI installed, link the exact project used
 by `NEXT_PUBLIC_SUPABASE_URL`, then review and apply pending migrations:
 
 ```bash
@@ -123,6 +123,28 @@ is missing or the session cookie was not sent.
 
 The consolidated `supabase/schema.sql` already contains `0011`, so a fresh project can also be
 provisioned in one file as described in `WALKTHROUGH.md`.
+
+### Owner automation (`0012`)
+
+`0012_automation.sql` adds the columns and the service-role-only housekeeping function behind
+the scheduled jobs: quick-access presets and remembered "last settings" (`M-1`), saved
+share-link defaults (`M-2`), `expire_stale_security_records()` (`M-3`), the private `backups`
+bucket (`M-4`) and the `alert_on_access` preference (`M-6`). Everything it adds is
+fail-safe — the dashboard reads a missing column as "unset" — but the cron jobs below do
+nothing until it is applied.
+
+| Job | Route | Vercel schedule (`vercel.json`) |
+| --- | --- | --- |
+| Retire expired codes/links, purge old rate-limit rows | `/api/cron/cleanup` | daily `17 3 * * *` |
+| Daily access digest email | `/api/cron/digest` | daily `7 8 * * *` |
+| Encrypted backup to the private bucket | `/api/cron/backup` | weekly (Sun) `23 3 * * 0` |
+
+The routes are authenticated with `CRON_SECRET`. Set it (any random string, ≥ 16 characters)
+in the deployment; Vercel sends it automatically as `Authorization: Bearer <CRON_SECRET>` and
+refuses the request when it is missing. Set `BACKUP_PASSPHRASE` (≥ 12 characters) as well —
+the encrypted backup cannot run without it, and the owner is emailed when it is missing.
+Both are optional variables, so an unconfigured deployment simply has no scheduled jobs
+rather than an open endpoint.
 
 If a previous push stopped at `0004_visitor_presentation.sql` with
 `column "visitor_theme" already exists`, update to the latest repository version and rerun

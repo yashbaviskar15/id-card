@@ -6,6 +6,7 @@ import { getProfile } from '@/lib/card/load';
 import { ReauthPanel } from '@/components/auth/reauth-panel';
 import { GiveAccess } from './give-access';
 import { AccessHistory, type EventRow, type GrantRow } from './access-history';
+import { effectiveQuickPresets, lastUsedDefaults } from '@/lib/access/presets';
 import type { AccessScope } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -50,9 +51,16 @@ export default async function AccessPage({
       .returns<EventRow[]>(),
     supabase
       .from('owner_settings')
-      .select('default_scope, default_validity_minutes')
+      .select('default_scope, default_validity_minutes, quick_presets, last_scope, last_validity_minutes, last_include_documents')
       .eq('owner_id', owner.id)
-      .maybeSingle<{ default_scope: AccessScope; default_validity_minutes: number }>(),
+      .maybeSingle<{
+        default_scope: AccessScope;
+        default_validity_minutes: number;
+        quick_presets: unknown;
+        last_scope: string | null;
+        last_validity_minutes: number | null;
+        last_include_documents: boolean;
+      }>(),
     supabase
       .from('documents')
       .select('id', { count: 'exact', head: true })
@@ -68,6 +76,14 @@ export default async function AccessPage({
   const events = eventRows.slice(0, EVENTS_PAGE_SIZE);
   const sharedCount = sharedCountResult.count ?? 0;
   const now = Date.now();
+  const defaults = lastUsedDefaults({
+    lastScope: settingsResult.data?.last_scope ?? null,
+    lastValidityMinutes: settingsResult.data?.last_validity_minutes ?? null,
+    lastIncludeDocuments: settingsResult.data?.last_include_documents ?? false,
+    fallbackScope: settingsResult.data?.default_scope ?? 'contact',
+    fallbackValidity: settingsResult.data?.default_validity_minutes ?? 5,
+  });
+  const presets = effectiveQuickPresets(settingsResult.data?.quick_presets);
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -93,8 +109,10 @@ export default async function AccessPage({
         </section>
       ) : reauthenticated ? (
         <GiveAccess
-          defaultScope={settingsResult.data?.default_scope ?? 'contact'}
-          defaultValidity={settingsResult.data?.default_validity_minutes ?? 5}
+          defaultScope={defaults.scope}
+          defaultValidity={defaults.validityMinutes}
+          defaultIncludeDocuments={defaults.includeDocuments}
+          presets={presets}
           sharedCount={sharedCount}
         />
       ) : (

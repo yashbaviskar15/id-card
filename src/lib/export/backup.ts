@@ -1,5 +1,6 @@
 import 'server-only';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { zipSync, strToU8 } from 'fflate';
 import { createUserClient } from '@/lib/db/user';
 import { decryptField, fieldAad, isEncryptedEnvelope } from '@/lib/crypto/fields';
@@ -40,8 +41,13 @@ export class BackupDecryptError extends Error {
   }
 }
 
-export async function loadBackupData(ownerId: string): Promise<BackupData> {
-  const supabase = await createUserClient();
+/**
+ * Loads everything that goes into a backup. `client` lets the scheduled job
+ * pass the service-role client (it has no browser session); the interactive
+ * export omits it and gets the owner-scoped client so RLS still applies.
+ */
+export async function loadBackupData(ownerId: string, client?: SupabaseClient): Promise<BackupData> {
+  const supabase = client ?? (await createUserClient());
   const [profileResult, fieldResult, categoryResult, documentResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('owner_id', ownerId).maybeSingle(),
     supabase.from('fields').select('*').eq('owner_id', ownerId).order('sort', { ascending: true }),
@@ -87,12 +93,16 @@ function safeFilename(value: string): string {
   return value.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200) || 'document';
 }
 
-export async function buildBackupZip(ownerId: string, includeData: boolean): Promise<Uint8Array> {
-  const backup = await loadBackupData(ownerId);
+export async function buildBackupZip(
+  ownerId: string,
+  includeData: boolean,
+  client?: SupabaseClient,
+): Promise<Uint8Array> {
+  const supabase = client ?? (await createUserClient());
+  const backup = await loadBackupData(ownerId, supabase);
   const files: Record<string, Uint8Array> = {};
   if (includeData) files['backup.json'] = strToU8(JSON.stringify(backup, null, 2));
 
-  const supabase = await createUserClient();
   for (const document of backup.documents) {
     const path = String(document.storage_path);
     const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).download(path);

@@ -13,7 +13,7 @@ import { getOwnerIdOrNull } from '@/lib/auth/session';
 
 /**
  * Re-authentication gate. Sensitive actions require the owner to have entered
- * their password within the last 5 minutes.
+ * their password within the last 30 minutes (OWNER_REAUTH_TTL_MS).
  */
 export class ReauthRequiredError extends Error {
   constructor() {

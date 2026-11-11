@@ -147,5 +147,24 @@ export const shareLinkInputSchema = z.object({
   max_downloads: z.coerce.number().int().min(1).max(1000).optional(),
 });
 
+export const MAX_BULK_SHARE_DOCUMENTS = 20;
+
+/** Bulk variant: one link per selected document, shared settings for the batch. */
+export const shareLinkBulkInputSchema = z.object({
+  document_ids: z
+    .array(z.uuid())
+    .min(1, 'Choose at least one document.')
+    .max(MAX_BULK_SHARE_DOCUMENTS, `Choose at most ${MAX_BULK_SHARE_DOCUMENTS} documents at a time.`),
+  expires_in_minutes: z.coerce.number().int().min(5).max(60 * 24 * 30),
+  password: z.string().max(200).optional().or(z.literal('')),
+  max_downloads: z.coerce.number().int().min(1).max(1000).optional(),
+});
+
+/** Saved share-link defaults (expiry + optional download cap) the form starts from. */
+export const shareDefaultsSchema = z.object({
+  share_default_expiry_minutes: z.coerce.number().int().min(5).max(60 * 24 * 30),
+  share_default_max_downloads: z.coerce.number().int().min(1).max(1000).nullable(),
+});
+
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type FieldInput = z.infer<typeof fieldInputSchema>;

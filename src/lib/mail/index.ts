@@ -68,3 +68,59 @@ export async function alertSensitiveReveal(context: { field: string }): Promise<
 export async function alertBackupExported(): Promise<void> {
   await deliver('Security alert: backup exported', `An encrypted backup bundle was created and downloaded.${footer}`);
 }
+
+export async function alertGrantUsed(context: { slugSuffix: string; scope: 'contact' | 'full' }): Promise<void> {
+  await deliver(
+    'Access alert: your code was used',
+    `Someone just entered an access code on profile ...${context.slugSuffix} (${context.scope} scope).\n\nIf you did not hand out a code, revoke outstanding codes from the Access dashboard.${footer}`,
+  );
+}
+
+export async function alertScheduledBackup(context: {
+  ok: boolean;
+  documentCount: number;
+  sizeBytes: number;
+  storedPath?: string;
+  error?: string;
+}): Promise<void> {
+  if (context.ok) {
+    const megabytes = (context.sizeBytes / (1024 * 1024)).toFixed(2);
+    await deliver(
+      'Scheduled backup completed',
+      `Your encrypted backup finished. ${context.documentCount} document${context.documentCount === 1 ? '' : 's'} · ${megabytes} MB.\n\nStored at: ${context.storedPath ?? 'n/a'}\n\nRestore needs the BACKUP_PASSPHRASE you configured.${footer}`,
+    );
+  } else {
+    await deliver(
+      'Scheduled backup failed',
+      `Your scheduled backup did not complete: ${context.error ?? 'unknown error'}.\n\nCheck the deployment logs and the BACKUP_PASSPHRASE setting.${footer}`,
+    );
+  }
+}
+
+export interface AccessDigest {
+  windowHours: number;
+  total: number;
+  granted: number;
+  denied: number;
+  used: number;
+  uniqueVisitors: number;
+  topOutcome?: { outcome: string; count: number };
+}
+
+export async function sendAccessDigest(context: AccessDigest): Promise<void> {
+  const lines = [
+    `Access summary for the last ${context.windowHours} hours.`,
+    '',
+    `Total checks: ${context.total}`,
+    `Codes accepted: ${context.used}`,
+    `Successful sessions: ${context.granted}`,
+    `Refused attempts: ${context.denied}`,
+    `Distinct visitors (by IP): ${context.uniqueVisitors}`,
+  ];
+  if (context.topOutcome) {
+    lines.push(`Most common outcome: ${context.topOutcome.outcome} (${context.topOutcome.count})`);
+  }
+  lines.push('', 'Open the Access dashboard for the full history.', footer);
+  await deliver(`Access digest: ${context.used} code${context.used === 1 ? '' : 's'} used in ${context.windowHours}h`, lines.join('\n'));
+}
+

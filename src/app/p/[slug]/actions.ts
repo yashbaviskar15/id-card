@@ -8,7 +8,7 @@ import { clientIpFromHeaders, hashIp, truncateUserAgent } from '@/lib/crypto/ip'
 import { buildAccessCodeProof } from '@/lib/crypto/proofs';
 import { accessCodeSchema, slugSchema } from '@/lib/validation';
 import { isLocked, RATE_LIMITS } from '@/lib/rate-limit';
-import { alertAccessGateLockout } from '@/lib/mail';
+import { alertAccessGateLockout, alertGrantUsed } from '@/lib/mail';
 import { writeAudit } from '@/lib/audit';
 import { log } from '@/lib/log';
 import type { ConsumeCodeVerdict } from '@/lib/types';
@@ -109,9 +109,35 @@ export async function submitAccessCodeAction(_prev: FormState, formData: FormDat
       ipHash,
       userAgent,
     });
+    if (verdict.scope) await notifyGrantUsed(owner, slug, verdict.scope);
   }
 
   redirect(`/p/${slug}`);
+}
+
+/**
+ * M-6 — tells the owner the moment a visitor uses a code, unless the alert is
+ * switched off. Best-effort: it runs after the session is issued and can never
+ * block the visitor's redirect.
+ */
+async function notifyGrantUsed(
+  ownerId: string,
+  slug: string,
+  scope: 'contact' | 'full',
+): Promise<void> {
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from('owner_settings')
+      .select('alert_on_access')
+      .eq('owner_id', ownerId)
+      .maybeSingle<{ alert_on_access: boolean }>();
+    if (data?.alert_on_access ?? true) {
+      await alertGrantUsed({ slugSuffix: slug.slice(-6), scope });
+    }
+  } catch {
+    // Alerts must never break the visitor's redirect.
+  }
 }
 
 async function ownerIdForSlug(slug: string): Promise<string | null> {

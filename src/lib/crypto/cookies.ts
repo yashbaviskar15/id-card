@@ -70,7 +70,12 @@ export function visitorCookieName(slug: string): string {
   return `piv_v_${slug.slice(0, 8)}`;
 }
 
-export const OWNER_REAUTH_TTL_MS = 5 * 60 * 1000;
+/**
+ * How long a successful password re-check stays valid. 30 minutes keeps the
+ * card-and-code workflow (hand out a code, share a link) free of repeated
+ * password prompts without weakening the sign-in session itself.
+ */
+export const OWNER_REAUTH_TTL_MS = 30 * 60 * 1000;
 
 export interface CookieOptions {
   httpOnly: true;
