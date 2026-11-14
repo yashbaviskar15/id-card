@@ -77,6 +77,29 @@ export async function loadGrantedProfile(
   const session = await readVisitorSession(slug);
   if (!session) return null;
 
+  // TEMP MOCK - with documents
+  return {
+    grantId: session.grantId,
+    profile: {
+      full_name: 'Test User',
+      scope: 'full',
+      photo_path: null,
+      dob: '1990-01-01',
+      address: '123 Test St',
+      visitor_theme: 'ink',
+      visitor_layout: 'default',
+      visitor_intro: 'Hello',
+      emails: [{ label: 'Work', value: 'test@example.com' }],
+      phones: [{ label: 'Mobile', value: '+1234567890' }],
+      social_links: [{ label: 'Twitter', value: 'https://twitter.com/test' }],
+      documents: [{ id: 'doc1', name: 'Test.pdf', mime: 'application/pdf', size: 1024, updated_at: '2024-01-01T00:00:00Z' }],
+      can_view_documents: true,
+      session_expires_at: new Date(Date.now() + 15 * 60000).toISOString(),
+      server_now: new Date().toISOString(),
+    },
+  };
+  // END TEMP MOCK
+
   const supabase = createServiceClient();
   const { data, error } = await supabase.rpc('get_granted_profile', {
     p_grant_id: session.grantId,
