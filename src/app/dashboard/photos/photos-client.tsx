@@ -173,7 +173,7 @@ export function PhotosClient({
             continue;
           }
           added += 1;
-        } catch {
+        } catch (error) {
           if (pendingPath) {
             try {
               await createBrowserSupabase().storage.from('documents').remove([pendingPath]);
@@ -181,7 +181,14 @@ export function PhotosClient({
               // A retry uses a new random path; a failed cleanup cannot expose the file.
             }
           }
-          setUpload({ ok: false, error: `${file.name} was interrupted. Check your connection and try again.` });
+          const detail = error instanceof Error ? error.message : '';
+          console.error('photo upload interrupted', error);
+          setUpload({
+            ok: false,
+            error: detail
+              ? `${file.name}: ${detail}`
+              : `${file.name} was interrupted. Check your connection and try again.`,
+          });
         } finally {
           setProgress({ done: index + 1, total: files.length });
         }

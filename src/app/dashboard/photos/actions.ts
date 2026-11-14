@@ -7,6 +7,7 @@ import { requireOwner } from '@/lib/auth/session';
 import { guardOwnerAction } from '@/lib/rate-limit';
 import { createUserClient } from '@/lib/db/user';
 import { createServiceClient } from '@/lib/db/service';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { hashPassword } from '@/lib/crypto/password';
 import { encryptPhotoBytes, photoAad } from '@/lib/crypto/photos';
 import { generateStorageId } from '@/lib/crypto/random';
@@ -108,65 +109,85 @@ export async function finalizePrivatePhotoUploadAction(input: {
     return { ok: false, error: 'The upload could not be verified. Choose the photo again.' };
   }
 
-  const supabase = await createUserClient();
-  const storage = supabase.storage.from(DOCUMENTS_BUCKET);
-  const { data: object, error: downloadError } = await storage.download(parsed.data.path);
-  if (downloadError || !object) {
-    log.warn('photos.upload pending read failed', { code: downloadError?.name });
-    return { ok: false, error: 'The uploaded photo could not be checked. Check your connection and try again.' };
-  }
+  let storage: ReturnType<SupabaseClient['storage']['from']> | null = null;
+  try {
+    const supabase = await createUserClient();
+    storage = supabase.storage.from(DOCUMENTS_BUCKET);
+    const { data: object, error: downloadError } = await storage.download(parsed.data.path);
+    if (downloadError || !object) {
+      log.warn('photos.upload pending read failed', { code: downloadError?.name });
+      return { ok: false, error: 'The uploaded photo could not be checked. Check your connection and try again.' };
+    }
 
-  const buffer = Buffer.from(await object.arrayBuffer());
-  if (buffer.byteLength !== parsed.data.size) {
+    const buffer = Buffer.from(await object.arrayBuffer());
+    if (buffer.byteLength !== parsed.data.size) {
+      await storage.remove([parsed.data.path]);
+      return { ok: false, error: 'The upload was incomplete. Please upload the photo again.' };
+    }
+
+    const validation = await validateUpload({
+      buffer,
+      declaredName: parsed.data.name,
+      declaredMime: parsed.data.mime,
+      imagesOnly: true,
+    });
+    if (!validation.ok) {
+      await storage.remove([parsed.data.path]);
+      return { ok: false, error: REJECTION_MESSAGE[validation.reason] };
+    }
+
+    const photoId = randomUUID();
+    const encrypted = encryptPhotoBytes(validation.data.buffer, photoAad(owner.id, photoId));
+    const storagePath = photoStoragePath(owner.id);
+
+    const { error: uploadError } = await storage.upload(storagePath, encrypted, {
+      contentType: 'application/octet-stream',
+      upsert: false,
+    });
+    if (uploadError) {
+      await storage.remove([parsed.data.path]);
+      log.warn('photos.upload encrypt store failed', { code: uploadError.name });
+      return { ok: false, error: 'The photo could not be stored securely. Please try again.' };
+    }
+
+    const { error: dbError } = await supabase.from('private_photos').insert({
+      id: photoId,
+      owner_id: owner.id,
+      name: validation.data.safeName,
+      storage_path: storagePath,
+      mime: validation.data.mime,
+      size: validation.data.size,
+    });
+
+    // The plaintext staging object is no longer needed either way.
     await storage.remove([parsed.data.path]);
-    return { ok: false, error: 'The upload was incomplete. Please upload the photo again.' };
+
+    if (dbError) {
+      await storage.remove([storagePath]);
+      log.warn('photos.record failed', { code: dbError.code });
+      return { ok: false, error: 'The photo could not be saved. Try again.' };
+    }
+
+    revalidatePath('/dashboard/photos');
+    return { ok: true, message: `${validation.data.safeName} added to your private album.` };
+  } catch (cause) {
+    // Encryption (keyring) and any other unexpected failure surface as a clean
+    // error instead of bubbling up as a generic "interrupted" message.
+    const message = cause instanceof Error ? cause.message : 'unknown';
+    log.warn('photos.upload finalize threw', { message });
+    // Best-effort cleanup of the plaintext staging object.
+    if (storage) {
+      try {
+        await storage.remove([parsed.data.path]);
+      } catch {
+        // A retry uses a new random path; a failed cleanup cannot expose the file.
+      }
+    }
+    return {
+      ok: false,
+      error: `The photo could not be encrypted and saved (${message}). Check that FIELD_ENCRYPTION_KEYS is set correctly and try again.`,
+    };
   }
-
-  const validation = await validateUpload({
-    buffer,
-    declaredName: parsed.data.name,
-    declaredMime: parsed.data.mime,
-    imagesOnly: true,
-  });
-  if (!validation.ok) {
-    await storage.remove([parsed.data.path]);
-    return { ok: false, error: REJECTION_MESSAGE[validation.reason] };
-  }
-
-  const photoId = randomUUID();
-  const encrypted = encryptPhotoBytes(validation.data.buffer, photoAad(owner.id, photoId));
-  const storagePath = photoStoragePath(owner.id);
-
-  const { error: uploadError } = await storage.upload(storagePath, encrypted, {
-    contentType: 'application/octet-stream',
-    upsert: false,
-  });
-  if (uploadError) {
-    await storage.remove([parsed.data.path]);
-    log.warn('photos.upload encrypt store failed', { code: uploadError.name });
-    return { ok: false, error: 'The photo could not be stored securely. Please try again.' };
-  }
-
-  const { error: dbError } = await supabase.from('private_photos').insert({
-    id: photoId,
-    owner_id: owner.id,
-    name: validation.data.safeName,
-    storage_path: storagePath,
-    mime: validation.data.mime,
-    size: validation.data.size,
-  });
-
-  // The plaintext staging object is no longer needed either way.
-  await storage.remove([parsed.data.path]);
-
-  if (dbError) {
-    await storage.remove([storagePath]);
-    log.warn('photos.record failed', { code: dbError.code });
-    return { ok: false, error: 'The photo could not be saved. Try again.' };
-  }
-
-  revalidatePath('/dashboard/photos');
-  return { ok: true, message: `${validation.data.safeName} added to your private album.` };
 }
 
 /** Deletes one photo: the encrypted object first, then its metadata row. */
