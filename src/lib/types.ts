@@ -177,7 +177,11 @@ export interface RecoveryCodeRow {
 
 export interface GrantContactItem {
   label: string | null;
-  value: string;
+  /**
+   * The `fields.value` column is nullable, so the database projection can
+   * return null here. Consumers must guard against null/empty values.
+   */
+  value: string | null;
 }
 
 /** Metadata of one shareable document. Never carries a storage path or URL. */

@@ -18,9 +18,10 @@ function esc(value: string): string {
 function buildVCard(profile: GrantedProfile): string {
   const lines = ['BEGIN:VCARD', 'VERSION:3.0', `N:${esc(profile.full_name)};;;;`, `FN:${esc(profile.full_name)}`];
 
-  for (const item of profile.phones) lines.push(`TEL;TYPE=CELL:${esc(item.value)}`);
-  for (const item of profile.emails) lines.push(`EMAIL;TYPE=INTERNET:${esc(item.value)}`);
-  for (const item of profile.social_links ?? []) lines.push(`URL:${esc(item.value)}`);
+  // The `fields.value` column is nullable; skip any item without a usable value.
+  for (const item of profile.phones) if (item.value) lines.push(`TEL;TYPE=CELL:${esc(item.value)}`);
+  for (const item of profile.emails) if (item.value) lines.push(`EMAIL;TYPE=INTERNET:${esc(item.value)}`);
+  for (const item of profile.social_links ?? []) if (item.value) lines.push(`URL:${esc(item.value)}`);
   if (profile.address) lines.push(`ADR;TYPE=HOME:;;${esc(profile.address)};;;;`);
   if (profile.dob) lines.push(`BDAY:${esc(profile.dob)}`);
 

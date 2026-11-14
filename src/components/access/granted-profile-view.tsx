@@ -58,7 +58,19 @@ function formatBirthDate(value: string): string {
 
 type ContactKind = 'email' | 'phone';
 
-function ContactRow({ item, kind }: { item: GrantContactItem; kind: ContactKind }) {
+/** A contact item whose value is guaranteed to be a non-empty string. */
+type ValidContactItem = GrantContactItem & { value: string };
+
+/**
+ * The `fields.value` column is nullable, so the projection may include items
+ * with a null/empty value. Drop those before rendering so we never call
+ * `.replace()` / `new URL()` on a non-string.
+ */
+function hasContactValue(item: GrantContactItem): item is ValidContactItem {
+  return typeof item.value === 'string' && item.value.trim().length > 0;
+}
+
+function ContactRow({ item, kind }: { item: ValidContactItem; kind: ContactKind }) {
   const isEmail = kind === 'email';
   const LabelIcon = isEmail ? Mail : Phone;
   const label = item.label || (isEmail ? 'Email' : 'Phone');
@@ -100,8 +112,8 @@ function ContactSection({
   dob,
   address,
 }: {
-  emails: GrantContactItem[];
-  phones: GrantContactItem[];
+  emails: ValidContactItem[];
+  phones: ValidContactItem[];
   dob: string | null;
   address: string | null;
 }) {
@@ -147,7 +159,7 @@ function safeSocialUrl(value: string): URL | null {
   }
 }
 
-function SocialLinks({ items }: { items: GrantContactItem[] }) {
+function SocialLinks({ items }: { items: ValidContactItem[] }) {
   const links = items.flatMap((item, index) => {
     const url = safeSocialUrl(item.value);
     return url ? [{ ...item, url, key: `${item.label ?? 'link'}-${index}` }] : [];
@@ -393,6 +405,12 @@ export function GrantedProfileView({
   const theme = VISITOR_THEMES[profile.visitor_theme] ?? VISITOR_THEMES.ink;
   const compact = profile.visitor_layout === 'compact';
 
+  // Drop any contact items that carry a null/empty value before they reach
+  // rendering code that calls `.replace()` or `new URL()` on the value.
+  const emails = (profile.emails ?? []).filter(hasContactValue);
+  const phones = (profile.phones ?? []).filter(hasContactValue);
+  const socialLinks = (profile.social_links ?? []).filter(hasContactValue);
+
   return (
     <div className="visitor-page min-h-dvh bg-[#F6F7F8] font-inter text-[#172033]">
       <header className="border-b border-[#E6E9ED] bg-white">
@@ -451,9 +469,9 @@ export function GrantedProfileView({
               <nav aria-label="Contact actions" className="visitor-print-hide flex flex-wrap gap-2 border-t border-[#E9ECEF] px-5 py-4 sm:px-7">
                 {[
                   { label: 'Save contact', href: `/p/${encodeURIComponent(slug)}/vcf`, download: true, icon: Download, primary: true },
-                  ...(profile.phones[0] ? [{ label: 'Call', href: `tel:${profile.phones[0].value.replace(/[^\d+]/g, '')}`, icon: Phone }] : []),
-                  ...(profile.phones[0] && whatsAppNumber(profile.phones[0].value) ? [{ label: 'Message', href: `https://wa.me/${whatsAppNumber(profile.phones[0].value)}`, icon: MessageCircle, external: true }] : []),
-                  ...(profile.emails[0] ? [{ label: 'Email', href: `mailto:${encodeURIComponent(profile.emails[0].value)}`, icon: Mail }] : []),
+                  ...(phones[0] ? [{ label: 'Call', href: `tel:${phones[0].value.replace(/[^\d+]/g, '')}`, icon: Phone }] : []),
+                  ...(phones[0] && whatsAppNumber(phones[0].value) ? [{ label: 'Message', href: `https://wa.me/${whatsAppNumber(phones[0].value)}`, icon: MessageCircle, external: true }] : []),
+                  ...(emails[0] ? [{ label: 'Email', href: `mailto:${encodeURIComponent(emails[0].value)}`, icon: Mail }] : []),
                 ].map((action) => {
                   const Icon = action.icon;
                   const isPrimary = 'primary' in action && action.primary;
@@ -469,8 +487,8 @@ export function GrantedProfileView({
               </nav>
             </section>
 
-            <ContactSection emails={profile.emails} phones={profile.phones} dob={profile.dob} address={profile.address} />
-            <SocialLinks items={profile.social_links ?? []} />
+            <ContactSection emails={emails} phones={phones} dob={profile.dob} address={profile.address} />
+            <SocialLinks items={socialLinks} />
           </div>
 
           <aside className={`${cardClass} min-w-0 overflow-hidden`}>

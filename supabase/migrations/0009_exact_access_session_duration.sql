@@ -190,16 +190,19 @@ as $$
       select jsonb_agg(jsonb_build_object('label', f.label, 'value', f.value) order by f.sort, f.created_at)
       from public.fields f
       where f.owner_id = p.owner_id and f.kind = 'email' and f.is_public and not f.is_sensitive
+        and f.value is not null and btrim(f.value) <> ''
     ), '[]'::jsonb),
     'phones', coalesce((
       select jsonb_agg(jsonb_build_object('label', f.label, 'value', f.value) order by f.sort, f.created_at)
       from public.fields f
       where f.owner_id = p.owner_id and f.kind = 'phone' and f.is_public and not f.is_sensitive
+        and f.value is not null and btrim(f.value) <> ''
     ), '[]'::jsonb),
     'social_links', coalesce((
       select jsonb_agg(jsonb_build_object('label', f.label, 'value', f.value) order by f.sort, f.created_at)
       from public.fields f
       where f.owner_id = p.owner_id and f.kind = 'social_link' and f.is_public and not f.is_sensitive
+        and f.value is not null and btrim(f.value) <> ''
     ), '[]'::jsonb),
     'documents', case when g.include_documents then coalesce((
       select jsonb_agg(
