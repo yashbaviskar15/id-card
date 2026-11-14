@@ -30,6 +30,8 @@ const OWNER_TABLES = new Set([
   'access_log',
   'owner_settings',
   'backup_recovery_codes',
+  'private_photos',
+  'owner_secrets',
 ]);
 
 export function DashboardLiveSync({ ownerId }: { ownerId: string }) {
