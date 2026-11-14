@@ -30,6 +30,16 @@ export const visitorSessionMinutesSchema = z.coerce
 /** Six digits from an authenticator app. */
 export const totpCodeSchema = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code.');
 
+/**
+ * Password typed by a visitor to open the private album. The strength policy is
+ * enforced when the owner *sets* it; at unlock time we only bound the length so
+ * an oversized body cannot be used to stall the Argon2 verify.
+ */
+export const photoUnlockPasswordSchema = z
+  .string()
+  .min(1, 'Enter the album password.')
+  .max(200, 'That password is too long.');
+
 /** Unchecked checkboxes are simply absent from the form data, so this is false. */
 export const includeDocumentsSchema = z.coerce.boolean();
 

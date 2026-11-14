@@ -215,6 +215,46 @@ export interface GrantedProfile {
   server_now: string;
 }
 
+/* ------------------------------------------------------------------ */
+/* Private photo album                                                 */
+/* ------------------------------------------------------------------ */
+
+export interface PrivatePhotoRow {
+  id: string;
+  owner_id: string;
+  name: string;
+  /** Storage object holding the AES-256-GCM encrypted bytes. */
+  storage_path: string;
+  mime: string;
+  size: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Metadata of one album photo a visitor may view. Never carries a storage path. */
+export interface GrantedPhoto {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  created_at: string;
+}
+
+/** The complete album projection a password-verified visitor session can receive. */
+export interface GrantedPhotoAlbum {
+  photos: GrantedPhoto[];
+  session_expires_at: string;
+  /** Database clock sampled with the projection, for an accurate timer. */
+  server_now: string;
+}
+
+export interface GrantedPhotoTarget {
+  ownerId: string;
+  storagePath: string;
+  mime: string;
+  name: string;
+}
+
 export type GrantVerdictReason =
   | 'granted'
   | 'invalid'

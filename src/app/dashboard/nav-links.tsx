@@ -6,6 +6,7 @@ import { cn } from 'cn';
 import {
   ArchiveRestore,
   IdCard,
+  Images,
   KeyRound,
   LayoutDashboard,
   Paintbrush,
@@ -34,6 +35,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/access', label: 'Access', icon: KeyRound },
       { href: '/dashboard/share', label: 'Share links', icon: Share2 },
       { href: '/dashboard/vault', label: 'Vault', icon: Vault },
+      { href: '/dashboard/photos', label: 'Private photos', icon: Images },
     ],
   },
   {

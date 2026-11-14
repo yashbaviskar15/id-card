@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/db/service';
 import {
+  albumCookieName,
   cookieOptions,
   ownerCookieSecret,
   signCookie,
@@ -11,7 +12,7 @@ import {
   type CookiePayload,
 } from '@/lib/crypto/cookies';
 import { log } from '@/lib/log';
-import type { GrantedProfile } from '@/lib/types';
+import type { GrantedPhotoAlbum, GrantedPhotoTarget, GrantedProfile } from '@/lib/types';
 
 /** Hard ceiling on a visitor session, independent of the environment value. */
 const MAX_VISITOR_SESSION_SECONDS = 60 * 60;
@@ -133,6 +134,99 @@ export async function loadGrantedDocument(
   const row = data as { storage_path: string; name: string; mime: string };
   if (!row.storage_path) return null;
   return { storagePath: row.storage_path, name: row.name, mime: row.mime };
+}
+
+/* ------------------------------------------------------------------ */
+/* Private photo album sessions                                        */
+/* ------------------------------------------------------------------ */
+
+export interface AlbumSession {
+  grantId: string;
+  slug: string;
+}
+
+/**
+ * The album cookie is minted only after the owner's album password is verified
+ * (see the album unlock action), and shares the same slug-scoped path as the
+ * visitor session so it can never reach another profile.
+ */
+export async function setAlbumSession(session: AlbumSession, maxAgeSeconds: number): Promise<void> {
+  const ttl = Math.max(1, Math.min(MAX_VISITOR_SESSION_SECONDS, Math.ceil(maxAgeSeconds)));
+  const token = signCookie({ g: session.grantId, s: session.slug, a: 'album' }, ttl * 1000, ownerCookieSecret());
+  const store = await cookies();
+  store.set(albumCookieName(session.slug), token, cookieOptions(ttl, visitorCookiePath(session.slug)));
+}
+
+export async function clearAlbumSession(slug: string): Promise<void> {
+  const store = await cookies();
+  store.set(albumCookieName(slug), '', cookieOptions(0, visitorCookiePath(slug)));
+}
+
+export async function readAlbumSession(slug: string): Promise<AlbumSession | null> {
+  const store = await cookies();
+  const token = store.get(albumCookieName(slug))?.value;
+  const result = verifyCookie<CookiePayload>(token, ownerCookieSecret());
+  if (!result.ok || !result.payload) return null;
+  if (result.payload.a !== 'album') return null;
+
+  const grantId = result.payload.g;
+  const boundSlug = result.payload.s;
+  if (typeof grantId !== 'string' || typeof boundSlug !== 'string') return null;
+  if (boundSlug !== slug) return null;
+
+  return { grantId, slug };
+}
+
+/**
+ * Re-validates the album session on every request. `get_granted_photos` returns
+ * nothing once the grant is revoked/expired, the profile is off, or the owner
+ * switched the album off — so revoking a code closes the album immediately.
+ */
+export async function loadGrantedPhotos(slug: string): Promise<GrantedPhotoAlbum | null> {
+  const session = await readAlbumSession(slug);
+  if (!session) return null;
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc('get_granted_photos', {
+    p_grant_id: session.grantId,
+    p_slug: slug,
+  });
+  if (error) {
+    log.warn('access.album read failed', { code: error.code });
+    return null;
+  }
+  if (!data) return null;
+  return data as GrantedPhotoAlbum;
+}
+
+/** Resolves one album photo for the encrypted stream route; null when not gated. */
+export async function loadGrantedPhoto(
+  slug: string,
+  photoId: string,
+): Promise<GrantedPhotoTarget | null> {
+  const session = await readAlbumSession(slug);
+  if (!session) return null;
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc('get_granted_photo', {
+    p_grant_id: session.grantId,
+    p_slug: slug,
+    p_photo_id: photoId,
+  });
+  if (error) {
+    log.warn('access.album photo read failed', { code: error.code });
+    return null;
+  }
+  if (!data) return null;
+
+  const row = data as { owner_id: string; storage_path: string; mime: string; name: string };
+  if (!row.storage_path) return null;
+  return { ownerId: row.owner_id, storagePath: row.storage_path, mime: row.mime, name: row.name };
+}
+
+/** View-only URL for one album photo. No download URL is ever exposed. */
+export function albumPhotoUrl(slug: string, photoId: string): string {
+  return `/p/${encodeURIComponent(slug)}/photos/raw/${encodeURIComponent(photoId)}`;
 }
 
 /** Appends one `session_view` row to the access log. Never blocks rendering. */

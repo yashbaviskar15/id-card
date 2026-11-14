@@ -7,7 +7,7 @@ import { log } from '@/lib/log';
  * counters to race on, and it survives a cold start).
  */
 
-export type LockScope = 'slug' | 'email' | 'ip' | 'share' | 'action';
+export type LockScope = 'slug' | 'email' | 'ip' | 'share' | 'action' | 'photo';
 
 export async function isLocked(scope: LockScope, keyHash: string): Promise<boolean> {
   const supabase = createServiceClient();
@@ -86,6 +86,12 @@ export const RATE_LIMITS = {
   codeSlugLockoutMinutes: 15,
   sharePasswordFailures: 5,
   shareWindowMinutes: 15,
+  // Private-photo album unlock (owner password + access code). Tighter than the
+  // profile gate because the password is the only thing standing between a
+  // holder of a valid code and the album.
+  photoFailuresPerIp: 5,
+  photoWindowMinutes: 15,
+  photoLockoutMinutes: 15,
   // Throttle for authenticated mutation actions (issue a code, create a share
   // link, upload, edit information). Generous enough for normal use, tight
   // enough that a scripted or runaway client cannot hammer the database.

@@ -71,6 +71,15 @@ export function visitorCookieName(slug: string): string {
 }
 
 /**
+ * Private-album cookie. Separate from the visitor session on purpose: it is
+ * minted only after the owner's album password has been verified, so holding a
+ * valid access code alone is never enough to reach the photos.
+ */
+export function albumCookieName(slug: string): string {
+  return `piv_a_${slug.slice(0, 8)}`;
+}
+
+/**
  * How long a successful password re-check stays valid. 30 minutes keeps the
  * card-and-code workflow (hand out a code, share a link) free of repeated
  * password prompts without weakening the sign-in session itself.
